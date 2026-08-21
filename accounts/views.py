@@ -79,3 +79,13 @@ def profile(request):
 def logout_user(request):
     logout(request)
     return redirect('accounts:login')
+
+
+# Agar file ke upar login_required import nahi hai, toh check kar lein ki ye line ho:
+# from django.contrib.auth.decorators import login_required
+
+@login_required
+def team_list(request):
+    # Database se saare team members ka data nikal rahe hain
+    team_members = UserProfile.objects.all().select_related('user')
+    return render(request, 'accounts/team.html', {'team_members': team_members})
