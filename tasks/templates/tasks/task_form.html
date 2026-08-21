@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6 max-w-lg">
+  <h1 class="text-2xl font-bold mb-4">{% if task %}Edit task{% else %}New task{% endif %}</h1>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% for field in form %}
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<p class="text-red-600 text-xs">{{ field.errors }}</p>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save task</button>
+  </form>
+</div>
+{% endblock %}
