@@ -32,6 +32,8 @@
                         <a href="{% url 'accounts:logout' %}" class="bg-red-50 text-red-600 hover:bg-red-100 font-medium px-4 py-2 rounded-lg transition duration-300">Logout</a>
                         <!-- Navbar me yahan add karein -->
                         <a href="{% url 'accounts:team_list' %}" class="text-gray-700 hover:text-blue-600 font-medium px-3 py-2 rounded-md transition duration-300">Team</a>
+                        <a href="{% url 'tasks:dashboard' %}" class="text-gray-700 hover:text-blue-600 font-medium px-3 py-2 rounded-md transition duration-300">Dashboard</a>
+                        <a href="{% url 'tasks:kanban' %}" class="text-gray-700 hover:text-blue-600 font-medium px-3 py-2 rounded-md transition duration-300">Kanban</a>
                     {% else %}
                         <!-- Agar user LOGOUT hai toh ye dikhega -->
                         <a href="{% url 'accounts:login' %}" class="text-gray-700 hover:text-blue-600 font-medium px-3 py-2 rounded-md transition duration-300">Login</a>
