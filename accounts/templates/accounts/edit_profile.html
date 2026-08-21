@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile - Team Management{% endblock %}
+
+{% block content %}
+<style>
+    /* Django form styling matching your theme */
+    #editForm input {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.875rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        background-color: #fafafa;
+        outline: none;
+        transition: all 0.3s ease;
+        margin-top: 0.25rem;
+    }
+    #editForm input:focus {
+        border-color: #7a2656;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(122, 38, 86, 0.1);
+    }
+    .helptext { display: none; } /* Default Django text hide karne ke liye */
+</style>
+
+<div class="flex items-center justify-center py-10 px-4 sm:px-6 mt-4 sm:mt-10">
+    <!-- Contained Edit Card -->
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+        
+        <!-- Header -->
+        <div class="bg-gray-50 border-b border-gray-100 p-6 flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-bold text-gray-800">Edit Profile</h2>
+                <p class="text-sm text-gray-500 mt-1 font-medium">Update your personal information</p>
+            </div>
+            <!-- Back Button -->
+            <a href="{% url 'accounts:profile' %}" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </a>
+        </div>
+
+        <!-- Form Section -->
+        <div class="p-6 sm:p-8">
+            <form id="editForm" method="POST" class="space-y-5">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {% for field in form %}
+                        <div class="{% if field.name == 'email' %}md:col-span-2{% endif %}">
+                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            <div class="text-red-500 text-xs mt-1">{{ field.errors }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-8 pt-6 border-t border-gray-100 flex justify-end gap-3">
+                    <a href="{% url 'accounts:profile' %}" class="px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg border border-gray-200 transition duration-200 text-center">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-5 py-2.5 bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-semibold rounded-lg transition duration-200 shadow-md text-center">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

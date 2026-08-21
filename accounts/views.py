@@ -1,4 +1,5 @@
 import json
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -6,11 +7,13 @@ from django.http import JsonResponse
 from django.contrib import messages
 from .forms import UserRegistrationForm, LoginForm
 from .models import UserProfile
+from .forms import UserUpdateForm
 
 def register_user(request):
-    # Agar user form submit karta hai
+    # Agar user form submit karta hai (Frontend se Fetch API ke through)
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
+        
         if form.is_valid():
             # User save karein par abhi database me commit na karein
             user = form.save(commit=False)
@@ -24,10 +27,21 @@ def register_user(request):
                 role=form.cleaned_data.get('role'),
                 phone_number=form.cleaned_data.get('phone_number')
             )
-            messages.success(request, 'Registration successful! Please login.')
-            return redirect('accounts:login')
+            
+            # --- DRAMA KHATAM YAHAN HUA ---
+            # Ab hum Redirect ki jagah direct JSON bhejenge jo JS ko chahiye
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'Registration successful! Please login.', 
+                'redirect_url': '/accounts/login/'
+            })
+            
+        else:
+            # Agar form me galti hai (jaise password chota hai), toh HTML nahi, errors JSON me bhejenge
+            return JsonResponse({'status': 'error', 'errors': form.errors})
+            
     else:
-        # Agar user sirf page open karta hai
+        # Agar user sirf page open karta hai (GET request)
         form = UserRegistrationForm()
         
     return render(request, 'accounts/register.html', {'form': form})
@@ -89,3 +103,16 @@ def team_list(request):
     # Database se saare team members ka data nikal rahe hain
     team_members = UserProfile.objects.all().select_related('user')
     return render(request, 'accounts/team.html', {'team_members': team_members})
+
+@login_required
+def edit_profile(request):
+    if request.method == 'POST':
+        # form me 'instance=request.user' likhne se purana data pehle se bhara hua aayega
+        form = UserUpdateForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect('accounts:profile')  # Save hone ke baad wapas profile par bhej dega
+    else:
+        form = UserUpdateForm(instance=request.user)
+
+    return render(request, 'accounts/edit_profile.html', {'form': form})

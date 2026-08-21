@@ -3,49 +3,96 @@
 {% block title %}Team Directory - Team Management{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto mt-8">
-    <div class="flex justify-between items-center mb-8">
-        <h2 class="text-3xl font-bold text-gray-800">Team Directory</h2>
-        <span class="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-2 rounded-full">
-            Total Members: {{ team_members.count }}
-        </span>
+<div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 min-h-[80vh]">
+    
+    <!-- Page Header & Badge -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Team Directory</h1>
+            <p class="text-sm text-gray-500 mt-1 font-medium">Meet the amazing people working on this project.</p>
+        </div>
+        
+        <!-- Total Members Badge (Maroon/Pink Theme) -->
+        <div class="bg-pink-50 border border-pink-100 text-[#7a2656] px-5 py-2.5 rounded-full font-bold text-sm shadow-sm flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+            Total Members: {{ team_members.count }} 
+        </div>
     </div>
 
-    <!-- Team Members Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Team Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+        
         {% for member in team_members %}
-        <div class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6">
-            <div class="flex items-center space-x-4 mb-4">
-                <!-- Avatar / Initials -->
-                <div class="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold">
+        <!-- Single Card with 3D Hover Effect -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-xl hover:-translate-y-1.5 transition duration-300 overflow-hidden group">
+            
+            <!-- Top Section (Avatar & Name) -->
+            <div class="p-6 flex items-center gap-4 relative bg-white">
+                <!-- Gradient Avatar -->
+                <div class="h-16 w-16 rounded-full bg-gradient-to-br from-[#7a2656] to-pink-400 text-white flex items-center justify-center text-2xl font-bold shadow-md flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
                     {{ member.user.username|make_list|first|upper }}
                 </div>
-                <div>
-                    <h3 class="text-xl font-semibold text-gray-800">{{ member.user.first_name }} {{ member.user.last_name }}</h3>
-                    <p class="text-gray-500 text-sm">@{{ member.user.username }}</p>
+                
+                <!-- Info -->
+                <div class="flex-grow min-w-0">
+                    <h2 class="text-lg font-bold text-gray-900 truncate capitalize">{{ member.user.first_name }} {{ member.user.last_name }}</h2>
+                    <p class="text-sm text-gray-500 truncate font-medium">@{{ member.user.username }}</p>
                 </div>
             </div>
-            
-            <div class="space-y-2 mt-4 pt-4 border-t border-gray-100">
-                <div class="flex justify-between">
-                    <span class="text-gray-500 text-sm font-medium">Role:</span>
-                    <span class="text-blue-600 text-sm font-bold uppercase">{{ member.role }}</span>
+
+            <!-- Gradient Divider Line -->
+            <div class="h-px w-full bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+
+            <!-- Bottom Details Section -->
+            <div class="p-6 bg-gray-50/50 space-y-4">
+                
+                <!-- Role Tag -->
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Role</span>
+                    <span class="bg-pink-50 text-[#7a2656] text-[10px] font-extrabold px-3 py-1 rounded-md uppercase tracking-wider border border-pink-100 shadow-sm">
+                        {{ member.role }}
+                    </span>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500 text-sm font-medium">Email:</span>
-                    <span class="text-gray-800 text-sm">{{ member.user.email }}</span>
+
+                <!-- Email with Icon -->
+                <div class="flex items-center gap-3">
+                    <div class="p-1.5 bg-white rounded-md shadow-sm text-gray-400 border border-gray-100 group-hover:text-[#7a2656] transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="truncate">
+                        <p class="text-sm font-medium text-gray-700 truncate" title="{{ member.user.email }}">{{ member.user.email }}</p>
+                    </div>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500 text-sm font-medium">Phone:</span>
-                    <span class="text-gray-800 text-sm">{{ member.phone_number|default:"N/A" }}</span>
+
+                <!-- Phone with Icon -->
+                <div class="flex items-center gap-3">
+                    <div class="p-1.5 bg-white rounded-md shadow-sm text-gray-400 border border-gray-100 group-hover:text-[#7a2656] transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">{{ member.phone_number|default:"N/A" }}</p>
+                    </div>
                 </div>
+
             </div>
         </div>
+        
         {% empty %}
-        <div class="col-span-full text-center py-10">
-            <p class="text-gray-500 text-lg">No team members found.</p>
+        <!-- Empty State Design -->
+        <div class="col-span-full py-16 flex flex-col items-center justify-center text-gray-500 bg-white rounded-2xl border border-dashed border-gray-300">
+            <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+            <p class="text-lg font-medium">No team members found.</p>
         </div>
         {% endfor %}
+
     </div>
 </div>
 {% endblock %}

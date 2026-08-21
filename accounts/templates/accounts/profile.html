@@ -3,49 +3,93 @@
 {% block title %}My Profile - Team Management{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto mt-10 bg-white p-8 border border-gray-200 rounded-xl shadow-lg">
-    <!-- Header Section -->
-    <div class="flex items-center justify-between mb-8 border-b pb-4">
-        <h2 class="text-3xl font-bold text-gray-800">My Profile</h2>
-        <!-- Role Badge -->
-        <span class="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1.5 rounded-full uppercase tracking-wide">
-            {{ request.user.profile.role }}
-        </span>
+<div class="flex items-center justify-center py-10 px-4 sm:px-6 h-full mt-4 sm:mt-10">
+
+    <!-- Contained Profile Card -->
+    <div
+        class="w-full max-w-4xl bg-white rounded-2xl shadow-lg border border-gray-200 flex flex-col md:flex-row overflow-hidden">
+
+        <!-- Left Side: Avatar & Basic Info -->
+        <div
+            class="md:w-1/3 bg-gray-50/70 p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gray-100 relative">
+
+            <!-- Online Status Indicator (Blinking Green Dot) -->
+            <span class="absolute top-6 right-6 flex h-3 w-3">
+                <span
+                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" title="Active"></span>
+            </span>
+
+            <!-- Avatar -->
+            <div
+                class="h-28 w-28 rounded-full bg-[#7a2656] text-white flex items-center justify-center text-4xl font-bold shadow-md border-4 border-white">
+                {{ user.username|make_list|first|upper }}
+            </div>
+
+            <!-- Name & Role -->
+            <h2 class="mt-5 text-xl font-extrabold text-gray-800 text-center tracking-tight">{{ user.first_name }} {{ user.last_name }}</h2>
+            <p class="text-sm text-gray-500 mt-1 font-medium">@{{ user.username }}</p>
+
+            <!-- Role Badge -->
+            <span
+                class="mt-4 bg-pink-50 text-[#7a2656] text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider border border-pink-100 shadow-sm">
+                {{ user.userprofile.role|default:"EMPLOYEE" }}
+            </span>
+        </div>
+
+        <!-- Right Side: Details & Actions -->
+        <div class="md:w-2/3 p-8 sm:p-10 flex flex-col justify-center">
+
+            <!-- Section Header -->
+            <div class="flex items-center justify-between mb-6 border-b border-gray-100 pb-3">
+                <h3 class="text-xl font-bold text-gray-800">Account Details</h3>
+            </div>
+
+            <!-- Details Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">
+
+                <div>
+                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Email Address</p>
+                    <p class="text-gray-800 font-semibold text-sm">{{ user.email }}</p>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Phone Number</p>
+                    <p class="text-gray-800 font-semibold text-sm">{{ user.userprofile.phone_number|default:"06396572959" }}</p>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">First Name</p>
+                    <p class="text-gray-800 font-semibold text-sm">{{ user.first_name }}</p>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Last Name</p>
+                    <p class="text-gray-800 font-semibold text-sm">{{ user.last_name }}</p>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Joined Date</p>
+                    <p class="text-gray-800 font-semibold text-sm">{{ user.date_joined|date:"F d, Y" }}</p>
+                </div>
+
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-10 pt-5 border-t border-gray-100 flex flex-col sm:flex-row gap-3 justify-end">
+                <!-- Purane <button> ko hatakar ye <a> tag lagayein -->
+                <a href="{% url 'accounts:edit_profile' %}"
+                    class="px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg border border-gray-200 transition duration-200 text-center">
+                    Edit Profile
+                </a>
+                <a href="{% url 'accounts:logout' %}"
+                    class="px-5 py-2.5 bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-semibold rounded-lg transition duration-200 shadow-md text-center">
+                    Logout
+                </a>
+            </div>
+
+        </div>
     </div>
-    
-    <!-- User Details Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-            <label class="block text-gray-500 text-sm font-semibold mb-1">Username</label>
-            <p class="text-gray-800 text-lg font-medium">{{ request.user.username }}</p>
-        </div>
-        <div>
-            <label class="block text-gray-500 text-sm font-semibold mb-1">Email</label>
-            <p class="text-gray-800 text-lg font-medium">{{ request.user.email }}</p>
-        </div>
-        <div>
-            <label class="block text-gray-500 text-sm font-semibold mb-1">First Name</label>
-            <p class="text-gray-800 text-lg font-medium">{{ request.user.first_name|default:"-" }}</p>
-        </div>
-        <div>
-            <label class="block text-gray-500 text-sm font-semibold mb-1">Last Name</label>
-            <p class="text-gray-800 text-lg font-medium">{{ request.user.last_name|default:"-" }}</p>
-        </div>
-        <div>
-            <label class="block text-gray-500 text-sm font-semibold mb-1">Phone Number</label>
-            <p class="text-gray-800 text-lg font-medium">{{ request.user.profile.phone_number|default:"Not Provided" }}</p>
-        </div>
-        <div>
-            <label class="block text-gray-500 text-sm font-semibold mb-1">Joined Date</label>
-            <p class="text-gray-800 text-lg font-medium">{{ request.user.date_joined|date:"F j, Y" }}</p>
-        </div>
-    </div>
-    
-    <!-- Action Buttons -->
-    <div class="mt-10 pt-6 border-t flex gap-4">
-        <a href="{% url 'accounts:logout' %}" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
-            Logout
-        </a>
-    </div>
+
 </div>
 {% endblock %}
