@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - Team Management{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-10 bg-white p-8 border border-gray-200 rounded-xl shadow-lg">
+    <!-- Header Section -->
+    <div class="flex items-center justify-between mb-8 border-b pb-4">
+        <h2 class="text-3xl font-bold text-gray-800">My Profile</h2>
+        <!-- Role Badge -->
+        <span class="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1.5 rounded-full uppercase tracking-wide">
+            {{ request.user.profile.role }}
+        </span>
+    </div>
+    
+    <!-- User Details Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <label class="block text-gray-500 text-sm font-semibold mb-1">Username</label>
+            <p class="text-gray-800 text-lg font-medium">{{ request.user.username }}</p>
+        </div>
+        <div>
+            <label class="block text-gray-500 text-sm font-semibold mb-1">Email</label>
+            <p class="text-gray-800 text-lg font-medium">{{ request.user.email }}</p>
+        </div>
+        <div>
+            <label class="block text-gray-500 text-sm font-semibold mb-1">First Name</label>
+            <p class="text-gray-800 text-lg font-medium">{{ request.user.first_name|default:"-" }}</p>
+        </div>
+        <div>
+            <label class="block text-gray-500 text-sm font-semibold mb-1">Last Name</label>
+            <p class="text-gray-800 text-lg font-medium">{{ request.user.last_name|default:"-" }}</p>
+        </div>
+        <div>
+            <label class="block text-gray-500 text-sm font-semibold mb-1">Phone Number</label>
+            <p class="text-gray-800 text-lg font-medium">{{ request.user.profile.phone_number|default:"Not Provided" }}</p>
+        </div>
+        <div>
+            <label class="block text-gray-500 text-sm font-semibold mb-1">Joined Date</label>
+            <p class="text-gray-800 text-lg font-medium">{{ request.user.date_joined|date:"F j, Y" }}</p>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="mt-10 pt-6 border-t flex gap-4">
+        <a href="{% url 'accounts:logout' %}" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+            Logout
+        </a>
+    </div>
+</div>
+{% endblock %}

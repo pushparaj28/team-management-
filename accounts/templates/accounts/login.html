@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Team Management{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-16 bg-white p-8 border border-gray-200 rounded-xl shadow-lg">
+    <h2 class="text-3xl font-bold mb-6 text-center text-blue-600">Welcome Back</h2>
+    
+    <!-- Login Form -->
+    <form id="loginForm">
+        <!-- Django Security Token -->
+        {% csrf_token %}
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2">Username</label>
+            {{ form.username }}
+        </div>
+        
+        <div class="mb-6">
+            <label class="block text-gray-700 font-medium mb-2">Password</label>
+            {{ form.password }}
+        </div>
+        
+        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300">
+            Login
+        </button>
+    </form>
+    
+    <p class="mt-6 text-center text-sm text-gray-600">
+        Don't have an account? 
+        <a href="{% url 'accounts:register' %}" class="text-blue-600 hover:underline font-semibold">Register here</a>
+    </p>
+</div>
+{% endblock %}
+
+<!-- Custom JavaScript for AJAX Login -->
+{% block scripts %}
+<script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Default form submit (page reload) ko rokna
+        
+        // Form ka data nikalna
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Django CSRF token lena security ke liye
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        // Backend ko Data bhejna (Fetch API)
+        fetch("{% url 'accounts:login' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Agar login success hua toh Profile page par bhej do
+                window.location.href = data.redirect_url;
+            } else {
+                // Agar error aayi toh alert dikhao (Future me ise bhi Toast bana sakte hain)
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Something went wrong. Please try again.");
+        });
+    });
+</script>
+{% endblock %}
