@@ -1,0 +1,14 @@
+from django.urls import path
+from . import views
+
+app_name = 'tasks'
+
+urlpatterns = [
+    path('', views.dashboard, name='dashboard'),
+    path('kanban/', views.kanban_board, name='kanban'),
+    path('task/<int:pk>/', views.task_detail, name='task_detail'),
+    path('task/new/', views.task_form_view, name='task_create'),
+    path('task/<int:pk>/edit/', views.task_form_view, name='task_edit'),
+    path('milestone/new/', views.milestone_form_view, name='milestone_create'),
+    path('api/task/<int:pk>/update-status/', views.update_task_status, name='update_task_status'),
+]
