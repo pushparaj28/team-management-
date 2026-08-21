@@ -23,11 +23,14 @@ def dashboard(request):
             'user': user,
             'percent': round((user_done / user_total) * 100) if user_total else 0,
             'total': user_total,
+            'done': user_done,
         })
 
     context = {
         'milestones': Milestone.objects.all(),
         'percent_complete': percent_complete,
+        'total_tasks': total,
+        'done_tasks': done,
         'member_stats': member_stats,
     }
     return render(request, 'tasks/dashboard.html', context)
@@ -61,7 +64,7 @@ def task_form_view(request, pk=None):
             return redirect('tasks:kanban')
     else:
         form = TaskForm(instance=task)
-    return render(request, 'tasks/task_form.html', {'form': form})
+    return render(request, 'tasks/task_form.html', {'form': form, 'task': task})
 
 
 @login_required
@@ -74,6 +77,14 @@ def milestone_form_view(request):
     else:
         form = MilestoneForm()
     return render(request, 'tasks/milestone_form.html', {'form': form})
+
+
+@login_required
+@require_POST
+def task_delete(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+    task.delete()
+    return redirect('tasks:kanban')
 
 
 @login_required

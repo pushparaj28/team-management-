@@ -9,6 +9,7 @@ urlpatterns = [
     path('task/<int:pk>/', views.task_detail, name='task_detail'),
     path('task/new/', views.task_form_view, name='task_create'),
     path('task/<int:pk>/edit/', views.task_form_view, name='task_edit'),
+    path('task/<int:pk>/delete/', views.task_delete, name='task_delete'),
     path('milestone/new/', views.milestone_form_view, name='milestone_create'),
     path('api/task/<int:pk>/update-status/', views.update_task_status, name='update_task_status'),
 ]
