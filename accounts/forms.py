@@ -40,3 +40,13 @@ class LoginForm(forms.Form):
         tailwind_classes = 'w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = tailwind_classes
+
+class UserUpdateForm(forms.ModelForm):
+    first_name = forms.CharField(max_length=100, required=True)
+    last_name = forms.CharField(max_length=100, required=True)
+    email = forms.EmailField(required=True)
+    
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']

@@ -1,52 +1,125 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Login - Team Management{% endblock %}
-
 {% block content %}
-<div class="max-w-md mx-auto mt-16 bg-white p-8 border border-gray-200 rounded-xl shadow-lg">
-    <h2 class="text-3xl font-bold mb-6 text-center text-blue-600">Welcome Back</h2>
-    
-    <!-- Login Form -->
-    <form id="loginForm">
-        <!-- Django Security Token -->
-        {% csrf_token %}
-        
-        <div class="mb-4">
-            <label class="block text-gray-700 font-medium mb-2">Username</label>
-            {{ form.username }}
+<!-- Custom styles for Django form fields -->
+<style>
+    #loginForm input[type="text"],
+    #loginForm input[type="password"] {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        background-color: #fafafa;
+        outline: none;
+        transition: all 0.3s ease;
+    }
+
+    #loginForm input[type="text"]:focus,
+    #loginForm input[type="password"]:focus {
+        border-color: #7a2656;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(122, 38, 86, 0.1);
+    }
+</style>
+
+<div class="min-h-[85vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8">
+    <!-- Main Card Container -->
+    <div
+        class="bg-white max-w-5xl w-full rounded-3xl shadow-xl flex flex-col md:flex-row overflow-hidden border border-gray-100">
+        <!-- Left Side (Illustration & Branding) -->
+        <div class="w-full md:w-1/2 bg-[#fdf1e4] p-10 flex flex-col items-center justify-center relative min-h-[400px]">
+
+            <!-- Aapki Image -->
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOfWUQ1c1p3CNBFMwgcMKC6KVQj-Auj6la6Aq2IqVEnYYvhTc5g67vVNU&s=10" class="w-3/4 mb-8" alt="Illustration">
+
+            <!-- Heading -->
+            <h3 class="text-2xl font-bold text-[#7a2656] text-center mt-4">Turn your ideas into reality.</h3>
         </div>
-        
-        <div class="mb-6">
-            <label class="block text-gray-700 font-medium mb-2">Password</label>
-            {{ form.password }}
+
+        <!-- Right Side (Form Section) -->
+        <div class="w-full md:w-1/2 p-10 sm:p-14 bg-white flex flex-col justify-center">
+
+            <!-- Logo Icon (Optional) -->
+            <div class="mb-4 text-center md:text-left">
+                <svg class="w-8 h-8 text-gray-800 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5">
+                    </path>
+                </svg>
+            </div>
+
+            <!-- Headings -->
+            <div class="mb-8 text-center md:text-left">
+                <h2 class="text-3xl font-bold text-gray-800 tracking-tight">Login to your Account</h2>
+                <p class="text-sm text-gray-500 mt-2">See what is going on with your business</p>
+            </div>
+
+            <!-- Google Button -->
+            <button type="button"
+                class="w-full border border-gray-200 text-gray-700 font-semibold py-2.5 px-4 rounded-lg flex items-center justify-center hover:bg-gray-50 transition duration-200 mb-6 shadow-sm">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 mr-3" alt="Google">
+                Continue with Google
+            </button>
+
+            <!-- Divider -->
+            <div class="relative flex items-center mb-6">
+                <div class="flex-grow border-t border-gray-200"></div>
+                <span class="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase tracking-wide">or Sign in with
+                    Email</span>
+                <div class="flex-grow border-t border-gray-200"></div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="space-y-5">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1.5">Email / Username</label>
+                    {{ form.username }}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1.5">Password</label>
+                    {{ form.password }}
+                </div>
+
+                <div class="flex items-center justify-between mt-2 mb-6">
+                    <label class="flex items-center text-sm text-gray-600 cursor-pointer">
+                        <input type="checkbox" class="mr-2 rounded border-gray-300 text-[#7a2656] focus:ring-[#7a2656]">
+                        Remember Me
+                    </label>
+                    <a href="#" class="text-sm font-semibold text-[#7a2656] hover:underline">Forgot Password?</a>
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-[#7a2656] hover:bg-[#5c1c40] text-white font-bold py-3.5 px-4 rounded-lg transition duration-300 shadow-md">
+                    Login
+                </button>
+                 <!-- Login Link -->
+                <div class="text-center mt-3">
+                    <p class="text-xs text-gray-600">Don't have an account? 
+                        <a href="{% url 'accounts:register' %}" class="font-bold text-[#7a2656] hover:underline">Register</a>
+                    </p>
+                </div>
+            </form>
+
         </div>
-        
-        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300">
-            Login
-        </button>
-    </form>
-    
-    <p class="mt-6 text-center text-sm text-gray-600">
-        Don't have an account? 
-        <a href="{% url 'accounts:register' %}" class="text-blue-600 hover:underline font-semibold">Register here</a>
-    </p>
+    </div>
 </div>
 {% endblock %}
 
-<!-- Custom JavaScript for AJAX Login -->
 {% block scripts %}
+<!-- Purana JavaScript Code (Fetch API) -->
 <script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault(); // Default form submit (page reload) ko rokna
-        
-        // Form ka data nikalna
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
         const formData = new FormData(this);
         const data = Object.fromEntries(formData.entries());
-        
-        // Django CSRF token lena security ke liye
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-        // Backend ko Data bhejna (Fetch API)
         fetch("{% url 'accounts:login' %}", {
             method: 'POST',
             headers: {
@@ -55,20 +128,18 @@
             },
             body: JSON.stringify(data)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // Agar login success hua toh Profile page par bhej do
-                window.location.href = data.redirect_url;
-            } else {
-                // Agar error aayi toh alert dikhao (Future me ise bhi Toast bana sakte hain)
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert("Something went wrong. Please try again.");
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Something went wrong. Please try again.");
+            });
     });
 </script>
 {% endblock %}
