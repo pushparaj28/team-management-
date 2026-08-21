@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="p-6">
+  <div class="flex flex-wrap justify-between items-center mb-4 gap-3">
+    <h1 class="text-2xl font-bold">Kanban board</h1>
+    <div class="flex gap-2">
+      <input id="searchInput" type="text" placeholder="Search tasks..." class="border rounded px-3 py-1">
+      <select id="priorityFilter" class="border rounded px-3 py-1">
+        <option value="">All priorities</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <a href="{% url 'tasks:task_create' %}" class="bg-blue-600 text-white px-3 py-1 rounded">+ New task</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    {% for status, tasks in board.items %}
+    <div class="bg-gray-100 rounded-lg p-3 kanban-column" data-status="{{ status }}">
+      <h2 class="font-semibold mb-3">{{ status }} <span class="text-gray-400 text-sm">({{ tasks|length }})</span></h2>
+      <div class="space-y-3 task-list" ondragover="allowDrop(event)" ondrop="dropTask(event)">
+        {% for task in tasks %}
+        <a href="{% url 'tasks:task_detail' task.pk %}" class="block bg-white rounded shadow p-3 cursor-move task-card"
+           draggable="true" ondragstart="dragTask(event)"
+           data-task-id="{{ task.id }}" data-priority="{{ task.priority }}" data-title="{{ task.title|lower }}">
+          <p class="font-medium">{{ task.title }}</p>
+          <p class="text-xs text-gray-500 mt-1">{{ task.assigned_to.username|default:"Unassigned" }}</p>
+          <div class="flex justify-between items-center mt-2">
+            <span class="text-xs px-2 py-0.5 rounded
+              {% if task.priority == 'High' %}bg-red-100 text-red-700
+              {% elif task.priority == 'Medium' %}bg-yellow-100 text-yellow-700
+              {% else %}bg-green-100 text-green-700{% endif %}">{{ task.priority }}</span>
+            {% if task.due_date %}<span class="text-xs text-gray-400">{{ task.due_date }}</span>{% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+<script src="{% static 'tasks/js/kanban.js' %}"></script>
+{% endblock %}

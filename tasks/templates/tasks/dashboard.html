@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6">
+  <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white rounded-lg shadow p-4">
+      <p class="text-sm text-gray-500">Total tasks</p>
+      <p class="text-3xl font-bold">{{ total_tasks }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <p class="text-sm text-gray-500">Completed</p>
+      <p class="text-3xl font-bold">{{ done_tasks }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <p class="text-sm text-gray-500">Overall progress</p>
+      <p class="text-3xl font-bold">{{ percent_complete }}%</p>
+      <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ percent_complete }}%"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="text-lg font-semibold mb-3">Member workload</h2>
+  <div class="bg-white rounded-lg shadow divide-y mb-8">
+    {% for stat in member_stats %}
+    <div class="flex items-center justify-between p-3">
+      <span>{{ stat.user.username }}</span>
+      <div class="flex items-center gap-3 w-1/2">
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="bg-green-600 h-2 rounded-full" style="width: {{ stat.percent }}%"></div>
+        </div>
+        <span class="text-sm text-gray-500 w-16 text-right">{{ stat.done }}/{{ stat.total }}</span>
+      </div>
+    </div>
+    {% empty %}
+    <p class="p-3 text-gray-400">No assigned tasks yet.</p>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-lg font-semibold mb-3">Milestones</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {% for m in milestones %}
+    <div class="bg-white rounded-lg shadow p-4">
+      <p class="font-medium">{{ m.title }}</p>
+      <p class="text-sm text-gray-500">Due {{ m.target_date }}</p>
+      <span class="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700">{{ m.status }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
