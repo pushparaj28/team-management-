@@ -70,11 +70,11 @@ def login_user(request):
             return JsonResponse({
                 'status': 'success', 
                 'message': 'Login successful!', 
-                # 1. Yahan JS ke liye url update kiya
-                'redirect_url': '/tasks/dashboard/' 
+                # Yahan /tasks/dashboard/ ki jagah sirf /tasks/ 
+                'redirect_url': '/tasks/' 
             })
             
-        # 2. Yahan normal form submit ke liye update kiya
+        # Normal form submit ke liye ye waisa ka waisa hi rahega (kyunki name same hai
         return redirect('tasks:dashboard')
     else:
             # Agar details galat hain
