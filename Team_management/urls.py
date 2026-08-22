@@ -8,4 +8,6 @@ urlpatterns = [
     
     # Jab koi khali URL (root) dale, toh usko accounts:login par bhej do
     path('', RedirectView.as_view(pattern_name='accounts:login'), name='home'),
+    # Ye ek nayi line add kar dijiye 👇
+    path('tasks/', include('tasks.urls')),
 ]

@@ -65,15 +65,18 @@ def login_user(request):
         if user is not None:
             login(request, user) # User ko login kara diya
             
-            # Agar JavaScript se request aayi thi, toh JSON bhejein
-            if request.headers.get('Content-Type') == 'application/json':
-                return JsonResponse({
-                    'status': 'success', 
-                    'message': 'Login successful!', 
-                    'redirect_url': '/accounts/profile/'
-                })
-            return redirect('accounts:profile')
-        else:
+           # Agar JavaScript se request aayi thi, toh JSON bhejein
+        if request.headers.get('Content-Type') == 'application/json':
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'Login successful!', 
+                # 1. Yahan JS ke liye url update kiya
+                'redirect_url': '/tasks/dashboard/' 
+            })
+            
+        # 2. Yahan normal form submit ke liye update kiya
+        return redirect('tasks:dashboard')
+    else:
             # Agar details galat hain
             if request.headers.get('Content-Type') == 'application/json':
                 return JsonResponse({'status': 'error', 'message': 'Invalid username or password.'}, status=400)
