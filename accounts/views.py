@@ -14,23 +14,18 @@ from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Q
 
 def register_user(request):
-    # Agar user form submit karta hai (Frontend se Fetch API ke through)
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         
         if form.is_valid():
-            # User save karein par abhi database me commit na karein
             user = form.save(commit=False) 
-            # Password ko secure (hash) karke save karein
             user.set_password(form.cleaned_data['password'])  
             user.save()
-            
-            # 🟢 PRO LOGIC: Naya account hamesha by default 'employee' banega
             UserProfile.objects.create(
                 user=user,
                 role='employee', 
-                phone_number=form.cleaned_data.get('phone_number')
-                # Manager set karne ki zaroorat nahi, wo by default azaad (None) rahega
+                phone_number=form.cleaned_data.get('phone_number'),
+                department=form.cleaned_data.get('department')  # 🟢 JAADU: Department yahan save ho jayega!
             )
             
             return JsonResponse({
@@ -40,11 +35,9 @@ def register_user(request):
             })
             
         else:
-            # Agar form me galti hai, toh errors JSON me bhejenge
             return JsonResponse({'status': 'error', 'errors': form.errors}) 
             
     else:
-        # GET request - Khali form dikhayein
         form = UserRegistrationForm() 
         
     return render(request, 'accounts/register.html', {'form': form})
@@ -83,7 +76,7 @@ def login_user(request):
     return render(request, 'accounts/login.html', {'form': form})
 
 
-@login_required # Ye page bina login ke open nahi hoga
+@login_required 
 def profile(request):
     return render(request, 'accounts/profile.html')
 
@@ -92,33 +85,34 @@ def logout_user(request):
     logout(request)
     return redirect('accounts:login')
 
-
 @login_required
 def team_list(request):
     user = request.user
-    
-    # 1. ADMIN LOGIC: Saari company ki team dikhegi
     if user.is_superuser:
-        team_members = UserProfile.objects.select_related('user').all()
+        base_query = UserProfile.objects.select_related('user').all()
         
-    # 2. MANAGER LOGIC: Manager ko wo khud aur uske under kaam karne wale employees dikhenge
     elif hasattr(user, 'profile') and user.profile.role == 'manager':
-        team_members = UserProfile.objects.filter(
+        base_query = UserProfile.objects.filter(
             Q(user=user) | Q(manager=user)
         ).select_related('user')
         
-    # 3. EMPLOYEE LOGIC: Employee ko sirf apne manager ki team ke baaki log dikhenge
     else:
         if hasattr(user, 'profile') and user.profile.manager:
-            # Apne manager ki puri team dekho
-            team_members = UserProfile.objects.filter(
+            base_query = UserProfile.objects.filter(
                 manager=user.profile.manager
             ).select_related('user')
         else:
-            # Agar koi manager nahi hai, toh sirf khud ko dekho
-            team_members = UserProfile.objects.filter(user=user)
+            base_query = UserProfile.objects.filter(user=user).select_related('user')
             
-    return render(request, 'accounts/team.html', {'team_members': team_members})
+    managers = base_query.filter(role='manager')
+    employees = base_query.filter(role='employee')
+    
+    context = {
+        'managers': managers,
+        'employees': employees,
+    }
+    
+    return render(request, 'accounts/team.html', context)
 
 @login_required
 def edit_profile(request):
@@ -166,22 +160,12 @@ def edit_member(request, user_id):
         return redirect('accounts:team_list') 
     return render(request, 'accounts/edit_member.html', {'member_user': user_to_edit, 'profile': profile})
 
-
-
-
-    # ==========================================
-# MANAGER: MY TEAM DASHBOARD (Page dikhane ke liye)
-# ==========================================
+ # ==========================================
 @login_required
 def manager_dashboard(request):
-    # Security: Agar user Manager nahi hai, toh use Tasks wale page par wapas bhej do
     if not hasattr(request.user, 'profile') or request.user.profile.role != 'manager':
         return redirect('tasks:dashboard') 
-
-    # 1. Meri Team: Wo employees jinka manager ye current user hai
     my_team = UserProfile.objects.filter(manager=request.user).select_related('user')
-
-    # 2. Azaad Employees: Wo employees jinka role employee hai aur koi boss nahi hai
     available_employees = UserProfile.objects.filter(role='employee', manager__isnull=True).select_related('user')
 
     context = {
@@ -191,20 +175,12 @@ def manager_dashboard(request):
     return render(request, 'accounts/manager_team.html', context)
 
 
-# ==========================================
+
 # MANAGER: ADD EMPLOYEE ACTION (Button click hone par)
-# ==========================================
 @login_required
 def add_employee_to_team(request, profile_id):
-    # Sirf POST request aur Manager hi isko chala sakta hai
     if request.method == 'POST' and hasattr(request.user, 'profile') and request.user.profile.role == 'manager':
-        
-        # Us azaad employee ko database me dhoondo
         employee_profile = get_object_or_404(UserProfile, id=profile_id, role='employee', manager__isnull=True)
-        
-        # Is current Manager ko uska Boss bana do!
         employee_profile.manager = request.user
         employee_profile.save()
-        
-    # Add karne ke baad wapas My Team page par bhej do
     return redirect('accounts:manager_dashboard')

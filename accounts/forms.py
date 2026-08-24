@@ -7,11 +7,13 @@ from django.contrib.auth.models import User
 from .models import UserProfile
 
 class UserRegistrationForm(forms.ModelForm):
-    # Sirf phone number rakha hai profile ke liye
     phone_number = forms.CharField(max_length=15, required=False)
-    
     password = forms.CharField(widget=forms.PasswordInput)
     confirm_password = forms.CharField(widget=forms.PasswordInput)
+    department = forms.ChoiceField(
+        choices=UserProfile.DEPARTMENT_CHOICES,
+        widget=forms.Select(attrs={'class': 'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#7a2656]'})
+    )
 
     class Meta:
         model = User
@@ -38,7 +40,6 @@ class LoginForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(LoginForm, self).__init__(*args, **kwargs)
-        # Tailwind CSS classes
         tailwind_classes = 'w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = tailwind_classes

@@ -55,7 +55,7 @@
 
                         <!-- Old Team Link (Agar Admin/Superuser ke liye chahiye toh rakh sakte hain, warna hata dein) -->
                         {% if request.user.is_superuser %}
-                            <a href="{% url 'accounts:team_list' %}" class="text-sm font-bold text-gray-500 hover:text-[#7a2656] transition duration-200">All Users (Admin)</a>
+                            <a href="{% url 'accounts:team_list' %}" class="text-sm font-bold text-gray-500 hover:text-[#7a2656] transition duration-200">All Users</a>
                         {% endif %}
 
                         <!-- My Profile -->
