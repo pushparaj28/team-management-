@@ -16,5 +16,14 @@ class UserProfile(models.Model):
     is_active_team_member = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    DEPARTMENT_CHOICES = [
+        ('IT', 'IT / Development'),
+        ('Design', 'UI/UX Design'),
+        ('Marketing', 'Marketing'),
+        ('HR', 'Human Resources'),
+        ('Sales', 'Sales'),
+    ]
+    department = models.CharField(max_length=50, choices=DEPARTMENT_CHOICES, default='IT')
+
     def __str__(self):
         return f"{self.user.username} - {self.role}"
