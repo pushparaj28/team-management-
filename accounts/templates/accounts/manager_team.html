@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}My Team - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    
+    <!-- Page Header -->
+    <div class="mb-10">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Manager Dashboard</h1>
+        <p class="text-sm text-gray-500 mt-1 font-medium">Manage your current team and onboard new employees.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- SECTION 1: MY CURRENT TEAM -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-[#7a2656]">My Current Team</h2>
+                <span class="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">{{ my_team.count }} Members</span>
+            </div>
+            
+            <div class="p-6 flex-grow">
+                {% if my_team %}
+                    <ul class="space-y-4">
+                        {% for member in my_team %}
+                        <li class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-[#7a2656] to-pink-400 text-white flex items-center justify-center font-bold">
+                                    {{ member.user.first_name|make_list|first|upper }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-900 capitalize">{{ member.user.first_name }} {{ member.user.last_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ member.user.email }}</p>
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center py-10 text-gray-500">Your team is currently empty.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SECTION 2: AVAILABLE EMPLOYEES (AZAAD) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-100 bg-blue-50/30 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-blue-800">Available Employees</h2>
+                <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full">{{ available_employees.count }} Unassigned</span>
+            </div>
+            
+            <div class="p-6 flex-grow">
+                {% if available_employees %}
+                    <ul class="space-y-4">
+                        {% for emp in available_employees %}
+                        <li class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold">
+                                    {{ emp.user.first_name|make_list|first|upper|default:"U" }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-900 capitalize">{{ emp.user.first_name }} {{ emp.user.last_name }}</p>
+                                    <p class="text-xs text-gray-500">@{{ emp.user.username }}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- 🟢 ADD TO TEAM FORM -->
+                            <form action="{% url 'accounts:add_employee_to_team' emp.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 text-xs font-bold py-1.5 px-3 rounded-lg transition duration-200 shadow-sm">
+                                    + Add to Team
+                                </button>
+                            </form>
+                            
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center py-10 text-gray-500">No new employees available.</div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

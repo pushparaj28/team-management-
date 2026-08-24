@@ -12,7 +12,10 @@
         <option value="Medium">Medium</option>
         <option value="Low">Low</option>
       </select>
+       
+      {% if request.user.is_superuser or request.user.profile.role == 'manager' %}
       <a href="{% url 'tasks:task_create' %}" class="bg-blue-600 text-white px-3 py-1 rounded">+ New task</a>
+      {% endif %}
     </div>
   </div>
 

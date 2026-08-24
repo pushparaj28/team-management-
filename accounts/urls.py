@@ -10,4 +10,9 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('team/', views.team_list, name='team_list'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
+    path('team/delete/<int:user_id>/', views.delete_member, name='delete_member'),
+    path('team/edit/<int:user_id>/', views.edit_member, name='edit_member'),
+    # 🟢 MANAGER TEAM URLs (Purane URLs ke niche add karein)
+    path('my-team/', views.manager_dashboard, name='manager_dashboard'),
+    path('add-to-team/<int:profile_id>/', views.add_employee_to_team, name='add_employee_to_team'),
 ]

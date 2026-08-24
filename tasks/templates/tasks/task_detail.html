@@ -13,12 +13,32 @@
     <p><span class="text-gray-500">Milestone:</span> {{ task.milestone.title|default:"—" }}</p>
   </div>
 
-  <div class="flex gap-3 mt-6">
-    <a href="{% url 'tasks:task_edit' task.pk %}" class="bg-blue-600 text-white px-3 py-1 rounded">Edit</a>
-    <form method="post" action="{% url 'tasks:task_delete' task.pk %}" onsubmit="return confirm('Delete this task?');">
-      {% csrf_token %}
-      <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded">Delete</button>
-    </form>
-  </div>
+  <div class="flex gap-3 mt-6 items-center">
+    
+    <!-- 1. EDIT AUR DELETE: Sirf Admin ko dikhega -->
+    {% if request.user.is_superuser %}
+        <a href="{% url 'tasks:task_edit' task.pk %}" class="bg-blue-600 text-white px-3 py-1 rounded">Edit</a>
+        
+        <form method="post" action="{% url 'tasks:task_delete' task.pk %}" onsubmit="return confirm('Delete this task?');">
+            {% csrf_token %}
+            <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+        </form>
+    {% endif %}
+
+    <!-- 2. STATUS UPDATE: Ye sirf task wale user ko aur Admin ko dikhega -->
+    {% if request.user == task.assigned_to or request.user.is_superuser %}
+        <form action="{% url 'tasks:update_task_status' task.pk %}" method="POST" class="flex items-center gap-2 ml-4">
+            {% csrf_token %}
+            <select name="status" class="border border-gray-300 rounded px-2 py-1 text-sm bg-white">
+                <option value="Backlog" {% if task.status == 'Backlog' %}selected{% endif %}>Backlog</option>
+                <option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                <option value="Review" {% if task.status == 'Review' %}selected{% endif %}>Review</option>
+                <option value="Done" {% if task.status == 'Done' %}selected{% endif %}>Done</option>
+            </select>
+            
+            <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded">Update</button>
+        </form>
+    {% endif %}
+</div>
 </div>
 {% endblock %}
