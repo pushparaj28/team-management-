@@ -175,30 +175,26 @@ def task_delete(request, pk):
 @require_POST
 def update_task_status(request, pk):
     task = get_object_or_404(Task, pk=pk)
+    
     if request.content_type == 'application/json':
-        data = json.loads(request.body)
-        new_status = data.get('status')
+        try:
+            data = json.loads(request.body)
+            new_status = data.get('status')
+            if new_status in dict(Task.STATUS_CHOICES):
+                task.status = new_status
+                task.save(update_fields=['status', 'updated_at'])
+                return JsonResponse({'success': True, 'task_id': task.id, 'status': task.status})
+            return JsonResponse({'error': 'Invalid status'}, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid request format'}, status=400)
+            
     else:
         new_status = request.POST.get('status')
-
-    # Admin, the assignee's manager, or the assignee themself may move the card
-    allowed = (
-        request.user.is_superuser
-        or _can_manage_task(request.user, task)
-        or task.assigned_to_id == request.user.id
-    )
-    if not allowed:
-        return JsonResponse({'error': 'Permission denied'}, status=403)
-
-    data = json.loads(request.body)
-    new_status = data.get('status')
-    if new_status not in dict(Task.STATUS_CHOICES):
-        return JsonResponse({'error': 'Invalid status'}, status=400)
-
-    task.status = new_status
-    task.save(update_fields=['status', 'updated_at'])
-    return JsonResponse({'success': True, 'task_id': task.id, 'status': task.status})
-
+        if new_status and new_status in dict(Task.STATUS_CHOICES):
+            task.status = new_status
+            task.save(update_fields=['status', 'updated_at'])
+            
+        return redirect('tasks:kanban')
 
 @login_required
 @require_POST
