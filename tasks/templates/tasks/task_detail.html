@@ -1,24 +1,42 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="p-6 max-w-2xl">
-  <a href="{% url 'tasks:kanban' %}" class="text-sm text-blue-600">&larr; Back to board</a>
-  <h1 class="text-2xl font-bold mt-2">{{ task.title }}</h1>
-  <p class="text-gray-600 mt-2">{{ task.description|default:"No description." }}</p>
+<div class="p-6 max-w-2xl mx-auto">
+  <a href="{% url 'tasks:kanban' %}" class="text-sm text-[#7a2656] font-medium">&larr; Back to board</a>
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-3">
+    <h1 class="text-2xl font-bold text-gray-800">{{ task.title }}</h1>
+    <p class="text-gray-600 mt-2">{{ task.description|default:"No description." }}</p>
 
-  <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
-    <p><span class="text-gray-500">Status:</span> {{ task.status }}</p>
-    <p><span class="text-gray-500">Priority:</span> {{ task.priority }}</p>
-    <p><span class="text-gray-500">Assigned to:</span> {{ task.assigned_to.username|default:"Unassigned" }}</p>
-    <p><span class="text-gray-500">Due:</span> {{ task.due_date|default:"—" }}</p>
-    <p><span class="text-gray-500">Milestone:</span> {{ task.milestone.title|default:"—" }}</p>
-  </div>
+    <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
+      <p><span class="text-gray-500">Status:</span> <span class="font-medium">{{ task.status }}</span></p>
+      <p><span class="text-gray-500">Priority:</span> <span class="font-medium">{{ task.priority }}</span></p>
+      <p><span class="text-gray-500">Assigned to:</span> <span class="font-medium">{{ task.assigned_to.username|default:"Unassigned" }}</span></p>
+      <p><span class="text-gray-500">Due:</span> <span class="font-medium">{{ task.due_date|default:"—" }}</span></p>
+      <p><span class="text-gray-500">Milestone:</span> <span class="font-medium">{{ task.milestone.title|default:"—" }}</span></p>
+    </div>
 
-  <div class="flex gap-3 mt-6">
-    <a href="{% url 'tasks:task_edit' task.pk %}" class="bg-blue-600 text-white px-3 py-1 rounded">Edit</a>
-    <form method="post" action="{% url 'tasks:task_delete' task.pk %}" onsubmit="return confirm('Delete this task?');">
-      {% csrf_token %}
-      <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded">Delete</button>
-    </form>
+    <div class="flex flex-wrap gap-3 mt-6 items-center">
+      {% if can_manage %}
+        <a href="{% url 'tasks:task_edit' task.pk %}"
+           class="bg-[#7a2656] hover:bg-[#5c1c40] text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Edit</a>
+        <form method="post" action="{% url 'tasks:task_delete' task.pk %}" onsubmit="return confirm('Delete this task?');">
+          {% csrf_token %}
+          <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Delete</button>
+        </form>
+      {% endif %}
+
+      {% if can_update_status %}
+        <form action="{% url 'tasks:update_task_status' task.pk %}" method="POST" class="flex items-center gap-2 ml-auto">
+          {% csrf_token %}
+          <select name="status" class="border border-gray-200 rounded-lg px-2 py-2 text-sm">
+            <option value="Backlog" {% if task.status == 'Backlog' %}selected{% endif %}>Backlog</option>
+            <option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+            <option value="Review" {% if task.status == 'Review' %}selected{% endif %}>Review</option>
+            <option value="Done" {% if task.status == 'Done' %}selected{% endif %}>Done</option>
+          </select>
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Update</button>
+        </form>
+      {% endif %}
+    </div>
   </div>
 </div>
 {% endblock %}

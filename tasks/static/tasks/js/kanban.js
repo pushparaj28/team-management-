@@ -96,17 +96,18 @@ function closeQuickAdd() { document.getElementById('quickAddModal').classList.ad
 function submitQuickAdd() {
   const title = document.getElementById('quickTaskTitle').value.trim();
   const priority = document.getElementById('quickTaskPriority').value;
+  const assignedTo = document.getElementById('quickTaskAssignee').value; // new
   if (!title) return;
 
   fetch('/tasks/api/task/quick-create/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-    body: JSON.stringify({ title, priority }),
+    body: JSON.stringify({ title, priority, assigned_to: assignedTo || null }),
   })
   .then(res => res.json())
   .then(data => {
     if (data.error) { showToast(data.error, true); return; }
-    location.reload(); // simplest reliable way to show the new card in the right column
+    location.reload();
   })
   .catch(() => showToast('Could not create task', true));
 }

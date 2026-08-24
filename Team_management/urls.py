@@ -7,4 +7,6 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('tasks/', include('tasks.urls')),
     path('', RedirectView.as_view(pattern_name='accounts:login'), name='home'),
+    # Ye ek nayi line add kar dijiye 
+    path('tasks/', include('tasks.urls')),
 ]

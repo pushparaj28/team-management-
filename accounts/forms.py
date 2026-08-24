@@ -2,9 +2,12 @@ from django import forms
 from django.contrib.auth.models import User
 from .models import UserProfile
 
+from django import forms
+from django.contrib.auth.models import User
+from .models import UserProfile
+
 class UserRegistrationForm(forms.ModelForm):
-    # Custom fields jo UserProfile me jayengi
-    role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES, initial='employee')
+    # Sirf phone number rakha hai profile ke liye
     phone_number = forms.CharField(max_length=15, required=False)
     
     password = forms.CharField(widget=forms.PasswordInput)
@@ -16,7 +19,6 @@ class UserRegistrationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(UserRegistrationForm, self).__init__(*args, **kwargs)
-        # Tailwind CSS classes
         tailwind_classes = 'w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = tailwind_classes

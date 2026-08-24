@@ -4,13 +4,12 @@
 {% block title %}Register - Team Management{% endblock %}
 
 {% block content %}
-<!-- Custom styles for ALL Django form fields - COMPACT VERSION -->
 <style>
     #registerForm input, 
     #registerForm select {
         width: 100%;
-        padding: 0.5rem 0.75rem; /* Padding kam ki gayi hai (pehle 0.75rem thi) */
-        font-size: 0.875rem; /* Font thoda chota kiya taaki fit aaye */
+        padding: 0.5rem 0.75rem; 
+        font-size: 0.875rem; 
         border: 1px solid #e5e7eb;
         border-radius: 0.5rem;
         background-color: #fafafa;
@@ -34,15 +33,13 @@
 </style>
 
 <div class="min-h-[80vh] flex items-center justify-center py-4 px-4 sm:px-6 lg:px-8">
-    <!-- Main Card Container - Max width 4xl kiya taaki tight lage -->
+    <!-- Main Card Container -->
     <div class="bg-white max-w-4xl w-full rounded-2xl shadow-xl flex flex-col md:flex-row overflow-hidden border border-gray-100">
 
         <!-- Left Side (Illustration & Branding) -->
         <div class="w-full md:w-5/12 bg-[#fdf1e4] p-6 sm:p-8 flex flex-col items-center justify-center relative">
-            
             <img src="https://img.magnific.com/free-vector/user-verification-unauthorized-access-prevention-private-account-authentication-cyber-security-people-entering-login-password-safety-measures_335657-3530.jpg?semt=ais_hybrid&w=740&q=80" 
                  class="w-3/5 sm:w-2/3 mb-4 transform hover:scale-105 transition duration-500" alt="Join Us">
-            
             <h3 class="text-xl font-bold text-[#7a2656] text-center mt-2">Start your journey.</h3>
             <p class="text-gray-600 text-center mt-1 text-xs">Join our platform to manage tasks.</p>
         </div>
@@ -50,7 +47,7 @@
         <!-- Right Side (Form Section) -->
         <div class="w-full md:w-7/12 p-6 sm:p-8 lg:p-10 bg-white flex flex-col justify-center">
             
-            <!-- Headings (Margin kam kiya) -->
+            <!-- Headings -->
             <div class="mb-5 text-center md:text-left flex items-center md:items-start justify-center md:justify-start gap-3">
                 <svg class="w-7 h-7 text-[#7a2656] inline-block hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
@@ -61,7 +58,7 @@
                 </div>
             </div>
 
-            <!-- Google Button (Padding aur Text chota kiya) -->
+            <!-- Google Button -->
             <button type="button" class="w-full border border-gray-200 text-gray-700 text-sm font-semibold py-2 px-4 rounded-lg flex items-center justify-center hover:bg-gray-50 transition duration-200 mb-4 shadow-sm">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-4 h-4 mr-2" alt="Google">
                 Sign up with Google
@@ -74,14 +71,15 @@
                 <div class="flex-grow border-t border-gray-200"></div>
             </div>
 
-            <!-- Register Form (Gap kam kiya: space-y-4 se gap-3) -->
+            <!-- Register Form -->
             <form id="registerForm" class="flex flex-col gap-3">
                 {% csrf_token %}
                 
                 <!-- Dynamic Form Fields Loop -->
                 <div class="flex flex-col gap-2.5">
                     {% for field in form %}
-                        <div>
+                        <!-- 🟢 NAYA: id="div_{{ field.name }}" add kiya JS ke liye -->
+                        <div id="div_{{ field.name }}">
                             <label class="block text-xs font-semibold text-gray-600">
                                 {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
                             </label>
@@ -112,6 +110,7 @@
 
 {% block scripts %}
 <script>
+    // JS Jaadu hata diya. Sirf Fetch API bachi hai.
     document.getElementById('registerForm').addEventListener('submit', function(e) {
         e.preventDefault(); 
         
