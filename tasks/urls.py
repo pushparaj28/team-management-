@@ -12,4 +12,5 @@ urlpatterns = [
     path('task/<int:pk>/delete/', views.task_delete, name='task_delete'),
     path('milestone/new/', views.milestone_form_view, name='milestone_create'),
     path('api/task/<int:pk>/update-status/', views.update_task_status, name='update_task_status'),
+    path('api/task/quick-create/', views.quick_create_task, name='quick_create_task'),
 ]

@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-
+from django.utils import timezone
 from .models import Task, Milestone
 from .forms import TaskForm, MilestoneForm
 
@@ -38,6 +38,7 @@ def dashboard(request):
 
 @login_required
 def kanban_board(request):
+    today = timezone.now().date()
     tasks = Task.objects.select_related('assigned_to', 'milestone').all()
     board = {
         'Backlog': tasks.filter(status='Backlog'),
@@ -45,7 +46,7 @@ def kanban_board(request):
         'Review': tasks.filter(status='Review'),
         'Done': tasks.filter(status='Done'),
     }
-    return render(request, 'tasks/kanban.html', {'board': board})
+    return render(request, 'tasks/kanban.html', {'board': board, 'today': today})
 
 
 @login_required
@@ -98,3 +99,20 @@ def update_task_status(request, pk):
     task.status = new_status
     task.save(update_fields=['status', 'updated_at'])
     return JsonResponse({'success': True, 'task_id': task.id, 'status': task.status})
+
+@login_required
+@require_POST
+def quick_create_task(request):
+    data = json.loads(request.body)
+    title = data.get('title', '').strip()
+    priority = data.get('priority', 'Medium')
+    if not title:
+        return JsonResponse({'error': 'Title is required'}, status=400)
+    task = Task.objects.create(title=title, priority=priority, status='Backlog', assigned_to=request.user)
+    return JsonResponse({
+        'success': True,
+        'id': task.id,
+        'title': task.title,
+        'priority': task.priority,
+        'assigned_to': task.assigned_to.username,
+    })
