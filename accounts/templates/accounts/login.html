@@ -8,12 +8,13 @@
     #loginForm input[type="text"],
     #loginForm input[type="password"] {
         width: 100%;
-        padding: 0.75rem 1rem;
+        padding: 0.65rem 1rem;
         border: 1px solid #e5e7eb;
         border-radius: 0.5rem;
         background-color: #fafafa;
         outline: none;
         transition: all 0.3s ease;
+        font-size: 0.875rem; /* 14px size for perfect 100% zoom look */
     }
 
     #loginForm input[type="text"]:focus,
@@ -24,103 +25,95 @@
     }
 </style>
 
-<div class="min-h-[85vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8">
-    <!-- Main Card Container -->
-    <div
-        class="bg-white max-w-5xl w-full rounded-3xl shadow-xl flex flex-col md:flex-row overflow-hidden border border-gray-100">
+<!-- Min height thoda adjust kiya taaki scrolling na aaye -->
+<div class="min-h-[80vh] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Main Card Container (Shrinked to max-w-4xl) -->
+    <div class="bg-white max-w-4xl w-full rounded-2xl shadow-xl flex flex-col md:flex-row overflow-hidden border border-gray-100">
+        
         <!-- Left Side (Illustration & Branding) -->
-        <div class="w-full md:w-1/2 bg-[#fdf1e4] p-10 flex flex-col items-center justify-center relative min-h-[400px]">
-
-            <!-- Aapki Image -->
+        <div class="w-full md:w-1/2 bg-[#fdf1e4] p-8 flex flex-col items-center justify-center relative min-h-[350px]">
             <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOfWUQ1c1p3CNBFMwgcMKC6KVQj-Auj6la6Aq2IqVEnYYvhTc5g67vVNU&s=10"
-                class="w-3/4 mb-8" alt="Illustration">
-
-            <!-- Heading -->
-            <h3 class="text-2xl font-bold text-[#7a2656] text-center mt-4">Turn your ideas into reality.</h3>
+                class="w-2/3 mb-6" alt="Illustration">
+            <h3 class="text-xl font-bold text-[#7a2656] text-center mt-2">Turn your ideas into reality.</h3>
         </div>
 
         <!-- Right Side (Form Section) -->
-        <div class="w-full md:w-1/2 p-10 sm:p-14 bg-white flex flex-col justify-center">
+        <div class="w-full md:w-1/2 p-8 sm:p-10 bg-white flex flex-col justify-center">
 
-            <!-- Logo Icon (Optional) -->
-            <div class="mb-4 text-center md:text-left">
-                <svg class="w-8 h-8 text-gray-800 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Logo Icon -->
+            <div class="mb-3 text-center md:text-left">
+                <svg class="w-7 h-7 text-gray-800 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5">
+                        d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5">
                     </path>
                 </svg>
             </div>
 
             <!-- Headings -->
-            <div class="mb-8 text-center md:text-left">
-                <h2 class="text-3xl font-bold text-gray-800 tracking-tight">Login to your Account</h2>
-                <p class="text-sm text-gray-500 mt-2">See what is going on with your business</p>
+            <div class="mb-6 text-center md:text-left">
+                <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Login to your Account</h2>
+                <p class="text-xs text-gray-500 mt-1.5">See what is going on with your business</p>
             </div>
 
             <!-- Google Button -->
             <button type="button"
-                class="w-full border border-gray-200 text-gray-700 font-semibold py-2.5 px-4 rounded-lg flex items-center justify-center hover:bg-gray-50 transition duration-200 mb-6 shadow-sm">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 mr-3" alt="Google">
+                class="w-full border border-gray-200 text-gray-700 text-sm font-semibold py-2.5 px-4 rounded-lg flex items-center justify-center hover:bg-gray-50 transition duration-200 mb-5 shadow-sm">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-4 h-4 mr-3" alt="Google">
                 Continue with Google
             </button>
 
             <!-- Divider -->
-            <div class="relative flex items-center mb-6">
+            <div class="relative flex items-center mb-5">
                 <div class="flex-grow border-t border-gray-200"></div>
-                <span class="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase tracking-wide">or Sign in with
-                    Email</span>
+                <span class="flex-shrink-0 mx-4 text-gray-400 text-[10px] font-bold uppercase tracking-wider">or Sign in with Email</span>
                 <div class="flex-grow border-t border-gray-200"></div>
             </div>
 
-            <!-- Login Form -->
-            <form id="loginForm" class="space-y-5">
+            <!-- Login Form (Tightened spacing) -->
+            <form id="loginForm" class="space-y-4">
                 {% csrf_token %}
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-600 mb-1.5">Email / Username</label>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Email / Username</label>
                     {{ form.username }}
                 </div>
+                
                 <!-- Password Field Wrapper -->
                 <div class="relative w-full">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-
-                    <!-- Render Django Form Field manually for custom UI -->
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Password</label>
                     <div class="relative">
                         <input type="password" name="password" id="id_password" required
-                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7a2656] pr-10"
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7a2656] pr-10 text-sm"
                             placeholder="Enter your password">
 
                         <!-- Eye Icon Button -->
                         <button type="button" onclick="togglePassword()"
                             class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#7a2656] transition-colors">
-                            <!-- Default (Eye Open) -->
-                            <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
-                                </path>
+                            <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                             </svg>
                         </button>
                     </div>
                 </div>
-                <div class="flex items-center justify-between mt-2 mb-6">
-                    <label class="flex items-center text-sm text-gray-600 cursor-pointer">
+                
+                <div class="flex items-center justify-between mt-1 mb-4">
+                    <label class="flex items-center text-xs text-gray-600 cursor-pointer">
                         <input type="checkbox" class="mr-2 rounded border-gray-300 text-[#7a2656] focus:ring-[#7a2656]">
                         Remember Me
                     </label>
-                    <a href="#" class="text-sm font-semibold text-[#7a2656] hover:underline">Forgot Password?</a>
+                    <a href="#" class="text-xs font-semibold text-[#7a2656] hover:underline">Forgot Password?</a>
                 </div>
 
                 <button type="submit"
-                    class="w-full bg-[#7a2656] hover:bg-[#5c1c40] text-white font-bold py-3.5 px-4 rounded-lg transition duration-300 shadow-md">
+                    class="w-full bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-bold py-3 px-4 rounded-lg transition duration-300 shadow-md">
                     Login
                 </button>
-                <!-- Login Link -->
+                
+                <!-- Register Link -->
                 <div class="text-center mt-3">
                     <p class="text-xs text-gray-600">Don't have an account?
-                        <a href="{% url 'accounts:register' %}"
-                            class="font-bold text-[#7a2656] hover:underline">Register</a>
+                        <a href="{% url 'accounts:register' %}" class="font-bold text-[#7a2656] hover:underline">Register</a>
                     </p>
                 </div>
             </form>
@@ -131,7 +124,7 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Purana JavaScript Code (Fetch API) -->
+<!-- Purana JavaScript Code -->
 <script>
     document.getElementById('loginForm').addEventListener('submit', function (e) {
         e.preventDefault();
@@ -168,11 +161,9 @@
         
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
-            // Change icon to 'Eye Closed'
             eyeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.978 9.978 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path>`;
         } else {
             passwordInput.type = 'password';
-            // Change icon back to 'Eye Open'
             eyeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>`;
         }
     }

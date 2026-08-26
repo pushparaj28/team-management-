@@ -5,250 +5,236 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Team Management{% endblock %}</title>
-    <!-- Tailwind CSS (CDN for quick setup) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Smooth transition for Mini-Sidebar */
+        #app-sidebar { transition: width 0.3s ease, margin 0.3s ease; overflow-x: hidden; }
+    </style>
 </head>
 
-<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+<body class="bg-gray-50 text-gray-800 h-screen flex overflow-hidden font-sans relative">
 
-    <!-- Global Navbar yahan aayega future me -->
-    <!-- MODERN DYNAMIC NAVBAR -->
-    <header class="bg-white shadow-md sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
+    {% if request.user.is_authenticated %}
+        <!-- ================= SIDEBAR (Now with Mini-Sidebar Logic) ================= -->
+        <aside id="app-sidebar" class="w-64 bg-[#0a1929] border-r border-[#13273e] text-gray-300 flex-shrink-0 flex flex-col z-40 shadow-xl absolute md:relative h-full -ml-64 md:ml-0">
+            
+            <!-- Logo / Brand -->
+            <div class="h-16 flex items-center px-4 border-b border-[#13273e] whitespace-nowrap overflow-hidden">
+                <i class="fas fa-layer-group text-blue-500 text-2xl w-10 text-center flex-shrink-0"></i>
+                <span class="text-white text-lg font-bold tracking-wide ml-2 sidebar-text">TeamAdmin</span>
+            </div>
 
-                <!-- Logo / Project Name (Modern Gradient Theme) -->
-                <div class="flex-shrink-0 flex items-center">
-                    <a href="/"
-                        class="text-2xl font-extrabold tracking-tight hover:opacity-80 transition-opacity duration-300 flex items-center gap-2">
-                        <!-- Optional: Ek chota sa icon agar aap lagana chahein (Nahi chahiye toh ye div hata sakte hain) -->
-                        <div class="p-1.5 bg-pink-50 rounded-lg text-[#7a2656] shadow-sm">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
-                                </path>
-                            </svg>
-                        </div>
-                        <!-- Gradient Text -->
-                        <span>
-                            <span
-                                class="bg-clip-text text-transparent bg-gradient-to-r from-[#7a2656] to-pink-500">Team</span><span
-                                class="text-gray-800">Management</span>
-                        </span>
-                    </a>
+            <!-- Navigation Links -->
+            <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-1.5">
+                
+                <!-- Dashboard -->
+                {% url 'tasks:dashboard' as dashboard_url %}
+                <a href="{{ dashboard_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == dashboard_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-home text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">Dashboard</span>
+                </a>
+
+                <!-- 🟢 All Users (Admin) -->
+                {% if request.user.is_superuser %}
+                {% url 'accounts:team_list' as team_list_url %}
+                <a href="{{ team_list_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == team_list_url or '/admin-panel/' in request.path %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-users-cog text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">All Users</span>
+                </a>
+                {% endif %}
+
+                <!-- 🟢 My Team (Manager) -->
+                {% if request.user.profile.role == 'manager' %}
+                {% url 'accounts:manager_dashboard' as my_team_url %}
+                <a href="{{ my_team_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == my_team_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-user-tie text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">My Team</span>
+                </a>
+                {% endif %}
+
+                <!-- Tasks (Kanban) -->
+                {% url 'tasks:kanban' as kanban_url %}
+                <a href="{{ kanban_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == kanban_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-tasks text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">Tasks</span>
+                </a>
+
+                <!-- Leaves -->
+                <a href="#" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/10">
+                    <i class="fas fa-calendar-alt text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">Leaves</span>
+                </a>
+
+                <!-- My Profile -->
+                {% url 'accounts:profile' as profile_url %}
+                <a href="{{ profile_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == profile_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-user-circle text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">My Profile</span>
+                </a>
+                
+                <!-- Settings -->
+                <a href="#" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/10">
+                    <i class="fas fa-cog text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">Settings</span>
+                </a>
+            </nav>
+
+            <!-- BOTTOM LOGOUT BUTTON -->
+            <div class="p-4 border-t border-[#13273e] mt-auto">
+                <a href="{% url 'accounts:logout' %}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-bold rounded-lg text-red-400 hover:text-white hover:bg-red-500/20 transition-colors whitespace-nowrap">
+                    <i class="fas fa-sign-out-alt text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- ================= MAIN CONTENT AREA ================= -->
+        <div class="flex-1 flex flex-col overflow-hidden relative">
+
+            <!-- ================= TOP NAVBAR ================= -->
+            <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
+                <!-- Search Bar & Toggle Button -->
+                <div class="flex-1 flex items-center">
+                    
+                    <!-- 🟢 Sidebar Toggle Button -->
+                    <button onclick="toggleSidebar()" class="mr-4 p-2 text-gray-500 hover:bg-gray-100 hover:text-blue-600 rounded-lg transition-colors focus:outline-none" title="Toggle Sidebar">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+
+                    <div class="relative w-full max-w-md hidden sm:block">
+                        <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                        <input type="text" placeholder="Search users, tasks, projects, resources..." 
+                            class="w-full pl-10 pr-12 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white">
+                        <div class="absolute right-2 top-2 text-xs text-gray-400 font-semibold border border-gray-200 rounded px-1.5 py-0.5 bg-white">⌘ K</div>
+                    </div>
                 </div>
 
-                <!-- Navigation Links (Modern Theme) -->
-                <nav class="flex items-center space-x-4 sm:space-x-6">
-                    {% if request.user.is_authenticated %}
-                        
-                        <!-- Dashboard -->
-                        <a href="{% url 'tasks:dashboard' %}" class="text-sm font-bold text-gray-500 hover:text-[#7a2656] transition duration-200">Dashboard</a>
+                <!-- Right: Actions & Profile -->
+                <div class="flex items-center gap-4 sm:gap-6 ml-4">
+                    <div class="hidden sm:flex items-center bg-gray-100 rounded-full p-1 border border-gray-200">
+                        <button class="p-1.5 bg-white rounded-full shadow-sm text-teal-500 w-8 h-8 flex items-center justify-center"><i class="fas fa-sun"></i></button>
+                        <button class="p-1.5 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center transition-colors"><i class="fas fa-moon"></i></button>
+                    </div>
 
-                        <!-- Kanban -->
-                        <a href="{% url 'tasks:kanban' %}" class="text-sm font-bold text-gray-500 hover:text-[#7a2656] transition duration-200">Kanban</a>
+                    <button class="relative text-gray-500 hover:text-gray-700 transition-colors">
+                        <i class="far fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-white">5</span>
+                    </button>
 
-                        <!-- 🟢 JAADU: My Team (Sirf Manager ke liye) -->
-                        {% if request.user.profile.role == 'manager' %}
-                            <a href="{% url 'accounts:manager_dashboard' %}" class="text-sm font-bold text-[#7a2656] border-b-2 border-[#7a2656] pb-1 transition duration-200">My Team</a>
-                        {% endif %}
-
-                        <!-- Old Team Link (Agar Admin/Superuser ke liye chahiye toh rakh sakte hain, warna hata dein) -->
-                        {% if request.user.is_superuser %}
-                            <a href="{% url 'accounts:team_list' %}" class="text-sm font-bold text-gray-500 hover:text-[#7a2656] transition duration-200">All Users</a>
-                        {% endif %}
-
-                        <!-- My Profile -->
-                        <a href="{% url 'accounts:profile' %}" class="text-sm font-bold text-gray-500 hover:text-[#7a2656] transition duration-200">My Profile</a>
-
-                        <!-- Patli si Vertical Line (Divider) -->
-                        <div class="h-6 w-px bg-gray-200 hidden sm:block mx-1"></div>
-
-                        <!-- User Avatar & Hello Text -->
-                        <div class="hidden sm:flex items-center gap-3">
-                            <span class="text-sm font-bold text-gray-700">Hello, {{ request.user.username }}</span>
-                            <div class="h-9 w-9 rounded-full bg-gradient-to-br from-[#7a2656] to-pink-400 text-white flex items-center justify-center text-sm font-bold shadow-md transform hover:scale-110 transition duration-300">
+                    <a href="{% url 'accounts:profile' %}" class="flex items-center gap-3 border-l border-gray-200 pl-4 sm:pl-6 cursor-pointer group">
+                        <div class="relative">
+                            <div class="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-md">
                                 {{ request.user.username|make_list|first|upper }}
                             </div>
+                            <div class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white"></div>
                         </div>
+                        <div class="hidden md:block text-left">
+                            <p class="text-sm font-semibold text-gray-800 leading-tight">{{ request.user.first_name|default:request.user.username }}</p>
+                            <p class="text-xs text-gray-500">{{ request.user.profile.role|title|default:"Project Manager" }}</p>
+                        </div>
+                    </a>
+                </div>
+            </header>
 
-                        <!-- Logout -->
-                        <a href="{% url 'accounts:logout' %}" class="bg-red-50 text-red-600 hover:bg-red-100 font-bold px-4 py-2 rounded-lg transition duration-300 text-sm border border-red-100 shadow-sm ml-2">Logout</a>
-                    
-                    {% else %}
-                        <!-- Agar user LOGOUT hai toh ye dikhega -->
-                        <a href="{% url 'accounts:login' %}" class="text-sm font-bold text-gray-600 hover:text-[#7a2656] transition duration-200 px-2">Login</a>
-                        <a href="{% url 'accounts:register' %}" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-bold py-2 px-6 rounded-full shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5">Register</a>
-                    {% endif %}
-                </nav>
+            <!-- ================= SCROLLABLE CONTENT & FOOTER ================= -->
+            <div class="flex-1 overflow-y-auto flex flex-col bg-gray-50/50">
+                <main class="flex-grow p-6">
+    {% else %}
+        <!-- 🟢 Agar User Login NAHI Hai (Matlab Login/Signup Page hai) -->
+        <main class="flex-1 w-full flex items-center justify-center min-h-screen bg-gray-50">
+    {% endif %}
 
+
+            <!-- 🟢 SIRF EK BLOCK CONTENT YAHAN HAI 🟢 -->
+            {% block content %}
+            {% endblock %}
+
+
+    {% if request.user.is_authenticated %}
+                </main>
+
+                <!-- FOOTER -->
+                <footer class="bg-white border-t border-gray-200 flex-shrink-0">
+                    <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="text-left">
+                            <p class="text-sm font-bold text-gray-700">Team Management System</p>
+                            <p class="text-xs text-gray-500 mt-0.5">© 2026 All Rights Reserved</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-6">
+                            <div class="flex items-center gap-4 text-xs font-semibold text-gray-500">
+                                <a href="#" class="hover:text-blue-600 transition-colors">About Us</a>
+                                <a href="#" class="hover:text-blue-600 transition-colors">Contact</a>
+                                <a href="#" class="hover:text-blue-600 transition-colors">Privacy Policy</a>
+                                <a href="#" class="hover:text-blue-600 transition-colors">Terms & Conditions</a>
+                            </div>
+                            <div class="flex items-center gap-3 text-gray-400 border-l border-gray-300 pl-6">
+                                <a href="#" class="hover:text-blue-600 transition-colors"><i class="fab fa-facebook"></i></a>
+                                <a href="#" class="hover:text-blue-600 transition-colors"><i class="fab fa-twitter"></i></a>
+                                <a href="#" class="hover:text-blue-600 transition-colors"><i class="fab fa-linkedin"></i></a>
+                                <a href="#" class="hover:text-blue-600 transition-colors"><i class="fab fa-github"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </div>
-    </header>
+    {% else %}
+        </main>
+    {% endif %}
 
-    <!-- Main Content Area -->
-    <main class="flex-grow p-4">
-        {% block content %}
-        {% endblock %}
-    </main>
-
-    <!-- TOAST MESSAGES CONTAINER -->
+    <!-- ================= TOAST MESSAGES ================= -->
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">
         {% if messages %}
-        {% for message in messages %}
-        <div class="toast-message pointer-events-auto flex items-center p-4 w-full max-w-xs text-gray-700 bg-white rounded-lg shadow-lg border-l-4 
-                    {% if message.tags == 'success' %}border-green-500{% elif message.tags == 'error' %}border-red-500{% else %}border-blue-500{% endif %} transform transition-all duration-300 translate-x-0"
-            role="alert">
-
-            <!-- Message Text -->
-            <div class="ml-3 text-sm font-medium">{{ message }}</div>
-
-            <!-- Close Button -->
-            <button type="button"
-                class="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg p-1.5 hover:bg-gray-100 inline-flex h-8 w-8"
-                onclick="this.parentElement.remove()">
-                <span class="sr-only">Close</span>
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd"
-                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                        clip-rule="evenodd"></path>
-                </svg>
-            </button>
-        </div>
-
-        {% endfor %}
+            {% for message in messages %}
+            <div class="toast-message pointer-events-auto flex items-center p-4 w-full max-w-xs text-gray-700 bg-white rounded-lg shadow-lg border-l-4 
+                {% if message.tags == 'success' %}border-green-500{% elif message.tags == 'error' %}border-red-500{% else %}border-blue-500{% endif %} transition-all duration-300" role="alert">
+                <div class="ml-3 text-sm font-medium">{{ message }}</div>
+                <button type="button" class="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg p-1.5 hover:bg-gray-100 inline-flex h-8 w-8" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {% endfor %}
         {% endif %}
     </div>
 
-    <!-- ================= FOOTER START ================= -->
-    <footer class="bg-white mt-auto flex-shrink-0 relative overflow-hidden">
-        <!-- Modern Top Gradient Accent Line -->
-        <div class="h-1 w-full bg-gradient-to-r from-[#7a2656] via-pink-500 to-[#7a2656] opacity-90"></div>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
-
-                <!-- Brand & Copyright (Left) -->
-                <div class="flex flex-col items-center md:items-start group">
-                    <a href="/" class="flex items-center gap-2 cursor-pointer">
-                        <!-- Brand Icon -->
-                        <div
-                            class="p-1.5 bg-pink-50 rounded-lg group-hover:bg-[#7a2656] transition-colors duration-300">
-                            <svg class="w-5 h-5 text-[#7a2656] group-hover:text-white transition-colors duration-300"
-                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
-                                </path>
-                            </svg>
-                        </div>
-                        <!-- Brand Name -->
-                        <span class="text-xl font-extrabold text-gray-800 tracking-tight">Team<span
-                                class="text-[#7a2656]">Management</span></span>
-                    </a>
-                    <p class="text-gray-400 text-xs mt-2.5 font-medium">© 2026 Team Management. All rights reserved.</p>
-                </div>
-
-                <!-- Footer Quick Links (Center) -->
-                <div class="flex space-x-6 sm:space-x-8">
-                    <a href="#"
-                        class="text-sm font-semibold text-gray-500 hover:text-[#7a2656] hover:underline underline-offset-4 transition duration-300">Features</a>
-                    <a href="#"
-                        class="text-sm font-semibold text-gray-500 hover:text-[#7a2656] hover:underline underline-offset-4 transition duration-300">Privacy</a>
-                    <a href="#"
-                        class="text-sm font-semibold text-gray-500 hover:text-[#7a2656] hover:underline underline-offset-4 transition duration-300">Support</a>
-                </div>
-
-                <!-- Social Media Icons (Right) -->
-                <div class="flex space-x-5 flex-wrap justify-center gap-y-3">
-
-                    <!-- Facebook -->
-                    <a href="#"
-                        class="text-gray-400 hover:text-[#7a2656] transform hover:-translate-y-1 transition duration-300">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd"
-                                d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
-                                clip-rule="evenodd"></path>
-                        </svg>
-                    </a>
-
-                    <!-- Instagram -->
-                    <a href="#"
-                        class="text-gray-400 hover:text-[#7a2656] transform hover:-translate-y-1 transition duration-300">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd"
-                                d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z"
-                                clip-rule="evenodd"></path>
-                        </svg>
-                    </a>
-
-                    <!-- Twitter / X -->
-                    <a href="#"
-                        class="text-gray-400 hover:text-[#7a2656] transform hover:-translate-y-1 transition duration-300">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path
-                                d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84">
-                            </path>
-                        </svg>
-                    </a>
-
-                    <!-- LinkedIn -->
-                    <a href="#"
-                        class="text-gray-400 hover:text-[#7a2656] transform hover:-translate-y-1 transition duration-300">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd"
-                                d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"
-                                clip-rule="evenodd"></path>
-                        </svg>
-                    </a>
-
-                    <!-- WhatsApp -->
-                    <a href="#"
-                        class="text-gray-400 hover:text-[#7a2656] transform hover:-translate-y-1 transition duration-300">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd"
-                                d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.656.84 5.147 2.33 7.21l-1.583 5.776 5.922-1.55A12.016 12.016 0 0012.031 24c6.647 0 12.032-5.385 12.032-12.031S18.678 0 12.031 0zm0 22.04c-2.25 0-4.423-.585-6.326-1.688l-.454-.268-3.414.894.912-3.328-.293-.467a9.982 9.982 0 01-1.534-5.362C.922 6.435 5.358 2 10.828 2c5.47 0 9.907 4.435 9.907 9.907 0 5.47-4.437 9.907-9.907 9.907z"
-                                clip-rule="evenodd"></path>
-                            <path
-                                d="M17.514 14.153c-.28-.14-1.657-.817-1.913-.91-.256-.093-.443-.14-.63.14-.187.28-.724.91-.887 1.097-.163.186-.327.21-.607.07-.28-.14-1.182-.436-2.254-1.393-.835-.745-1.398-1.666-1.562-1.946-.164-.28-.018-.432.123-.57.126-.125.28-.328.42-.492.14-.163.187-.28.28-.467.093-.186.046-.35-.024-.49-.07-.14-.63-1.517-.863-2.077-.226-.546-.456-.473-.63-.482-.163-.008-.35-.01-.537-.01-.186 0-.49.07-.746.35-.256.28-.98 9.566-.98 2.333s.724 2.053.98 2.333c.256.28 1.586 2.427 3.842 3.4 2.255.972 2.255.646 2.674.606.42-.04 1.353-.553 1.54-1.086.186-.533.186-.99.13-1.086-.056-.094-.21-.14-.49-.28z">
-                            </path>
-                        </svg>
-                    </a>
-
-                    <!-- GitHub -->
-                    <a href="#"
-                        class="text-gray-400 hover:text-[#7a2656] transform hover:-translate-y-1 transition duration-300">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd"
-                                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                                clip-rule="evenodd"></path>
-                        </svg>
-                    </a>
-
-                </div>
-
-            </div>
-        </div>
-    </footer>
-    <!-- ================= FOOTER END ================= -->
-
-    <!-- TOAST AUTO-HIDE JAVASCRIPT -->
+    <!-- 🟢 JAVASCRIPT LOGIC FOR MINI SIDEBAR 🟢 -->
     <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('app-sidebar');
+            const texts = document.querySelectorAll('.sidebar-text');
+            
+            if (window.innerWidth >= 768) {
+                // Desktop Mode: Toggle between w-64 (256px) and w-20 (80px)
+                if (sidebar.classList.contains('w-64')) {
+                    sidebar.classList.replace('w-64', 'w-20');
+                    texts.forEach(t => t.classList.add('hidden')); // Text hide
+                } else {
+                    sidebar.classList.replace('w-20', 'w-64');
+                    texts.forEach(t => t.classList.remove('hidden')); // Text wapas
+                }
+            } else {
+                // Mobile Mode: Full Slide In/Out
+                sidebar.classList.toggle('-ml-64');
+                sidebar.classList.toggle('ml-0');
+            }
+        }
+
+        // Toast Fade JS
         document.addEventListener("DOMContentLoaded", function () {
             setTimeout(() => {
                 const toasts = document.querySelectorAll('.toast-message');
                 toasts.forEach(toast => {
-                    // Fade out effect
                     toast.style.opacity = '0';
                     toast.style.transform = 'translateX(100%)';
-                    // Remove from DOM after transition
                     setTimeout(() => toast.remove(), 300);
                 });
-            }, 4000); // 4 Seconds tak screen par dikhega
+            }, 4000);
         });
     </script>
 
-    <!-- Custom JS Blocks ke liye -->
     {% block scripts %}{% endblock %}
 </body>
-
 </html>
