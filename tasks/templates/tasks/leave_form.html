@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6 max-w-lg">
+  <h1 class="text-2xl font-bold mb-4 text-gray-800">Request leave</h1>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% for field in form %}
+    <div><label class="block text-sm font-semibold text-gray-600 mb-1">{{ field.label }}</label>{{ field }}</div>
+    {% endfor %}
+    <button type="submit" class="w-full bg-[#7a2656] hover:bg-[#5c1c40] text-white font-bold py-3 rounded-lg">Submit request</button>
+  </form>
+</div>
+{% endblock %}
