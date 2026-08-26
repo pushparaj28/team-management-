@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Leaves</h1>
+    {% if not can_review %}
+    <a href="{% url 'tasks:leave_request_create' %}" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white px-4 py-2 rounded-lg text-sm font-semibold">+ Request leave</a>
+    {% endif %}
+  </div>
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y">
+    {% for leave in leaves %}
+    <div class="p-4 flex justify-between items-center">
+      <div>
+        {% if can_review %}<p class="text-sm font-semibold text-gray-800">{{ leave.employee.username }}</p>{% endif %}
+        <p class="text-sm text-gray-600">{{ leave.start_date }} → {{ leave.end_date }}</p>
+        <p class="text-xs text-gray-400 mt-1">{{ leave.reason|default:"No reason given" }}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs px-2 py-1 rounded-full font-medium
+          {% if leave.status == 'Approved' %}bg-emerald-100 text-emerald-700
+          {% elif leave.status == 'Rejected' %}bg-rose-100 text-rose-700
+          {% else %}bg-amber-100 text-amber-700{% endif %}">{{ leave.status }}</span>
+        {% if can_review and leave.status == 'Pending' %}
+        <form method="post" action="{% url 'tasks:leave_review' leave.pk %}"><input type="hidden" name="decision" value="Approved">{% csrf_token %}<button class="text-xs bg-emerald-600 text-white px-2 py-1 rounded">Approve</button></form>
+        <form method="post" action="{% url 'tasks:leave_review' leave.pk %}"><input type="hidden" name="decision" value="Rejected">{% csrf_token %}<button class="text-xs bg-rose-600 text-white px-2 py-1 rounded">Reject</button></form>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}<p class="p-4 text-gray-400 text-sm">No leave requests yet.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

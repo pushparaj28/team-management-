@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Team Management{% endblock %}</title>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Icons -->
@@ -63,8 +66,17 @@
                 </a>
 
                 <!-- Leaves -->
-                <a href="#" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/10">
+                {% url 'tasks:leave_list' as leave_list_url %}
+                <a href="{{ leave_list_url }}"
+                    class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
+                    {% if request.path == leave_list_url %}
+                        bg-blue-600 text-white shadow-md
+                    {% else %}
+                        text-gray-300 hover:text-white hover:bg-white/10
+                    {% endif %}">
+
                     <i class="fas fa-calendar-alt text-lg w-8 text-center flex-shrink-0"></i>
+
                     <span class="sidebar-text ml-2">Leaves</span>
                 </a>
 
@@ -115,8 +127,8 @@
                 <!-- Right: Actions & Profile -->
                 <div class="flex items-center gap-4 sm:gap-6 ml-4">
                     <div class="hidden sm:flex items-center bg-gray-100 rounded-full p-1 border border-gray-200">
-                        <button class="p-1.5 bg-white rounded-full shadow-sm text-teal-500 w-8 h-8 flex items-center justify-center"><i class="fas fa-sun"></i></button>
-                        <button class="p-1.5 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center transition-colors"><i class="fas fa-moon"></i></button>
+                        <button onclick="setTheme('light')" class="p-1.5 bg-white rounded-full shadow-sm text-teal-500 w-8 h-8 flex items-center justify-center"><i class="fas fa-sun"></i></button>
+                        <button onclick="setTheme('dark')" class="p-1.5 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center transition-colors"><i class="fas fa-moon"></i></button>
                     </div>
 
                     <button class="relative text-gray-500 hover:text-gray-700 transition-colors">
@@ -233,7 +245,18 @@
                 });
             }, 4000);
         });
+
+        function setTheme(mode) {
+            document.documentElement.classList.toggle('dark', mode === 'dark');
+            localStorage.setItem('theme', mode);
+        }
+        (function () {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
     </script>
+    
 
     {% block scripts %}{% endblock %}
 </body>

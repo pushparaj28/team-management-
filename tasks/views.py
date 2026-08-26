@@ -6,8 +6,11 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from .models import LeaveRequest
+from .forms import LeaveRequestForm
 
-from .models import Task, Milestone
+
+from .models import Task, Milestone, TaskComment
 from .forms import TaskForm, MilestoneForm
 
 
@@ -103,11 +106,13 @@ def kanban_board(request):
     return render(request, 'tasks/kanban.html', context)
 
 
+
 @login_required
 def task_detail(request, pk):
     task = get_object_or_404(Task, pk=pk)
     context = {
         'task': task,
+        'comments': task.comments.select_related('author'),
         'can_manage': _can_manage_task(request.user, task),
         'can_update_status': (
             request.user.is_superuser
@@ -116,6 +121,25 @@ def task_detail(request, pk):
         ),
     }
     return render(request, 'tasks/task_detail.html', context)
+
+
+@login_required
+@require_POST
+def add_task_comment(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+    # Only the assignee, their manager, or admin can post on this task
+    allowed = (
+        request.user.is_superuser
+        or _can_manage_task(request.user, task)
+        or task.assigned_to_id == request.user.id
+    )
+    if not allowed:
+        return HttpResponseForbidden("You don't have permission to comment on this task.")
+
+    message = request.POST.get('message', '').strip()
+    if message:
+        TaskComment.objects.create(task=task, author=request.user, message=message)
+    return redirect('tasks:task_detail', pk=task.pk)
 
 
 @login_required
@@ -132,7 +156,7 @@ def task_form_view(request, pk=None):
             return HttpResponseForbidden("You don't have permission to edit this task.")
 
     if request.method == 'POST':
-        form = TaskForm(request.POST, instance=task, user=request.user)
+        form = TaskForm(request.POST, request.FILES, instance=task, user=request.user)
         if form.is_valid():
             form.save()
             return redirect('tasks:kanban')
@@ -230,3 +254,40 @@ def quick_create_task(request):
         'priority': task.priority,
         'assigned_to': task.assigned_to.username,
     })
+
+@login_required
+def leave_list(request):
+    if request.user.is_superuser or _is_manager(request.user):
+        team_users = _visible_team_users(request.user)
+        leaves = LeaveRequest.objects.filter(employee__in=team_users).select_related('employee')
+    else:
+        leaves = LeaveRequest.objects.filter(employee=request.user)
+    return render(request, 'tasks/leaves.html', {'leaves': leaves, 'can_review': request.user.is_superuser or _is_manager(request.user)})
+
+
+@login_required
+def leave_request_create(request):
+    if request.method == 'POST':
+        form = LeaveRequestForm(request.POST)
+        if form.is_valid():
+            leave = form.save(commit=False)
+            leave.employee = request.user
+            leave.save()
+            return redirect('tasks:leave_list')
+    else:
+        form = LeaveRequestForm()
+    return render(request, 'tasks/leave_form.html', {'form': form})
+
+
+@login_required
+@require_POST
+def leave_review(request, pk):
+    leave = get_object_or_404(LeaveRequest, pk=pk)
+    if not (request.user.is_superuser or _is_manager(request.user)):
+        return HttpResponseForbidden()
+    decision = request.POST.get('decision')
+    if decision in ('Approved', 'Rejected'):
+        leave.status = decision
+        leave.reviewed_by = request.user
+        leave.save()
+    return redirect('tasks:leave_list')
