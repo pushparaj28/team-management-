@@ -9,9 +9,9 @@ urlpatterns = [
     path('logout/', views.logout_user, name='logout'),
     path('profile/', views.profile, name='profile'),
     path('edit-profile/', views.edit_profile, name='edit_profile'),
-
-   path('switch-role/<str:role>/', views.switch_role, name='switch_role'),
-
+    path('my-team/', views.manager_dashboard, name='manager_dashboard'),
+    path('my-team/add/<int:profile_id>/', views.add_employee_to_team, name='add_employee_to_team'),
+    path('switch-role/<str:role>/', views.switch_role, name='switch_role'),
     path('managers/', views.managers_list, name='managers_list'),
     path('make-manager/<int:user_id>/', views.make_manager, name='make_manager'),
     path('toggle-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
