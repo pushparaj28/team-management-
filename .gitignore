@@ -1,7 +1,9 @@
-<<<<<<< HEAD
-__pycache__/ 
-*.pyc 
+# __pycache__/ 
+# *.pyc 
+#.env 
+
+venv/
+.venv/
+__pycache__/
+*.pyc
 .env 
-=======
-.env
->>>>>>> 8651a5561e4f52412f555c1af24063d6993ce88f
