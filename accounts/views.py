@@ -184,3 +184,41 @@ def add_employee_to_team(request, profile_id):
         employee_profile.manager = request.user
         employee_profile.save()
     return redirect('accounts:manager_dashboard')
+
+def switch_role(request, role):
+    # Check karega ki kya aap asali admin ho, YA phir admin the aur swap kiya tha
+    if request.user.is_superuser or request.session.get('is_original_admin'):
+        
+        # Ek secret token save kar lo taaki aap wapas Admin ban sako
+        request.session['is_original_admin'] = True 
+        
+        user = request.user
+        profile, created = UserProfile.objects.get_or_create(user=user)
+
+        if role == 'admin':
+            # Wapas sab powers de do
+            user.is_superuser = True
+            user.is_staff = True
+            profile.role = 'admin'
+        
+        elif role == 'manager':
+            # Superuser hatao, sirf Manager banao
+            user.is_superuser = False
+            user.is_staff = False
+            profile.role = 'manager'
+            
+        elif role == 'employee':
+            # Superuser hatao, sirf Employee banao
+            user.is_superuser = False
+            user.is_staff = False
+            profile.role = 'employee'
+
+        # Dono ko save karo (User aur Profile)
+        user.save()
+        profile.save()
+        
+        # Session me UI ke liye current role update karo
+        request.session['current_role'] = role
+        messages.success(request, f"Swapped to {role.title()} successfully! Real testing activated.")
+    
+    return redirect(request.META.get('HTTP_REFERER', '/tasks/dashboard/'))
