@@ -1,5 +1,7 @@
 import json
 import calendar as cal_module
+from datetime import timedelta, datetime
+from math import ceil
 from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -9,7 +11,6 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from .models import LeaveRequest
 from .forms import LeaveRequestForm
-from datetime import timedelta
 
 from accounts.models import UserProfile
 from .models import Task, Milestone, TaskComment
@@ -118,48 +119,89 @@ def overview(request):
         return HttpResponseForbidden("Overview is only available to admins.")
 
     today = timezone.localdate()
-    week_ago = today - timedelta(days=6)
 
+    # ---------------- Filters ----------------
+    range_param = request.GET.get('range', '7')       # '7' | '30' | '90' | 'custom'
+    department = request.GET.get('department', '')     # '' = all departments
+
+    if range_param == 'custom':
+        try:
+            start_date = datetime.strptime(request.GET.get('start', ''), '%Y-%m-%d').date()
+        except ValueError:
+            start_date = today - timedelta(days=6)
+        try:
+            end_date = datetime.strptime(request.GET.get('end', ''), '%Y-%m-%d').date()
+        except ValueError:
+            end_date = today
+        if end_date < start_date:
+            start_date, end_date = end_date, start_date
+    else:
+        days = int(range_param) if range_param in ('7', '30', '90') else 7
+        start_date = today - timedelta(days=days - 1)
+        end_date = today
+
+    tasks_qs = Task.objects.all()
+    if department:
+        tasks_qs = tasks_qs.filter(assigned_to__profile__department=department)
+
+    # ---------------- KPI cards ----------------
     total_users = User.objects.count()
     active_projects = Milestone.objects.filter(status='Active').count()
-    tasks_in_progress = Task.objects.filter(status='In Progress').count()
-    tasks_completed = Task.objects.filter(status='Done').count()
-    overdue_tasks = Task.objects.filter(due_date__lt=today).exclude(status='Done').count()
+    tasks_in_progress = tasks_qs.filter(status='In Progress').count()
+    tasks_completed = tasks_qs.filter(status='Done').count()
+    overdue_tasks = tasks_qs.filter(due_date__lt=today).exclude(status='Done').count()
 
-    # --- Task overview line chart: last 7 days ---
+    # ---------------- Trend chart, bucketed so wide ranges stay readable ----------------
+    total_days = (end_date - start_date).days + 1
+    max_points = 14
+    if total_days <= max_points:
+        buckets = [(start_date + timedelta(days=i), start_date + timedelta(days=i)) for i in range(total_days)]
+    else:
+        bucket_size = ceil(total_days / max_points)
+        buckets, cur = [], start_date
+        while cur <= end_date:
+            b_end = min(cur + timedelta(days=bucket_size - 1), end_date)
+            buckets.append((cur, b_end))
+            cur = b_end + timedelta(days=1)
+
     chart_labels, completed_series, in_progress_series, overdue_series = [], [], [], []
-    for i in range(7):
-        day = week_ago + timedelta(days=i)
-        chart_labels.append(day.strftime('%d %b'))
-        completed_series.append(Task.objects.filter(status='Done', updated_at__date=day).count())
-        in_progress_series.append(Task.objects.filter(status='In Progress', updated_at__date=day).count())
-        overdue_series.append(Task.objects.filter(due_date=day).exclude(status='Done').count())
+    for b_start, b_end in buckets:
+        chart_labels.append(
+            b_start.strftime('%d %b') if b_start == b_end
+            else f"{b_start.strftime('%d %b')}\u2013{b_end.strftime('%d %b')}"
+        )
+        completed_series.append(tasks_qs.filter(status='Done', updated_at__date__gte=b_start, updated_at__date__lte=b_end).count())
+        in_progress_series.append(tasks_qs.filter(status='In Progress', updated_at__date__gte=b_start, updated_at__date__lte=b_end).count())
+        overdue_series.append(tasks_qs.filter(due_date__gte=b_start, due_date__lte=b_end).exclude(status='Done').count())
 
-    # --- Project status donut ---
+    # ---------------- Project status donut ----------------
     milestone_counts = {
         'Completed': Milestone.objects.filter(status='Completed').count(),
         'Active': Milestone.objects.filter(status='Active').count(),
         'Upcoming': Milestone.objects.filter(status='Upcoming').count(),
     }
 
-    # --- Team distribution donut (by department) ---
+    # ---------------- Team distribution donut (always the full picture, not date/dept scoped) ----------------
     dept_counts = {}
     for code, label in UserProfile.DEPARTMENT_CHOICES:
         count = UserProfile.objects.filter(department=code).count()
         if count:
             dept_counts[label] = count
 
-    # --- Recent activity feed ---
+    # ---------------- Recent activity, scoped to the selected range ----------------
     activity = []
-    for c in TaskComment.objects.select_related('author', 'task').order_by('-created_at')[:5]:
+    for c in TaskComment.objects.select_related('author', 'task').filter(
+        created_at__date__gte=start_date, created_at__date__lte=end_date
+    ).order_by('-created_at')[:5]:
         activity.append({'text': f'{c.author.username} commented on "{c.task.title}"', 'time': c.created_at})
-    for t in Task.objects.select_related('assigned_to').order_by('-created_at')[:5]:
+    for t in tasks_qs.select_related('assigned_to').filter(
+        created_at__date__gte=start_date, created_at__date__lte=end_date
+    ).order_by('-created_at')[:5]:
         activity.append({'text': f'Task "{t.title}" created', 'time': t.created_at})
     activity.sort(key=lambda x: x['time'], reverse=True)
     activity = activity[:6]
 
-    # --- Upcoming deadlines ---
-    upcoming = Task.objects.filter(due_date__gte=today).exclude(status='Done').order_by('due_date')[:6]
+    upcoming = tasks_qs.filter(due_date__gte=today).exclude(status='Done').order_by('due_date')[:6]
 
     context = {
         'total_users': total_users,
@@ -176,6 +218,11 @@ def overview(request):
         'activity': activity,
         'upcoming': upcoming,
         'today': today,
+        'selected_range': range_param,
+        'selected_department': department,
+        'department_choices': UserProfile.DEPARTMENT_CHOICES,
+        'start_date': start_date,
+        'end_date': end_date,
     }
     return render(request, 'tasks/overview.html', context)
 
@@ -200,13 +247,20 @@ def dashboard(request):
             'done': user_done,
         })
 
+    today = timezone.localdate()
+    overdue_count = my_tasks.filter(due_date__lt=today).exclude(status='Done').count()
+    upcoming_tasks = my_tasks.filter(due_date__gte=today).exclude(status='Done').order_by('due_date')[:4]
+
     context = {
         'milestones': Milestone.objects.all(),
         'percent_complete': percent_complete,
         'total_tasks': total,
         'done_tasks': done,
+        'overdue_count': overdue_count,
+        'upcoming_tasks': upcoming_tasks,
         'member_stats': member_stats,
         'can_manage': user.is_superuser or _is_manager(user),
+        'today': today,
     }
     return render(request, 'tasks/dashboard.html', context)
 
