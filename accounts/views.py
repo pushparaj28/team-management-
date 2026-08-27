@@ -13,6 +13,8 @@ from .forms import UserUpdateForm
 from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Q
 from django.core.paginator import Paginator
+
+
 def register_user(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
@@ -41,6 +43,7 @@ def register_user(request):
         form = UserRegistrationForm() 
         
     return render(request, 'accounts/register.html', {'form': form})
+    
 def edit_profile(request):
     profile = get_object_or_404(UserProfile, user=request.user)
     

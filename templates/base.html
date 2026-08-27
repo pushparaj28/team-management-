@@ -31,12 +31,20 @@
         <!-- Logo / Brand -->
         <div class="h-16 flex items-center px-4 border-b border-[#13273e] whitespace-nowrap overflow-hidden">
             <i class="fas fa-layer-group text-blue-500 text-2xl w-10 text-center flex-shrink-0"></i>
-            <span class="text-white text-lg font-bold tracking-wide ml-2 sidebar-text">TeamAdmin</span>
+            <span class="text-white text-lg font-bold tracking-wide ml-2 sidebar-text">CollabPulse</span>
         </div>
 
         <!-- Navigation Links -->
         <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-1.5">
            <!-- 🟢 DASHBOARD DROPDOWN (WITHOUT LEFT SPACE) 🟢 -->
+
+            {% if request.user.is_superuser %}
+            {% url 'tasks:overview' as overview_url %}
+            <a href="{{ overview_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == overview_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                <i class="fas fa-chart-line text-lg w-8 text-center flex-shrink-0"></i>
+                <span class="sidebar-text ml-2">Overview</span>
+            </a>
+            {% endif %}
 {% url 'tasks:dashboard' as dashboard_url %}
 {% url 'accounts:managers_list' as managers_url %}
 {% url 'accounts:employees_list' as employees_url %}
@@ -51,11 +59,6 @@
     <!-- Dropdown Menu (Removed pl-10 to fix the left gap) -->
     <div id="dashboardSubMenu" class="{% if request.path == dashboard_url or request.path == managers_url or request.path == employees_url %}flex{% else %}hidden{% endif %} flex-col mt-1 space-y-1">
         
-        <!-- 1. Overview -->
-        <a href="{{ dashboard_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors {% if request.path == dashboard_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-400 hover:text-white hover:bg-white/10{% endif %}">
-            <i class="fas fa-chart-pie text-lg w-8 text-center flex-shrink-0"></i>
-            <span class="sidebar-text ml-2">Overview</span>
-        </a>
 
         {% if request.user.is_superuser %}
         <!-- 2. Managers Page -->
@@ -92,17 +95,16 @@
                 <span class="sidebar-text ml-2">Tasks</span>
             </a>
 
+            {% url 'tasks:calendar' as calendar_url %}
+            <a href="{{ calendar_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == calendar_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                <i class="fas fa-calendar-days text-lg w-8 text-center flex-shrink-0"></i>
+                <span class="sidebar-text ml-2">Calendar</span>
+            </a>
+
             <!-- Leaves -->
-            {% url 'tasks:leave_list' as leave_list_url %}
-            <a href="{{ leave_list_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
-                    {% if request.path == leave_list_url %}
-                        bg-blue-600 text-white shadow-md
-                    {% else %}
-                        text-gray-300 hover:text-white hover:bg-white/10
-                    {% endif %}">
-
+            {% url 'tasks:leave_list' as leaves_url %}
+            <a href="{{ leaves_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == leaves_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
                 <i class="fas fa-calendar-alt text-lg w-8 text-center flex-shrink-0"></i>
-
                 <span class="sidebar-text ml-2">Leaves</span>
             </a>
 
@@ -188,7 +190,8 @@
                     </div>
                     <div class="hidden md:block text-left">
                         <p class="text-sm font-semibold text-gray-800 leading-tight">{{request.user.first_name|default:request.user.username }}</p>
-                        <p class="text-xs text-gray-500">{{ request.user.profile.role|title|default:"Project Manager" }}
+                        <p class="text-xs text-gray-500">
+                            {% if request.user.is_superuser %}Admin{% else %}{{ request.user.profile.role|title|default:"Employee" }}{% endif %}
                         </p>
                     </div>
                 </a>
