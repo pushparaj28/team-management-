@@ -8,12 +8,17 @@ urlpatterns = [
     path('login/', views.login_user, name='login'),
     path('logout/', views.logout_user, name='logout'),
     path('profile/', views.profile, name='profile'),
-    path('team/', views.team_list, name='team_list'),
-    path('profile/edit/', views.edit_profile, name='edit_profile'),
-    path('team/delete/<int:user_id>/', views.delete_member, name='delete_member'),
-    path('team/edit/<int:user_id>/', views.edit_member, name='edit_member'),
-    path('my-team/', views.manager_dashboard, name='manager_dashboard'),
-    path('add-to-team/<int:profile_id>/', views.add_employee_to_team, name='add_employee_to_team'),
- 
-    path('switch-role/<str:role>/', views.switch_role, name='switch_role'),
+    path('edit-profile/', views.edit_profile, name='edit_profile'),
+
+   path('switch-role/<str:role>/', views.switch_role, name='switch_role'),
+
+    path('managers/', views.managers_list, name='managers_list'),
+    path('make-manager/<int:user_id>/', views.make_manager, name='make_manager'),
+    path('toggle-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
+    path('delete-user/<int:user_id>/', views.delete_user, name='delete_user'),
+    path('edit-manager/<int:user_id>/', views.edit_manager, name='edit_manager'),
+
+     path('employees/', views.employees_list, name='employees_list'),
+     path('edit-employee/<int:user_id>/', views.edit_employee, name='edit_employee'),
+     path('add-user/', views.add_user, name='add_user'),
 ]

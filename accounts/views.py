@@ -12,7 +12,7 @@ from .models import UserProfile
 from .forms import UserUpdateForm
 from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Q
-
+from django.core.paginator import Paginator
 def register_user(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
@@ -25,7 +25,7 @@ def register_user(request):
                 user=user,
                 role='employee', 
                 phone_number=form.cleaned_data.get('phone_number'),
-                department=form.cleaned_data.get('department')  # 🟢 JAADU: Department yahan save ho jayega!
+                department=form.cleaned_data.get('department') 
             )
             
             return JsonResponse({
@@ -41,6 +41,21 @@ def register_user(request):
         form = UserRegistrationForm() 
         
     return render(request, 'accounts/register.html', {'form': form})
+def edit_profile(request):
+    profile = get_object_or_404(UserProfile, user=request.user)
+    
+    if request.method == 'POST':
+        request.user.first_name = request.POST.get('first_name')
+        request.user.last_name = request.POST.get('last_name')
+        request.user.save()
+        
+        profile.phone = request.POST.get('phone', '')
+        profile.save()
+        
+        messages.success(request, "Aapki profile update ho gayi hai!")
+        return redirect('accounts:profile')
+        
+    return render(request, 'accounts/edit_profile.html', {'profile': profile})
 
 
 def login_user(request):
@@ -85,80 +100,6 @@ def logout_user(request):
     logout(request)
     return redirect('accounts:login')
 
-@login_required
-def team_list(request):
-    user = request.user
-    if user.is_superuser:
-        base_query = UserProfile.objects.select_related('user').all()
-        
-    elif hasattr(user, 'profile') and user.profile.role == 'manager':
-        base_query = UserProfile.objects.filter(
-            Q(user=user) | Q(manager=user)
-        ).select_related('user')
-        
-    else:
-        if hasattr(user, 'profile') and user.profile.manager:
-            base_query = UserProfile.objects.filter(
-                manager=user.profile.manager
-            ).select_related('user')
-        else:
-            base_query = UserProfile.objects.filter(user=user).select_related('user')
-            
-    managers = base_query.filter(role='manager')
-    employees = base_query.filter(role='employee')
-    
-    context = {
-        'managers': managers,
-        'employees': employees,
-    }
-    
-    return render(request, 'accounts/team.html', context)
-
-@login_required
-def edit_profile(request):
-    if request.method == 'POST':
-        form = UserUpdateForm(request.POST, instance=request.user) #form me 'instance=request.user' likhne se purana data pehle se bhara hua aayega
-        if form.is_valid():
-            form.save()
-            return redirect('accounts:profile')  #Save hone ke baad wapas profile par bhej dega
-    else:
-        form = UserUpdateForm(instance=request.user)
-
-    return render(request, 'accounts/edit_profile.html', {'form': form})
-
-def is_admin(user): #1.Security Check: Ye check karega ki delete karne wala Admin hai ya nahi
-    return user.is_superuser
-
-@user_passes_test(is_admin) # Agar admin nahi hai, toh ye function nahi chalega
-def delete_member(request, user_id):
-    user_to_delete = get_object_or_404(User, id=user_id) # User ko database me dhoondho
-    
-    if user_to_delete == request.user: # Smart Check: Admin galti se khud ka account delete na kar de!
-        messages.error(request, "Are sir Kya kar rahe ho apna hi account kyu delete kar rahe ho.")
-        return redirect('accounts:team_list') # Apne team page ka sahi URL name check kar lena
-     
-    user_to_delete.delete()  # User ko delete karo
-    messages.success(request, f"Team member {user_to_delete.username} successfully deleted!")
-    return redirect('accounts:team_list')
-
-
-@user_passes_test(is_admin)
-def edit_member(request, user_id):
-    user_to_edit = get_object_or_404(User, id=user_id) #User aur uski Profile (Custom fields) dono nikal lo
-    profile = user_to_edit.profile 
-    if request.method == 'POST':
-        user_to_edit.first_name = request.POST.get('first_name', '')
-        user_to_edit.last_name = request.POST.get('last_name', '')
-        user_to_edit.email = request.POST.get('email', '')
-        user_to_edit.save()
-        
-        profile.role = request.POST.get('role', 'employee')
-        profile.phone_number = request.POST.get('phone_number', '')
-        profile.save()
-        
-        messages.success(request, f"{user_to_edit.first_name} ki details update ho gayi hain!")
-        return redirect('accounts:team_list') 
-    return render(request, 'accounts/edit_member.html', {'member_user': user_to_edit, 'profile': profile})
 
  # ==========================================
 @login_required
@@ -222,3 +163,220 @@ def switch_role(request, role):
         messages.success(request, f"Swapped to {role.title()} successfully! Real testing activated.")
     
     return redirect(request.META.get('HTTP_REFERER', '/tasks/dashboard/'))
+
+
+
+
+def managers_list(request):
+    # 1. Sirf un users ko nikalo jinka role 'manager' hai
+    managers = UserProfile.objects.filter(role='manager').select_related('user').order_by('-id')
+
+    # 2.  SEARCH FILTER LOGIC
+    search_query = request.GET.get('search', '')
+    if search_query:
+        managers = managers.filter(
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__email__icontains=search_query)
+        )
+
+    # 3.TOP 4 CARDS (Metrics)
+    total_managers = managers.count()
+    active_managers = managers.filter(user__is_active=True).count()
+    inactive_managers = total_managers - active_managers
+    top_performers = 0 # (Isko hum baad me task module se link karenge)
+
+    # 4.PAGINATION LOGIC (Ek page par 10 managers)
+    paginator = Paginator(managers, 5) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    available_employees = UserProfile.objects.filter(role='employee', user__is_active=True)
+    context = {
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'total_managers': total_managers,
+        'active_managers': active_managers,
+        'inactive_managers': inactive_managers,
+        'top_performers': top_performers,
+        'available_employees': available_employees,
+    }
+    
+    return render(request, 'accounts/managers_list.html', context)
+def make_manager(request, user_id):
+    if request.user.is_superuser or request.session.get('is_original_admin'):
+        profile = get_object_or_404(UserProfile, user__id=user_id)
+        profile.role = 'manager'
+        profile.save()
+        messages.success(request, f"{profile.user.first_name} is now a Manager!")
+    return redirect('accounts:managers_list')
+
+
+
+def toggle_user_status(request, user_id):
+    if request.user.is_superuser or request.session.get('is_original_admin'):
+        user = get_object_or_404(User, id=user_id)
+        user.is_active = not user.is_active # True ko False, False ko True karega
+        user.save()
+        status = "Active" if user.is_active else "Inactive"
+        messages.success(request, f"User status changed to {status}.")
+    return redirect(request.META.get('HTTP_REFERER', 'accounts:managers_list'))
+
+def delete_user(request, user_id):
+    if request.user.is_superuser or request.session.get('is_original_admin'):
+        user = get_object_or_404(User, id=user_id)
+        user.delete() # Database se permanently delete
+        messages.error(request, "User deleted successfully.")
+    return redirect(request.META.get('HTTP_REFERER', 'accounts:managers_list'))
+
+def edit_manager(request, user_id):
+    # Sirf Admin ko allow karein
+    if not (request.user.is_superuser or request.session.get('is_original_admin')):
+        messages.error(request, "Aapko permission nahi hai.")
+        return redirect('tasks:dashboard') 
+
+    # Database se Manager (User) aur uski Profile nikaalein
+    manager_obj = get_object_or_404(User, id=user_id)
+    profile = get_object_or_404(UserProfile, user=manager_obj)
+
+    if request.method == 'POST':
+        # 1. User details update karein
+        manager_obj.first_name = request.POST.get('first_name')
+        manager_obj.last_name = request.POST.get('last_name')
+        manager_obj.email = request.POST.get('email')
+        manager_obj.save()
+
+        # 2. Profile update karein (Phone, Role)
+        profile.phone = request.POST.get('phone', '') 
+        profile.role = request.POST.get('role')
+        profile.save()
+
+        messages.success(request, f"{manager_obj.first_name} ki details successfully update ho gayi!")
+        
+        # Agar edit karte waqt role "Employee" kar diya, toh usko employees list me bhej do
+        if profile.role == 'employee':
+            return redirect('accounts:employees_list')
+        
+        # Warna wapas managers list par
+        return redirect('accounts:managers_list')
+
+    # GET request hone par form wala page dikhayein
+    context = {
+        'manager': manager_obj,
+        'profile': profile
+    }
+    return render(request, 'accounts/edit_manager.html', context)
+
+def employees_list(request):
+    # 1. Sirf 'employee' role wale users nikalenge
+    employees = UserProfile.objects.filter(role='employee').select_related('user').order_by('-id')
+
+    # 2.SEARCH FILTER LOGIC
+    search_query = request.GET.get('search', '')
+    if search_query:
+        employees = employees.filter(
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__email__icontains=search_query)
+        )
+
+    # 3.TOP CARDS METRICS
+    total_employees = employees.count()
+    active_employees = employees.filter(user__is_active=True).count()
+    inactive_employees = total_employees - active_employees
+
+    # 4.PAGINATION LOGIC
+    paginator = Paginator(employees, 5) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'total_employees': total_employees,
+        'active_employees': active_employees,
+        'inactive_employees': inactive_employees,
+    }
+    
+    return render(request, 'accounts/employees_list.html', context)
+
+def edit_employee(request, user_id):
+    # Sirf Admin allow hoga
+    if not (request.user.is_superuser or request.session.get('is_original_admin')):
+        messages.error(request, "Aapko permission nahi hai.")
+        return redirect('tasks:dashboard')
+
+    employee_obj = get_object_or_404(User, id=user_id)
+    profile = get_object_or_404(UserProfile, user=employee_obj)
+
+    if request.method == 'POST':
+        # 1. User table update
+        employee_obj.first_name = request.POST.get('first_name')
+        employee_obj.last_name = request.POST.get('last_name')
+        employee_obj.email = request.POST.get('email')
+        employee_obj.save()
+
+        # 2. Profile table update (Phone, Role)
+        profile.phone = request.POST.get('phone', '') 
+        profile.role = request.POST.get('role')
+        profile.save()
+
+        messages.success(request, f"{employee_obj.first_name} ki details update ho gayi!")
+        
+        # Agar role change karke 'Manager' kar diya, toh managers list me bhejo
+        if profile.role == 'manager':
+            return redirect('accounts:managers_list')
+        
+        return redirect('accounts:employees_list')
+
+    context = {
+        'employee': employee_obj,
+        'profile': profile
+    }
+    return render(request, 'accounts/edit_employee.html', context)
+
+
+def add_user(request):
+    # Sirf Admin naye users add kar sakta hai
+    if not (request.user.is_superuser or request.session.get('is_original_admin')):
+        messages.error(request, "Aapko naye users add karne ki permission nahi hai.")
+        return redirect('tasks:dashboard')
+
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        phone = request.POST.get('phone', '')
+        role = request.POST.get('role', 'employee')
+
+        # Check karna ki is email se koi pehle se toh nahi hai
+        if User.objects.filter(email=email).exists() or User.objects.filter(username=email).exists():
+            messages.error(request, "Is email id se user pehle se exist karta hai!")
+            return redirect('accounts:add_user')
+
+        # 1. Naya User Create Karna (Username ko hi email maan rahe hain)
+        user = User.objects.create_user(
+            username=email, 
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
+
+        # 2. Uski Profile Create Karna (Phone aur Role ke sath)
+        UserProfile.objects.create(
+            user=user,
+            phone=phone,
+            role=role
+        )
+
+        messages.success(request, f"{first_name} successfully added as {role.title()}!")
+        
+        # User jis role ka bana hai, usi list me redirect kar do
+        if role == 'manager':
+            return redirect('accounts:managers_list')
+        else:
+            return redirect('accounts:employees_list')
+
+    # Agar GET request hai, toh form dikhao
+    return render(request, 'accounts/add_user.html')

@@ -65,7 +65,7 @@
                                 </div>
                             </div>
                             
-                            <!-- 🟢 ADD TO TEAM FORM -->
+                            <!--  ADD TO TEAM FORM -->
                             <form action="{% url 'accounts:add_employee_to_team' emp.id %}" method="POST">
                                 {% csrf_token %}
                                 <button type="submit" class="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 text-xs font-bold py-1.5 px-3 rounded-lg transition duration-200 shadow-sm">

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Employee - Team Management{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-8">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Edit Employee Profile</h1>
+            <p class="text-xs text-gray-500 mt-1">Update details for {{ employee.first_name }} {{ employee.last_name }}</p>
+        </div>
+        <a href="{% url 'accounts:employees_list' %}" class="text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">
+            <i class="fas fa-arrow-left mr-1"></i> Go Back
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <form method="POST" class="p-8">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-2">First Name</label>
+                    <input type="text" name="first_name" value="{{ employee.first_name }}" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-2">Last Name</label>
+                    <input type="text" name="last_name" value="{{ employee.last_name }}" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-2">Email Address</label>
+                    <input type="email" name="email" value="{{ employee.email }}" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-2">Phone Number</label>
+                    <input type="text" name="phone" value="{{ profile.phone|default:'' }}" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] transition-all" placeholder="+91...">
+                </div>
+                <div class="sm:col-span-2 border-t border-gray-100 pt-6 mt-2">
+                    <label class="block text-xs font-bold text-gray-700 mb-2">System Role</label>
+                    <select name="role" class="w-full sm:w-1/2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] transition-all bg-white">
+                        <option value="employee" {% if profile.role == 'employee' %}selected{% endif %}>Employee (Standard Access)</option>
+                        <option value="manager" {% if profile.role == 'manager' %}selected{% endif %}>Manager (Team Lead Access)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-8 flex justify-end gap-4 border-t border-gray-100 pt-6">
+                <a href="{% url 'accounts:employees_list' %}" class="px-6 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</a>
+                <button type="submit" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-bold py-2.5 px-8 rounded-lg shadow-md transition-colors">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
