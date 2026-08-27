@@ -27,7 +27,8 @@
             <p class="text-sm text-gray-500 mt-1 font-medium">@{{ user.username }}</p>
 
             <!-- Role Badge -->
-            <span class="mt-4 bg-pink-50 text-[#7a2656] text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider border border-pink-100 shadow-sm">
+            <span
+                class="mt-4 bg-pink-50 text-[#7a2656] text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider border border-pink-100 shadow-sm">
                 {{ user.userprofile.role|default:"EMPLOYEE" }}
             </span>
         </div>

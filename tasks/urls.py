@@ -4,6 +4,7 @@ from . import views
 app_name = 'tasks'
 
 urlpatterns = [
+    path('overview/', views.overview, name='overview'),
     path('', views.dashboard, name='dashboard'),
     path('kanban/', views.kanban_board, name='kanban'),
     path('task/<int:pk>/', views.task_detail, name='task_detail'),
@@ -17,4 +18,5 @@ urlpatterns = [
     path('leaves/', views.leave_list, name='leave_list'),
     path('leaves/new/', views.leave_request_create, name='leave_request_create'),
     path('leaves/<int:pk>/review/', views.leave_review, name='leave_review'),
+    path('calendar/', views.calendar_view, name='calendar'),
 ]

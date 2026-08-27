@@ -91,9 +91,19 @@ def login_user(request):
     return render(request, 'accounts/login.html', {'form': form})
 
 
-@login_required 
+@login_required
 def profile(request):
-    return render(request, 'accounts/profile.html')
+    profile, created = UserProfile.objects.get_or_create(
+        user=request.user,
+        defaults={'role': 'admin' if request.user.is_superuser else 'employee'}
+    )
+    # Keep an existing profile in sync if someone was promoted to
+    # superuser after their profile was already created
+    if request.user.is_superuser and profile.role != 'admin':
+        profile.role = 'admin'
+        profile.save(update_fields=['role'])
+
+    return render(request, 'accounts/profile.html', {'profile': profile})
 
 @login_required
 def logout_user(request):
