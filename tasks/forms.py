@@ -15,6 +15,7 @@ class TaskForm(forms.ModelForm):
             'assigned_to': forms.Select(attrs={'class': 'border rounded px-3 py-2 w-full'}),
             'priority': forms.Select(attrs={'class': 'border rounded px-3 py-2 w-full'}),
             'status': forms.Select(attrs={'class': 'border rounded px-3 py-2 w-full'}),
+            'attachment': forms.ClearableFileInput(attrs={'class': 'border rounded px-3 py-2 w-full text-sm'}),
             'reference_url': forms.URLInput(attrs={'class': 'border rounded px-3 py-2 w-full', 'placeholder': 'https://...'}),
         }
 
@@ -23,12 +24,31 @@ class TaskForm(forms.ModelForm):
         # Views se hum 'user' bhejege, usko yahan catch kar liya
         user = kwargs.pop('user', None) 
         super(TaskForm, self).__init__(*args, **kwargs)
-        
+
+        # Frontend restriction: date picker won't show past dates
+        self.fields['due_date'].widget.attrs['min'] = timezone.localdate().isoformat()
+
         if user:
             # Agar user ADMIN (Superuser) nahi hai, aur role MANAGER hai...
             if not user.is_superuser and hasattr(user, 'profile') and user.profile.role == 'manager':
                 # Toh 'Assign To' dropdown me sirf uski team ke members dikhao
                 self.fields['assigned_to'].queryset = self.fields['assigned_to'].queryset.filter(profile__manager=user)
+
+    def clean_due_date(self):
+        due_date = self.cleaned_data.get('due_date')
+        if due_date:
+            today = timezone.localdate()
+            if due_date < today:
+                # Allow saving unchanged if this task already had this
+                # past date before the edit — don't break existing valid tasks.
+                already_had_this_date = (
+                    self.instance
+                    and self.instance.pk
+                    and self.instance.due_date == due_date
+                )
+                if not already_had_this_date:
+                    raise forms.ValidationError("Due date cannot be in the past.")
+        return due_date
 
 
 class MilestoneForm(forms.ModelForm):

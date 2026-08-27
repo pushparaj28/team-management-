@@ -1,17 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="p-6 max-w-lg">
-  <h1 class="text-2xl font-bold mb-4">{% if task %}Edit task{% else %}New task{% endif %}</h1>
-  <form method="post" enctype="multipart/form-data" class="space-y-4">
-    {% csrf_token %}
-    {% for field in form %}
-    <div>
-      <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
-      {{ field }}
-      {% if field.errors %}<p class="text-red-600 text-xs">{{ field.errors }}</p>{% endif %}
-    </div>
-    {% endfor %}
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save task</button>
-  </form>
+<div class="min-h-[70vh] flex items-center justify-center py-8 px-4">
+  <div class="bg-white max-w-lg w-full rounded-2xl shadow-sm border border-gray-100 p-8">
+    <h1 class="text-2xl font-bold text-gray-800 mb-1">{% if task %}Edit task{% else %}New task{% endif %}</h1>
+    <p class="text-sm text-gray-500 mb-6">Managers and admins can attach a document or reference link.</p>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">{{ field.label }}</label>
+        {{ field }}
+        {% if field.name == 'attachment' and task.attachment %}
+          <p class="text-xs text-gray-400 mt-1">Current file: {{ task.attachment.name|slice:"17:" }}</p>
+        {% endif %}
+        {% if field.errors %}<p class="text-rose-600 text-xs mt-1">{{ field.errors }}</p>{% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit"
+              class="w-full bg-[#7a2656] hover:bg-[#5c1c40] text-white font-bold py-3 rounded-lg transition shadow-md mt-2">
+        Save task
+      </button>
+    </form>
+  </div>
 </div>
 {% endblock %}

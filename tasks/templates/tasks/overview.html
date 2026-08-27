@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Welcome back, {{ request.user.first_name|default:request.user.username }} 👋</h1>
+      <p class="text-sm text-gray-500 mt-1">Here's what's happening across the platform.</p>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-xs text-gray-500">Total Users</p>
+      <p class="text-2xl font-bold text-gray-800 mt-1">{{ total_users }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-xs text-gray-500">Active Projects</p>
+      <p class="text-2xl font-bold text-gray-800 mt-1">{{ active_projects }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-xs text-gray-500">In Progress</p>
+      <p class="text-2xl font-bold text-gray-800 mt-1">{{ tasks_in_progress }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-xs text-gray-500">Completed</p>
+      <p class="text-2xl font-bold text-emerald-600 mt-1">{{ tasks_completed }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-xs text-gray-500">Overdue</p>
+      <p class="text-2xl font-bold text-rose-600 mt-1">{{ overdue_tasks }}</p>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-sm font-semibold text-gray-700 mb-3">Task overview — last 7 days</p>
+      <canvas id="taskChart" height="110"></canvas>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-sm font-semibold text-gray-700 mb-3">Project status</p>
+      <canvas id="projectChart" height="150"></canvas>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-sm font-semibold text-gray-700 mb-3">Team distribution</p>
+      <canvas id="teamChart" height="150"></canvas>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-sm font-semibold text-gray-700 mb-3">Recent activity</p>
+      <div class="space-y-3">
+        {% for item in activity %}
+        <div class="text-xs">
+          <p class="text-gray-700">{{ item.text }}</p>
+          <p class="text-gray-400">{{ item.time|timesince }} ago</p>
+        </div>
+        {% empty %}<p class="text-xs text-gray-400">No recent activity.</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-sm font-semibold text-gray-700 mb-3">Upcoming deadlines</p>
+      <div class="space-y-2">
+        {% for t in upcoming %}
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-gray-700">{{ t.title }}</span>
+          <span class="px-2 py-0.5 rounded-full font-medium
+            {% if t.priority == 'High' %}bg-rose-100 text-rose-700
+            {% elif t.priority == 'Medium' %}bg-amber-100 text-amber-700
+            {% else %}bg-emerald-100 text-emerald-700{% endif %}">{{ t.due_date }}</span>
+        </div>
+        {% empty %}<p class="text-xs text-gray-400">Nothing upcoming.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('taskChart'), {
+  type: 'line',
+  data: {
+    labels: {{ chart_labels|safe }},
+    datasets: [
+      { label: 'Completed', data: {{ completed_series }}, borderColor: '#10b981', tension: 0.3 },
+      { label: 'In Progress', data: {{ in_progress_series }}, borderColor: '#3b82f6', tension: 0.3 },
+      { label: 'Overdue', data: {{ overdue_series }}, borderColor: '#f43f5e', tension: 0.3 },
+    ]
+  },
+  options: { plugins: { legend: { position: 'bottom' } } }
+});
+
+new Chart(document.getElementById('projectChart'), {
+  type: 'doughnut',
+  data: {
+    labels: [{% for k in milestone_counts.keys %}'{{ k }}',{% endfor %}],
+    datasets: [{ data: [{% for v in milestone_counts.values %}{{ v }},{% endfor %}], backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'] }]
+  },
+  options: { plugins: { legend: { position: 'bottom' } } }
+});
+
+new Chart(document.getElementById('teamChart'), {
+  type: 'doughnut',
+  data: {
+    labels: [{% for k in dept_counts.keys %}'{{ k }}',{% endfor %}],
+    datasets: [{ data: [{% for v in dept_counts.values %}{{ v }},{% endfor %}], backgroundColor: ['#7a2656', '#3b82f6', '#f59e0b', '#10b981', '#ec4899'] }]
+  },
+  options: { plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+{% endblock %}
