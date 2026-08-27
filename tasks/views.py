@@ -1,4 +1,5 @@
 import json
+import calendar as cal_module
 from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -8,8 +9,9 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from .models import LeaveRequest
 from .forms import LeaveRequestForm
+from datetime import timedelta
 
-
+from accounts.models import UserProfile
 from .models import Task, Milestone, TaskComment
 from .forms import TaskForm, MilestoneForm
 
@@ -47,8 +49,135 @@ def _can_manage_task(user, task):
 
 
 # ---------------------------------------------------------------
+# Leave permission helpers
+# ---------------------------------------------------------------
+
+def _leave_submitter_role(leave):
+    """Role of the person who submitted this leave request."""
+    employee = leave.employee
+    if hasattr(employee, 'profile'):
+        return employee.profile.role
+    return 'employee'
+
+
+def _visible_leaves(user):
+    """
+    Returns the queryset of leave requests this user is allowed to see.
+    - Admin: all Manager-submitted leaves (full history) +
+             Employee-submitted leaves that have already been decided
+             by their manager (Approved/Rejected) — pending employee
+             leaves stay with the manager until a decision is made.
+    - Manager: leave requests from employees assigned to them, plus
+               their own leave request (read-only status).
+    - Employee: only their own leave request.
+    """
+    if user.is_superuser:
+        manager_leaves = LeaveRequest.objects.filter(employee__profile__role='manager')
+        decided_employee_leaves = LeaveRequest.objects.filter(
+            employee__profile__role='employee'
+        ).exclude(status='Pending')
+        return (manager_leaves | decided_employee_leaves).select_related('employee', 'employee__profile', 'reviewed_by').distinct()
+
+    if _is_manager(user):
+        team_leaves = LeaveRequest.objects.filter(
+            employee__profile__manager=user, employee__profile__role='employee'
+        )
+        own_leave = LeaveRequest.objects.filter(employee=user)
+        return (team_leaves | own_leave).select_related('employee', 'employee__profile', 'reviewed_by').distinct()
+
+    # Employee: only ever their own
+    return LeaveRequest.objects.filter(employee=user).select_related('employee', 'reviewed_by')
+
+
+def _can_review_leave(user, leave):
+    """
+    True if this user may approve/reject the given leave request.
+    - Manager-submitted leave -> only Admin (superuser) may decide.
+    - Employee-submitted leave -> only that employee's assigned
+      manager may decide. Admin never decides employee leave directly.
+    """
+    submitter_role = _leave_submitter_role(leave)
+
+    if submitter_role == 'manager':
+        return user.is_superuser
+
+    # submitter is an employee
+    employee = leave.employee
+    if not hasattr(employee, 'profile'):
+        return False
+    return employee.profile.manager_id == user.id
+
+
+# ---------------------------------------------------------------
 # Page views
 # ---------------------------------------------------------------
+
+@login_required
+def overview(request):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Overview is only available to admins.")
+
+    today = timezone.localdate()
+    week_ago = today - timedelta(days=6)
+
+    total_users = User.objects.count()
+    active_projects = Milestone.objects.filter(status='Active').count()
+    tasks_in_progress = Task.objects.filter(status='In Progress').count()
+    tasks_completed = Task.objects.filter(status='Done').count()
+    overdue_tasks = Task.objects.filter(due_date__lt=today).exclude(status='Done').count()
+
+    # --- Task overview line chart: last 7 days ---
+    chart_labels, completed_series, in_progress_series, overdue_series = [], [], [], []
+    for i in range(7):
+        day = week_ago + timedelta(days=i)
+        chart_labels.append(day.strftime('%d %b'))
+        completed_series.append(Task.objects.filter(status='Done', updated_at__date=day).count())
+        in_progress_series.append(Task.objects.filter(status='In Progress', updated_at__date=day).count())
+        overdue_series.append(Task.objects.filter(due_date=day).exclude(status='Done').count())
+
+    # --- Project status donut ---
+    milestone_counts = {
+        'Completed': Milestone.objects.filter(status='Completed').count(),
+        'Active': Milestone.objects.filter(status='Active').count(),
+        'Upcoming': Milestone.objects.filter(status='Upcoming').count(),
+    }
+
+    # --- Team distribution donut (by department) ---
+    dept_counts = {}
+    for code, label in UserProfile.DEPARTMENT_CHOICES:
+        count = UserProfile.objects.filter(department=code).count()
+        if count:
+            dept_counts[label] = count
+
+    # --- Recent activity feed ---
+    activity = []
+    for c in TaskComment.objects.select_related('author', 'task').order_by('-created_at')[:5]:
+        activity.append({'text': f'{c.author.username} commented on "{c.task.title}"', 'time': c.created_at})
+    for t in Task.objects.select_related('assigned_to').order_by('-created_at')[:5]:
+        activity.append({'text': f'Task "{t.title}" created', 'time': t.created_at})
+    activity.sort(key=lambda x: x['time'], reverse=True)
+    activity = activity[:6]
+
+    # --- Upcoming deadlines ---
+    upcoming = Task.objects.filter(due_date__gte=today).exclude(status='Done').order_by('due_date')[:6]
+
+    context = {
+        'total_users': total_users,
+        'active_projects': active_projects,
+        'tasks_in_progress': tasks_in_progress,
+        'tasks_completed': tasks_completed,
+        'overdue_tasks': overdue_tasks,
+        'chart_labels': chart_labels,
+        'completed_series': completed_series,
+        'in_progress_series': in_progress_series,
+        'overdue_series': overdue_series,
+        'milestone_counts': milestone_counts,
+        'dept_counts': dept_counts,
+        'activity': activity,
+        'upcoming': upcoming,
+        'today': today,
+    }
+    return render(request, 'tasks/overview.html', context)
 
 @login_required
 def dashboard(request):
@@ -110,6 +239,14 @@ def kanban_board(request):
 @login_required
 def task_detail(request, pk):
     task = get_object_or_404(Task, pk=pk)
+
+    if request.user.is_superuser:
+        comment_placeholder = "Add an admin note about this task..."
+    elif _is_manager(request.user):
+        comment_placeholder = "Add an update or comment about this task..."
+    else:
+        comment_placeholder = "Ask your manager about this task..."
+
     context = {
         'task': task,
         'comments': task.comments.select_related('author'),
@@ -119,6 +256,7 @@ def task_detail(request, pk):
             or _can_manage_task(request.user, task)
             or task.assigned_to_id == request.user.id
         ),
+        'comment_placeholder': comment_placeholder,
     }
     return render(request, 'tasks/task_detail.html', context)
 
@@ -257,16 +395,31 @@ def quick_create_task(request):
 
 @login_required
 def leave_list(request):
-    if request.user.is_superuser or _is_manager(request.user):
-        team_users = _visible_team_users(request.user)
-        leaves = LeaveRequest.objects.filter(employee__in=team_users).select_related('employee')
+    user = request.user
+    leaves = _visible_leaves(user)
+
+    context = {
+        'is_admin': user.is_superuser,
+        'is_manager': _is_manager(user),
+    }
+
+    if user.is_superuser:
+        # Admin sees two clearly separated sections — never mixed
+        context['manager_leaves'] = leaves.filter(employee__profile__role='manager').order_by('-created_at')
+        context['employee_leaves'] = leaves.filter(employee__profile__role='employee').order_by('-created_at')
+    elif _is_manager(user):
+        context['team_leaves'] = leaves.filter(employee__profile__role='employee').order_by('-created_at')
+        context['own_leave'] = leaves.filter(employee=user).order_by('-created_at')
     else:
-        leaves = LeaveRequest.objects.filter(employee=request.user)
-    return render(request, 'tasks/leaves.html', {'leaves': leaves, 'can_review': request.user.is_superuser or _is_manager(request.user)})
+        context['leaves'] = leaves.order_by('-created_at')
+
+    return render(request, 'tasks/leaves.html', context)
 
 
 @login_required
 def leave_request_create(request):
+    # Unchanged — employees, managers, and admins can all apply for
+    # their own leave; the workflow difference happens at review time.
     if request.method == 'POST':
         form = LeaveRequestForm(request.POST)
         if form.is_valid():
@@ -283,11 +436,55 @@ def leave_request_create(request):
 @require_POST
 def leave_review(request, pk):
     leave = get_object_or_404(LeaveRequest, pk=pk)
-    if not (request.user.is_superuser or _is_manager(request.user)):
-        return HttpResponseForbidden()
+
+    # Backend-enforced — not just a hidden button. A crafted POST from
+    # an unauthorized user (wrong manager, another employee, etc.)
+    # is rejected here regardless of what the UI shows them.
+    if not _can_review_leave(request.user, leave):
+        return HttpResponseForbidden("You don't have permission to review this leave request.")
+
     decision = request.POST.get('decision')
     if decision in ('Approved', 'Rejected'):
         leave.status = decision
         leave.reviewed_by = request.user
         leave.save()
+
     return redirect('tasks:leave_list')
+
+@login_required
+def calendar_view(request):
+    today = timezone.localdate()
+    year = int(request.GET.get('year', today.year))
+    month = int(request.GET.get('month', today.month))
+
+    team_users = _visible_team_users(request.user)
+    tasks = Task.objects.filter(assigned_to__in=team_users, due_date__year=year, due_date__month=month)
+    milestones = Milestone.objects.filter(target_date__year=year, target_date__month=month)
+    leaves = LeaveRequest.objects.filter(
+        employee__in=team_users, status='Approved'
+    ).filter(Q(start_date__year=year, start_date__month=month) | Q(end_date__year=year, end_date__month=month))
+
+    events_by_day = {}
+    for t in tasks:
+        events_by_day.setdefault(t.due_date.day, []).append({'type': 'task', 'label': t.title})
+    for m in milestones:
+        events_by_day.setdefault(m.target_date.day, []).append({'type': 'milestone', 'label': m.title})
+    for l in leaves:
+        d = l.start_date if l.start_date.month == month else l.end_date
+        events_by_day.setdefault(d.day, []).append({'type': 'leave', 'label': f"{l.employee.username} — leave"})
+
+    cal = cal_module.Calendar(firstweekday=0)
+    month_days = cal.monthdayscalendar(year, month)
+
+    prev_month, prev_year = (12, year - 1) if month == 1 else (month - 1, year)
+    next_month, next_year = (1, year + 1) if month == 12 else (month + 1, year)
+
+    context = {
+        'month_days': month_days,
+        'events_by_day': events_by_day,
+        'month_name': cal_module.month_name[month],
+        'year': year, 'month': month, 'today': today,
+        'prev_month': prev_month, 'prev_year': prev_year,
+        'next_month': next_month, 'next_year': next_year,
+    }
+    return render(request, 'tasks/calendar.html', context)
