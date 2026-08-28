@@ -12,6 +12,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('tasks/', include('tasks.urls')),
+    path('resources/', include('resource.urls')),
     path('', RedirectView.as_view(pattern_name='accounts:login'), name='home'),
 ]
 
