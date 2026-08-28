@@ -116,40 +116,40 @@
             <span class="sidebar-text ml-2">Calendar</span>
         </a>
          
-         <!-- RESOURCES -->
-<a href="{% url 'resource:list' %}" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-[12px]">
-    <i data-lucide="folder-open" class="w-[17px]"></i>
-    <span class="sidebar-text">Resources</span>
-</a>
-
-<!-- RESOURCE SUBMENU -->
-<div class="ml-5 pl-4 border-l border-slate-200 mt-1 space-y-0.5">
+<!-- 🟢 RESOURCES HOVER DROPDOWN SECTION (Without Arrow) -->
+<div class="mb-1 group">
     
-    <a href="{% url 'resource:list' %}" class="flex items-center gap-2 px-2 py-2 rounded-md text-[11px] text-violet-700 bg-violet-50 font-semibold">
-        <i data-lucide="grid-2x2" class="w-3 h-3"></i>
-        <span class="sidebar-text">All Resources</span>
+    <!-- Main Link / Hover Trigger -->
+    <a href="{% url 'resource:list' %}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/10 cursor-pointer">
+        <i class="fas fa-folder-open text-lg w-8 text-center flex-shrink-0 group-hover:text-violet-400 transition-colors"></i>
+        <span class="sidebar-text ml-2">Resources</span>
     </a>
 
-    <a href="{% url 'resource:list' %}?mine=1" class="flex items-center gap-2 px-2 py-2 rounded-md text-[11px] text-slate-500 hover:bg-slate-50">
-        <i data-lucide="user" class="w-3 h-3"></i>
-        <span class="sidebar-text">My Resources</span>
-    </a>
+    <!-- RESOURCE SUBMENU (Hover par dikhega) -->
+    <div class="hidden group-hover:block ml-11 pl-2 border-l border-[#1f3a5f] mt-1 space-y-1">
+        
+        <a href="{% url 'resource:list' %}" class="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
+            <i class="fas fa-th-large w-4 text-center text-violet-400"></i>
+            <span class="sidebar-text">All Resources</span>
+        </a>
 
-    <a href="{% url 'resource:list' %}?bookmarks=1" class="flex items-center gap-2 px-2 py-2 rounded-md text-[11px] text-slate-500 hover:bg-slate-50">
-        <i data-lucide="bookmark" class="w-3 h-3"></i>
-        <span class="sidebar-text">Bookmarks</span>
-    </a>
+        <a href="{% url 'resource:list' %}?mine=1" class="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+            <i class="fas fa-user w-4 text-center"></i>
+            <span class="sidebar-text">My Resources</span>
+        </a>
 
-    <a href="{% url 'resource:list' %}?recent=1" class="flex items-center gap-2 px-2 py-2 rounded-md text-[11px] text-slate-500 hover:bg-slate-50">
-        <i data-lucide="clock" class="w-3 h-3"></i>
-        <span class="sidebar-text">Recent</span>
-    </a>
+        <a href="{% url 'resource:list' %}?bookmarks=1" class="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+            <i class="fas fa-bookmark w-4 text-center"></i>
+            <span class="sidebar-text">Bookmarks</span>
+        </a>
 
+        <a href="{% url 'resource:list' %}?recent=1" class="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+            <i class="fas fa-clock w-4 text-center"></i>
+            <span class="sidebar-text">Recent</span>
+        </a>
+
+    </div>
 </div>
-
-<div class="h-4"></div>
-
-
         <!-- Leaves -->
         {% url 'tasks:leave_list' as leaves_url %}
         <a href="{{ leaves_url }}"
@@ -397,6 +397,24 @@
             });
         }, 4000);
     });
+
+    // 🟢 Resources Dropdown Toggle Logic
+    function toggleResourceMenu() {
+        const menu = document.getElementById('resourceSubMenu');
+        const caret = document.getElementById('resource-caret');
+        
+        // Menu ko hide/show karna
+        menu.classList.toggle('hidden');
+        
+        // Arrow (teer) ko 180 degree ghumana
+        caret.classList.toggle('rotate-180');
+        
+        // Optional: Naye icon ko render karne ke liye (agar zarurat ho)
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
 </script>
 
 {% block scripts %}{% endblock %}
