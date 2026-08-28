@@ -23,9 +23,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 
-<body
-    class="bg-slate-50 dark:bg-slate-900 text-gray-800 dark:text-gray-100 flex h-screen overflow-hidden transition-colors duration-200">
-</body>
+<body class="bg-slate-50 dark:bg-slate-900 text-gray-800 dark:text-gray-100 flex h-screen overflow-hidden transition-colors duration-200">
 {% if request.user.is_authenticated %}
 <!-- ================= SIDEBAR (Now with Mini-Sidebar Logic) ================= -->
 <aside id="app-sidebar"
