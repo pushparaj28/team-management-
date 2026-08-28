@@ -1,5 +1,5 @@
 from django import forms
-from .models import Task, Milestone, LeaveRequest
+from .models import Task, Milestone, LeaveRequest, Event
 from django.contrib.auth.models import User
 from django.utils import timezone 
 
@@ -120,3 +120,13 @@ class LeaveRequestForm(forms.ModelForm):
             )
 
         return cleaned_data 
+
+class EventForm(forms.ModelForm):
+    class Meta:
+        model = Event
+        fields = ['title', 'description', 'date']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'border border-gray-200 rounded-lg px-3 py-2 w-full'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'border border-gray-200 rounded-lg px-3 py-2 w-full'}),
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'border border-gray-200 rounded-lg px-3 py-2 w-full'}),
+        }

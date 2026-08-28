@@ -2,39 +2,51 @@
 {% load task_extras %}
 {% block content %}
 <div class="p-6">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">{{ month_name }} {{ year }}</h1>
-    <div class="flex gap-2">
-      <a href="?year={{ prev_year }}&month={{ prev_month }}" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">&larr; Prev</a>
-      <a href="?year={{ next_year }}&month={{ next_month }}" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">Next &rarr;</a>
+  <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">{{ month_name }} {{ year }}</h1>
+      <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> Task due</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Milestone</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span> Leave</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Company event</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      {% if can_create_event %}
+      <a href="{% url 'tasks:event_create' %}" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm">
+        + New event
+      </a>
+      {% endif %}
+      <a href="?year={{ prev_year }}&month={{ prev_month }}" class="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">&larr; Prev</a>
+      <a href="?year={{ next_year }}&month={{ next_month }}" class="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">Next &rarr;</a>
     </div>
   </div>
 
-  <div class="flex gap-4 mb-4 text-xs">
-    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> Task due</span>
-    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Milestone</span>
-    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span> Leave</span>
-  </div>
-
-  <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-gray-500 mb-2">
+  <div class="grid grid-cols-7 gap-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
     <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
   </div>
 
   <div class="grid grid-cols-7 gap-2">
     {% for week in month_days %}
       {% for day in week %}
-        <div class="bg-white rounded-lg border border-gray-100 min-h-[90px] p-2 {% if day == 0 %}bg-gray-50 border-none{% endif %}">
+        <div class="bg-white rounded-xl border border-gray-100 min-h-[110px] p-2.5 transition-shadow hover:shadow-sm
+          {% if day == 0 %}bg-gray-50/50 border-none{% endif %}">
           {% if day != 0 %}
-            <p class="text-xs font-semibold mb-1
+            <p class="text-xs font-bold mb-1.5
               {% if day == today.day and month == today.month and year == today.year %}
-                text-white bg-[#7a2656] w-5 h-5 rounded-full flex items-center justify-center
-              {% else %}text-gray-600{% endif %}">{{ day }}</p>
+                text-white bg-[#7a2656] w-6 h-6 rounded-full flex items-center justify-center
+              {% else %}text-gray-500{% endif %}">{{ day }}</p>
             <div class="space-y-1">
-              {% for event in events_by_day|get_item:day %}
-                <p class="text-[10px] px-1.5 py-0.5 rounded truncate
-                  {% if event.type == 'task' %}bg-rose-50 text-rose-700
-                  {% elif event.type == 'milestone' %}bg-amber-50 text-amber-700
-                  {% else %}bg-blue-50 text-blue-700{% endif %}" title="{{ event.label }}">{{ event.label }}</p>
+              {% for item in events_by_day|get_item:day %}
+                <div class="text-[10px] leading-tight px-1.5 py-1 rounded-lg truncate cursor-default
+                  {% if item.type == 'task' %}bg-rose-50 text-rose-700
+                  {% elif item.type == 'milestone' %}bg-amber-50 text-amber-700
+                  {% elif item.type == 'leave' %}bg-blue-50 text-blue-700
+                  {% else %}bg-indigo-50 text-indigo-700 font-semibold{% endif %}"
+                  title="{{ item.label }} — {{ item.sub }}">
+                  {% if item.type == 'event' %}📢 {% endif %}{{ item.label }}
+                </div>
               {% endfor %}
             </div>
           {% endif %}

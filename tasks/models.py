@@ -68,3 +68,22 @@ class LeaveRequest(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+class Event(models.Model):
+    """
+    Admin-created company-wide events/announcements/meetings.
+    Always visible to every authenticated user on the calendar —
+    there's no audience-scoping field because only Admins can create
+    these, and the requirement is that they broadcast to everyone.
+    """
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    date = models.DateField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_events')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date']
+
+    def __str__(self):
+        return self.title

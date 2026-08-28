@@ -9,12 +9,12 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.utils import timezone
-from .models import LeaveRequest
+from .models import LeaveRequest, Event
 from .forms import LeaveRequestForm
 
 from accounts.models import UserProfile
 from .models import Task, Milestone, TaskComment
-from .forms import TaskForm, MilestoneForm
+from .forms import TaskForm, MilestoneForm, EventForm
 
 
 # ---------------------------------------------------------------
@@ -140,9 +140,22 @@ def overview(request):
         start_date = today - timedelta(days=days - 1)
         end_date = today
 
-    tasks_qs = Task.objects.all()
+    status_filter = request.GET.get('status', '')
+    priority_filter = request.GET.get('priority', '')
+    assignee_filter = request.GET.get('assignee', '')
+    milestone_filter = request.GET.get('milestone', '')
+
+    tasks_qs = Task.objects.select_related('assigned_to', 'milestone').all()
     if department:
         tasks_qs = tasks_qs.filter(assigned_to__profile__department=department)
+    if status_filter:
+        tasks_qs = tasks_qs.filter(status=status_filter)
+    if priority_filter:
+        tasks_qs = tasks_qs.filter(priority=priority_filter)
+    if assignee_filter:
+        tasks_qs = tasks_qs.filter(assigned_to_id=assignee_filter)
+    if milestone_filter:
+        tasks_qs = tasks_qs.filter(milestone_id=milestone_filter)
 
     # ---------------- KPI cards ----------------
     total_users = User.objects.count()
@@ -223,8 +236,48 @@ def overview(request):
         'department_choices': UserProfile.DEPARTMENT_CHOICES,
         'start_date': start_date,
         'end_date': end_date,
+        'selected_status': status_filter,
+        'selected_priority': priority_filter,
+        'selected_assignee': assignee_filter,
+        'selected_milestone': milestone_filter,
+        'status_choices': Task.STATUS_CHOICES,
+        'priority_choices': Task.PRIORITY_CHOICES,
+        'assignee_choices': User.objects.filter(tasks__isnull=False).distinct().order_by('username'),
+        'milestone_choices': Milestone.objects.all().order_by('title'),
     }
-    return render(request, 'tasks/overview.html', context)
+    from django.template.response import TemplateResponse
+    return TemplateResponse(request, 'tasks/overview.html', context)
+
+
+@login_required
+def overview_data_api(request):
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    # Re-run overview() logic but return JSON instead of a template.
+    # We call the view function internally and pull the exact same
+    # context so filters can never drift out of sync between the
+    # full-page load and the AJAX refresh.
+    from django.template.response import TemplateResponse
+    response = overview(request)
+    if isinstance(response, JsonResponse):
+        return response
+    context = response.context_data if hasattr(response, 'context_data') else None
+    if context is None:
+        return JsonResponse({'error': 'Could not build overview data'}, status=500)
+
+    return JsonResponse({
+        'total_users': context['total_users'],
+        'active_projects': context['active_projects'],
+        'tasks_in_progress': context['tasks_in_progress'],
+        'tasks_completed': context['tasks_completed'],
+        'overdue_tasks': context['overdue_tasks'],
+        'chart_labels': context['chart_labels'],
+        'completed_series': context['completed_series'],
+        'in_progress_series': context['in_progress_series'],
+        'overdue_series': context['overdue_series'],
+        'milestone_counts': context['milestone_counts'],
+    })
 
 @login_required
 def dashboard(request):
@@ -251,6 +304,15 @@ def dashboard(request):
     overdue_count = my_tasks.filter(due_date__lt=today).exclude(status='Done').count()
     upcoming_tasks = my_tasks.filter(due_date__gte=today).exclude(status='Done').order_by('due_date')[:4]
 
+    # Role-based extra KPI: dynamic counts, never hardcoded
+    total_managers = None
+    total_employees = None
+    if user.is_superuser:
+        total_managers = UserProfile.objects.filter(role='manager').count()
+        total_employees = UserProfile.objects.filter(role='employee').count()
+    elif _is_manager(user):
+        total_employees = UserProfile.objects.filter(manager=user, role='employee').count()
+
     context = {
         'milestones': Milestone.objects.all(),
         'percent_complete': percent_complete,
@@ -261,6 +323,8 @@ def dashboard(request):
         'member_stats': member_stats,
         'can_manage': user.is_superuser or _is_manager(user),
         'today': today,
+        'total_managers': total_managers,
+        'total_employees': total_employees,
     }
     return render(request, 'tasks/dashboard.html', context)
 
@@ -511,21 +575,44 @@ def calendar_view(request):
     year = int(request.GET.get('year', today.year))
     month = int(request.GET.get('month', today.month))
 
+    # Backend-enforced role scoping — the same visibility rule your
+    # Kanban/Dashboard/Leaves already use. Admin -> everyone,
+    # Manager -> self + their employees, Employee -> just themself.
     team_users = _visible_team_users(request.user)
+
     tasks = Task.objects.filter(assigned_to__in=team_users, due_date__year=year, due_date__month=month)
-    milestones = Milestone.objects.filter(target_date__year=year, target_date__month=month)
     leaves = LeaveRequest.objects.filter(
         employee__in=team_users, status='Approved'
     ).filter(Q(start_date__year=year, start_date__month=month) | Q(end_date__year=year, end_date__month=month))
 
+    # Milestones are org-wide project data (no owner field on the
+    # model), so they stay visible to every authenticated user
+    # regardless of role — same as before this change.
+    milestones = Milestone.objects.filter(target_date__year=year, target_date__month=month)
+
+    # Company-wide events are visible to everyone by design — only
+    # Admins can create them (enforced in event_create below), so
+    # there's no audience filter needed here.
+    events = Event.objects.filter(date__year=year, date__month=month)
+
     events_by_day = {}
     for t in tasks:
-        events_by_day.setdefault(t.due_date.day, []).append({'type': 'task', 'label': t.title})
+        events_by_day.setdefault(t.due_date.day, []).append({
+            'type': 'task', 'label': t.title, 'sub': t.assigned_to.username if t.assigned_to else 'Unassigned'
+        })
     for m in milestones:
-        events_by_day.setdefault(m.target_date.day, []).append({'type': 'milestone', 'label': m.title})
+        events_by_day.setdefault(m.target_date.day, []).append({
+            'type': 'milestone', 'label': m.title, 'sub': m.status
+        })
     for l in leaves:
         d = l.start_date if l.start_date.month == month else l.end_date
-        events_by_day.setdefault(d.day, []).append({'type': 'leave', 'label': f"{l.employee.username} — leave"})
+        events_by_day.setdefault(d.day, []).append({
+            'type': 'leave', 'label': f"{l.employee.username} — leave", 'sub': l.status
+        })
+    for e in events:
+        events_by_day.setdefault(e.date.day, []).append({
+            'type': 'event', 'label': e.title, 'sub': f"by {e.created_by.username}"
+        })
 
     cal = cal_module.Calendar(firstweekday=0)
     month_days = cal.monthdayscalendar(year, month)
@@ -540,5 +627,25 @@ def calendar_view(request):
         'year': year, 'month': month, 'today': today,
         'prev_month': prev_month, 'prev_year': prev_year,
         'next_month': next_month, 'next_year': next_year,
+        'can_create_event': request.user.is_superuser,
     }
     return render(request, 'tasks/calendar.html', context)
+
+
+@login_required
+def event_create(request):
+    # Backend-enforced, not just a hidden button — a non-admin who
+    # manually POSTs here is rejected regardless of what the UI shows.
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Only admins can create company-wide events.")
+
+    if request.method == 'POST':
+        form = EventForm(request.POST)
+        if form.is_valid():
+            event = form.save(commit=False)
+            event.created_by = request.user
+            event.save()
+            return redirect('tasks:calendar')
+    else:
+        form = EventForm()
+    return render(request, 'tasks/event_form.html', {'form': form})
