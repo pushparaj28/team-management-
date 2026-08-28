@@ -108,22 +108,47 @@
             <i class="fas fa-tasks text-lg w-8 text-center flex-shrink-0"></i>
             <span class="sidebar-text ml-2">Tasks</span>
         </a>
-
-        <!-- Resources Tab -->
-        {% url 'resource:list' as resource_url %}
-        <a href="{{ resource_url }}"
-            class="flex items-center px-3 py-2.5 mx-1 mb-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == resource_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-            <i class="fas fa-folder-open text-lg w-8 text-center flex-shrink-0"></i>
-            <span class="sidebar-text ml-2">Resources</span>
-        </a>
-
-
+        
         {% url 'tasks:calendar' as calendar_url %}
         <a href="{{ calendar_url }}"
             class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == calendar_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
             <i class="fas fa-calendar-days text-lg w-8 text-center flex-shrink-0"></i>
             <span class="sidebar-text ml-2">Calendar</span>
         </a>
+         
+         <!-- RESOURCES -->
+<a href="{% url 'resource:list' %}" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-[12px]">
+    <i data-lucide="folder-open" class="w-[17px]"></i>
+    <span class="sidebar-text">Resources</span>
+</a>
+
+<!-- RESOURCE SUBMENU -->
+<div class="ml-5 pl-4 border-l border-slate-200 mt-1 space-y-0.5">
+    
+    <a href="{% url 'resource:list' %}" class="flex items-center gap-2 px-2 py-2 rounded-md text-[11px] text-violet-700 bg-violet-50 font-semibold">
+        <i data-lucide="grid-2x2" class="w-3 h-3"></i>
+        <span class="sidebar-text">All Resources</span>
+    </a>
+
+    <a href="{% url 'resource:list' %}?mine=1" class="flex items-center gap-2 px-2 py-2 rounded-md text-[11px] text-slate-500 hover:bg-slate-50">
+        <i data-lucide="user" class="w-3 h-3"></i>
+        <span class="sidebar-text">My Resources</span>
+    </a>
+
+    <a href="{% url 'resource:list' %}?bookmarks=1" class="flex items-center gap-2 px-2 py-2 rounded-md text-[11px] text-slate-500 hover:bg-slate-50">
+        <i data-lucide="bookmark" class="w-3 h-3"></i>
+        <span class="sidebar-text">Bookmarks</span>
+    </a>
+
+    <a href="{% url 'resource:list' %}?recent=1" class="flex items-center gap-2 px-2 py-2 rounded-md text-[11px] text-slate-500 hover:bg-slate-50">
+        <i data-lucide="clock" class="w-3 h-3"></i>
+        <span class="sidebar-text">Recent</span>
+    </a>
+
+</div>
+
+<div class="h-4"></div>
+
 
         <!-- Leaves -->
         {% url 'tasks:leave_list' as leaves_url %}
