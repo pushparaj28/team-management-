@@ -1,0 +1,67 @@
+/* ========================================== */
+/* 🟢 1. LOGIN & REGISTER FORM INPUT STYLING   */
+/* ========================================== */
+#loginForm input[type="text"],
+#loginForm input[type="password"],
+#registerForm input, 
+#registerForm select {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background-color: #fafafa;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+/* Login Specific Size */
+#loginForm input[type="text"],
+#loginForm input[type="password"] {
+    padding: 0.65rem 1rem;
+    font-size: 0.875rem; /* 14px */
+}
+
+/* Register Specific Size */
+#registerForm input, 
+#registerForm select {
+    padding: 0.4rem 0.75rem; 
+    font-size: 0.85rem; 
+    margin-top: 0.15rem;
+}
+
+/* Focus States (Common Theme Color) */
+#loginForm input[type="text"]:focus,
+#loginForm input[type="password"]:focus,
+#registerForm input:focus, 
+#registerForm select:focus {
+    border-color: #7a2656;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(122, 38, 86, 0.1);
+}
+
+/* ========================================== */
+/* 🟢 2. ERROR LIST STYLING                     */
+/* ========================================== */
+.errorlist {
+    color: #ef4444; 
+    font-size: 0.7rem;
+    margin-top: 0.1rem;
+    list-style-type: none;
+    padding: 0;
+}
+
+/* ========================================== */
+/* 🟢 3. CUSTOM SCROLLBAR                      */
+/* ========================================== */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}

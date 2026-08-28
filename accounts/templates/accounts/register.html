@@ -1,52 +1,12 @@
 {% extends 'base.html' %}
 {% load static %} 
-
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% endblock %} 
 {% block title %}Register - CollabPulse{% endblock %}
 
 {% block content %}
-<style>
-    /* 🟢 Form Inputs Styling */
-    #registerForm input, 
-    #registerForm select {
-        width: 100%;
-        padding: 0.4rem 0.75rem; 
-        font-size: 0.85rem; 
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        background-color: #fafafa;
-        outline: none;
-        transition: all 0.3s ease;
-        margin-top: 0.15rem;
-    }
-    #registerForm input:focus, 
-    #registerForm select:focus {
-        border-color: #7a2656;
-        background-color: #ffffff;
-        box-shadow: 0 0 0 3px rgba(122, 38, 86, 0.1);
-    }
-    .errorlist {
-        color: #ef4444; 
-        font-size: 0.7rem;
-        margin-top: 0.1rem;
-        list-style-type: none;
-        padding: 0;
-    }
 
-    /* 🟢 Custom Scrollbar (In case chhoti screen ho toh premium dikhe) */
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 5px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #d1d5db;
-        border-radius: 10px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #9ca3af;
-    }
-</style>
 
 <div class="min-h-screen grid place-items-center py-6 px-4 sm:px-6 lg:px-8">
     
@@ -54,7 +14,7 @@
 
         <!-- Left Side (Illustration) -->
         <div class="w-full md:w-5/12 bg-[#fdf1e4] p-6 flex flex-col items-center justify-center relative hidden md:flex">
-            <img src="https://img.magnific.com/free-vector/user-verification-unauthorized-access-prevention-private-account-authentication-cyber-security-people-entering-login-password-safety-measures_335657-3530.jpg?semt=ais_hybrid&w=740&q=80" 
+            <img src="https://assets.dochipo.com/editor/animations/sign-up/bc3e1b58-6e2a-4682-8436-f3b6320ccae1.gif" 
                  class="w-3/5 mb-4 transform hover:scale-105 transition duration-500" alt="Join Us">
             <h3 class="text-lg font-bold text-[#7a2656] text-center mt-2">Start your journey.</h3>
             <p class="text-gray-600 text-center mt-1 text-xs">Join our platform to manage tasks.</p>
@@ -74,10 +34,10 @@
                 </div>
             </div>
 
-            <!-- 🟢 Google Button aur Divider hata diya gaya hai 🟢 -->
+            <!-- Google Button aur Divider hata diya gaya hai-->
 
             <!-- Register Form -->
-            <form id="registerForm" class="flex flex-col gap-2 flex-shrink-0">
+            <form id="registerForm" data-url="{% url 'accounts:register' %}" method="POST">
                 {% csrf_token %}
                 
                 <div class="flex flex-col gap-2">
@@ -88,7 +48,7 @@
                         <div class="flex flex-col sm:flex-row gap-3">
                             <div id="div_{{ field.name }}" class="w-full sm:w-1/2">
                                 <label class="block text-xs font-semibold text-gray-600 mb-0.5">
-                                    {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                                {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
                                 </label>
                                 {{ field }}
                                 {{ field.errors }}
@@ -138,38 +98,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    document.getElementById('registerForm').addEventListener('submit', function(e) {
-        e.preventDefault(); 
-        
-        const formData = new FormData(this);
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        fetch("{% url 'accounts:register' %}", {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrfToken
-            },
-            body: formData 
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                alert(data.message);
-                window.location.href = data.redirect_url;
-            } else {
-                if (data.message) {
-                    alert(data.message);
-                } else if (data.errors) {
-                    alert("Please correct the errors in the form.");
-                    console.log(data.errors);
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert("Something went wrong. Please try again.");
-        });
-    });
-</script>
+<script src="{% static 'js/main.js' %}"></script>
 {% endblock %}

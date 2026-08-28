@@ -1,29 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% endblock %}
+
 {% block title %}Login - CollabPulse{% endblock %}
 {% block content %}
 <!-- Custom styles for Django form fields -->
-<style>
-    #loginForm input[type="text"],
-    #loginForm input[type="password"] {
-        width: 100%;
-        padding: 0.65rem 1rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        background-color: #fafafa;
-        outline: none;
-        transition: all 0.3s ease;
-        font-size: 0.875rem; /* 14px size for perfect 100% zoom look */
-    }
-
-    #loginForm input[type="text"]:focus,
-    #loginForm input[type="password"]:focus {
-        border-color: #7a2656;
-        background-color: #ffffff;
-        box-shadow: 0 0 0 3px rgba(122, 38, 86, 0.1);
-    }
-</style>
 
 <!-- Min height thoda adjust kiya taaki scrolling na aaye -->
 <div class="min-h-[80vh] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
@@ -32,7 +16,7 @@
         
         <!-- Left Side (Illustration & Branding) -->
         <div class="w-full md:w-1/2 bg-[#fdf1e4] p-8 flex flex-col items-center justify-center relative min-h-[350px]">
-            <img src="https://cdni.iconscout.com/illustration/premium/thumb/user-showing-user-login-page-in-website-or-application-illustration-svg-download-png-1597938.png" alt="Illustration">
+            <img src="https://rurutek.com/jio/assets/img/login-animate.gif" alt="Illustration">
             <h3 class="text-xl font-bold text-[#7a2656] text-center mt-2">Turn your ideas into reality.</h3>
         </div>
 
@@ -69,7 +53,7 @@
             </div>
 
             <!-- Login Form (Tightened spacing) -->
-            <form id="loginForm" class="space-y-4">
+           <form id="loginForm" class="space-y-4" data-url="{% url 'accounts:login' %}">
                 {% csrf_token %}
 
                 <div>
@@ -103,7 +87,7 @@
                     </label>
                     <a href="#" class="text-xs font-semibold text-[#7a2656] hover:underline">Forgot Password?</a>
                 </div>
-
+ 
                 <button type="submit"
                     class="w-full bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-bold py-3 px-4 rounded-lg transition duration-300 shadow-md">
                     Login
@@ -123,48 +107,5 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Purana JavaScript Code -->
-<script>
-    document.getElementById('loginForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        const formData = new FormData(this);
-        const data = Object.fromEntries(formData.entries());
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        fetch("{% url 'accounts:login' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify(data)
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    window.location.href = data.redirect_url;
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert("Something went wrong. Please try again.");
-            });
-    });
-
-    function togglePassword() {
-        const passwordInput = document.getElementById('id_password');
-        const eyeIcon = document.getElementById('eye-icon');
-        
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            eyeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.978 9.978 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path>`;
-        } else {
-            passwordInput.type = 'password';
-            eyeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>`;
-        }
-    }
-</script>
+<script src="{% static 'js/main.js' %}"></script>
 {% endblock %}

@@ -10,6 +10,7 @@
     </script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class', } </script>
     <!-- FontAwesome for Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -19,268 +20,277 @@
             overflow-x: hidden;
         }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 
-<body class="bg-gray-50 text-gray-800 h-screen flex overflow-hidden font-sans relative">
+<body
+    class="bg-slate-50 dark:bg-slate-900 text-gray-800 dark:text-gray-100 flex h-screen overflow-hidden transition-colors duration-200">
+</body>
+{% if request.user.is_authenticated %}
+<!-- ================= SIDEBAR (Now with Mini-Sidebar Logic) ================= -->
+<aside id="app-sidebar"
+    class="w-64 bg-[#0a1929] border-r border-[#13273e] text-gray-300 flex-shrink-0 flex flex-col z-40 shadow-xl absolute md:relative h-full -ml-64 md:ml-0">
 
-    {% if request.user.is_authenticated %}
-    <!-- ================= SIDEBAR (Now with Mini-Sidebar Logic) ================= -->
-    <aside id="app-sidebar"
-        class="w-64 bg-[#0a1929] border-r border-[#13273e] text-gray-300 flex-shrink-0 flex flex-col z-40 shadow-xl absolute md:relative h-full -ml-64 md:ml-0">
+    <!-- Logo / Brand -->
+    <div class="h-16 flex items-center px-4 border-b border-[#13273e] whitespace-nowrap overflow-hidden">
+        <i class="fas fa-layer-group text-blue-500 text-2xl w-10 text-center flex-shrink-0"></i>
+        <span class="text-white text-lg font-bold tracking-wide ml-2 sidebar-text">CollabPulse</span>
+    </div>
 
-        <!-- Logo / Brand -->
-        <div class="h-16 flex items-center px-4 border-b border-[#13273e] whitespace-nowrap overflow-hidden">
-            <i class="fas fa-layer-group text-blue-500 text-2xl w-10 text-center flex-shrink-0"></i>
-            <span class="text-white text-lg font-bold tracking-wide ml-2 sidebar-text">CollabPulse</span>
-        </div>
+    <!-- Navigation Links -->
+    <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-1.5">
 
-        <!-- Navigation Links -->
-        <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-1.5">
+        {% if request.user.is_superuser %}
+        {% url 'tasks:overview' as overview_url %}
+        <a href="{{ overview_url }}"
+            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == overview_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-chart-line text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">Overview</span>
+        </a>
+        {% endif %}
 
-            {% if request.user.is_superuser %}
-            {% url 'tasks:overview' as overview_url %}
-            <a href="{{ overview_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == overview_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-                <i class="fas fa-chart-line text-lg w-8 text-center flex-shrink-0"></i>
-                <span class="sidebar-text ml-2">Overview</span>
-            </a>
-            {% endif %}
+        <!-- 🟢 DASHBOARD DROPDOWN (WITHOUT LEFT SPACE) 🟢 -->
+        {% url 'tasks:dashboard' as dashboard_url %}
+        {% url 'accounts:managers_list' as managers_url %}
+        {% url 'accounts:employees_list' as employees_url %}
 
-            <!-- 🟢 DASHBOARD DROPDOWN (WITHOUT LEFT SPACE) 🟢 -->
-            {% url 'tasks:dashboard' as dashboard_url %}
-            {% url 'accounts:managers_list' as managers_url %}
-            {% url 'accounts:employees_list' as employees_url %}
+        <div class="mb-2">
+            <div
+                class="flex items-center rounded-lg mx-1 {% if request.path == dashboard_url or request.path == managers_url or request.path == employees_url %}bg-white/5{% endif %}">
+                <!-- Dashboard is now a real link for every role -->
+                <a href="{{ dashboard_url }}"
+                    class="flex-1 flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == dashboard_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-home text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">Dashboard</span>
+                </a>
 
-            <div class="mb-2">
-                <div class="flex items-center rounded-lg mx-1 {% if request.path == dashboard_url or request.path == managers_url or request.path == employees_url %}bg-white/5{% endif %}">
-                    <!-- Dashboard is now a real link for every role -->
-                    <a href="{{ dashboard_url }}" class="flex-1 flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == dashboard_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-                        <i class="fas fa-home text-lg w-8 text-center flex-shrink-0"></i>
-                        <span class="sidebar-text ml-2">Dashboard</span>
-                    </a>
-
-                    <!-- Admin-only caret to expand Managers/Employees, separate from the Dashboard link itself -->
-                    {% if request.user.is_superuser %}
-                    <button onclick="toggleDashboardMenu()" class="px-2 py-2.5 text-gray-400 hover:text-white transition-colors cursor-pointer sidebar-text">
-                        <i class="fas fa-chevron-down text-xs"></i>
-                    </button>
-                    {% endif %}
-                </div>
-
+                <!-- Admin-only caret to expand Managers/Employees, separate from the Dashboard link itself -->
                 {% if request.user.is_superuser %}
-                <div id="dashboardSubMenu" class="{% if request.path == managers_url or request.path == employees_url %}flex{% else %}hidden{% endif %} flex-col mt-1 space-y-1">
-                    <a href="{{ managers_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors {% if request.path == managers_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-400 hover:text-white hover:bg-white/10{% endif %}">
-                        <i class="fas fa-user-tie text-lg w-8 text-center flex-shrink-0"></i>
-                        <span class="sidebar-text ml-2">Managers</span>
-                    </a>
-                    <a href="{{ employees_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors {% if request.path == employees_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-400 hover:text-white hover:bg-white/10{% endif %}">
-                        <i class="fas fa-users text-lg w-8 text-center flex-shrink-0"></i>
-                        <span class="sidebar-text ml-2">Employees</span>
-                    </a>
-                </div>
+                <button onclick="toggleDashboardMenu()"
+                    class="px-2 py-2.5 text-gray-400 hover:text-white transition-colors cursor-pointer sidebar-text">
+                    <i class="fas fa-chevron-down text-xs"></i>
+                </button>
                 {% endif %}
             </div>
-       
 
-            <!-- 🟢 My Team (Manager) -->
-            {% if request.user.profile.role == 'manager' %}
-            {% url 'accounts:manager_dashboard' as my_team_url %}
-            <a href="{{ my_team_url }}"
-                class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == my_team_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-                <i class="fas fa-user-tie text-lg w-8 text-center flex-shrink-0"></i>
-                <span class="sidebar-text ml-2">My Team</span>
-            </a>
-            {% endif %}
-
-            <!-- Tasks (Kanban) -->
-            {% url 'tasks:kanban' as kanban_url %}
-            <a href="{{ kanban_url }}"
-                class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == kanban_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-                <i class="fas fa-tasks text-lg w-8 text-center flex-shrink-0"></i>
-                <span class="sidebar-text ml-2">Tasks</span>
-            </a>
-             
-          <!-- Resources Tab -->
-{% url 'resource:list' as resource_url %}
-<a href="{{ resource_url }}"
-    class="flex items-center px-3 py-2.5 mx-1 mb-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == resource_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-    <i class="fas fa-folder-open text-lg w-8 text-center flex-shrink-0"></i>
-    <span class="sidebar-text ml-2">Resources</span>
-</a>
-
-
-            {% url 'tasks:calendar' as calendar_url %}
-            <a href="{{ calendar_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == calendar_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-                <i class="fas fa-calendar-days text-lg w-8 text-center flex-shrink-0"></i>
-                <span class="sidebar-text ml-2">Calendar</span>
-            </a>
-
-            <!-- Leaves -->
-            {% url 'tasks:leave_list' as leaves_url %}
-            <a href="{{ leaves_url }}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == leaves_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-                <i class="fas fa-calendar-alt text-lg w-8 text-center flex-shrink-0"></i>
-                <span class="sidebar-text ml-2">Leaves</span>
-            </a>
-
-            <!-- My Profile -->
-            {% url 'accounts:profile' as profile_url %}
-            <a href="{{ profile_url }}"
-                class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == profile_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-                <i class="fas fa-user-circle text-lg w-8 text-center flex-shrink-0"></i>
-                <span class="sidebar-text ml-2">My Profile</span>
-            </a>
-
-            <!-- Settings -->
-            <a href="#"
-                class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/10">
-                <i class="fas fa-cog text-lg w-8 text-center flex-shrink-0"></i>
-                <span class="sidebar-text ml-2">Settings</span>
-            </a>
-        </nav>
-
-        <!-- BOTTOM LOGOUT BUTTON -->
-        <div class="p-4 border-t border-[#13273e] mt-auto">
-            <a href="{% url 'accounts:logout' %}"
-                class="flex items-center px-3 py-2.5 mx-1 text-sm font-bold rounded-lg text-red-400 hover:text-white hover:bg-red-500/20 transition-colors whitespace-nowrap">
-                <i class="fas fa-sign-out-alt text-lg w-8 text-center flex-shrink-0"></i>
-                <span class="sidebar-text ml-2">Logout</span>
-            </a>
-        </div>
-    </aside>
-
-    <!-- ================= MAIN CONTENT AREA ================= -->
-    <div class="flex-1 flex flex-col overflow-hidden relative">
-
-        <!-- ================= TOP NAVBAR ================= -->
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
-            <!-- Search Bar & Toggle Button -->
-            <div class="flex-1 flex items-center">
-
-                <!-- 🟢 Sidebar Toggle Button -->
-                <button onclick="toggleSidebar()"
-                    class="mr-4 p-2 text-gray-500 hover:bg-gray-100 hover:text-blue-600 rounded-lg transition-colors focus:outline-none"
-                    title="Toggle Sidebar">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-
-                <div class="relative w-full max-w-md hidden sm:block">
-                    <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
-                    <input type="text" placeholder="Search users, tasks, projects, resources..."
-                        class="w-full pl-10 pr-12 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white">
-                    <div
-                        class="absolute right-2 top-2 text-xs text-gray-400 font-semibold border border-gray-200 rounded px-1.5 py-0.5 bg-white">
-                        ⌘ </div>
-                </div>
-            </div>
-
-            <!-- Right: Actions & Profile -->
-            <div class="flex items-center gap-4 sm:gap-6 ml-4">
-                {% include 'includes/role_switcher.html' %}
-                <div class="hidden sm:flex items-center bg-gray-100 rounded-full p-1 border border-gray-200">
-                    <button onclick="setTheme('light')"
-                        class="p-1.5 bg-white rounded-full shadow-sm text-teal-500 w-8 h-8 flex items-center justify-center"><i
-                            class="fas fa-sun"></i></button>
-                    <button onclick="setTheme('dark')"
-                        class="p-1.5 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center transition-colors"><i
-                            class="fas fa-moon"></i></button>
-                </div>
-
-                <button class="relative text-gray-500 hover:text-gray-700 transition-colors">
-                    <i class="far fa-bell text-xl"></i>
-                    <span
-                        class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-white">5</span>
-                </button>
-
-                <a href="{% url 'accounts:profile' %}"
-                    class="flex items-center gap-3 border-l border-gray-200 pl-4 sm:pl-6 cursor-pointer group">
-                    <div class="relative">
-                        <div
-                            class="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-md">
-                            {{ request.user.username|make_list|first|upper }}
-                        </div>
-                        <div
-                            class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white">
-                        </div>
-                    </div>
-                    <div class="hidden md:block text-left">
-                        <p class="text-sm font-semibold text-gray-800 leading-tight">{{request.user.first_name|default:request.user.username }}</p>
-                        <p class="text-xs text-gray-500">
-                            {% if request.user.is_superuser %}Admin{% else %}{{ request.user.profile.role|title|default:"Employee" }}{% endif %}
-                        </p>
-                    </div>
+            {% if request.user.is_superuser %}
+            <div id="dashboardSubMenu"
+                class="{% if request.path == managers_url or request.path == employees_url %}flex{% else %}hidden{% endif %} flex-col mt-1 space-y-1">
+                <a href="{{ managers_url }}"
+                    class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors {% if request.path == managers_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-400 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-user-tie text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">Managers</span>
+                </a>
+                <a href="{{ employees_url }}"
+                    class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors {% if request.path == employees_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-400 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-users text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">Employees</span>
                 </a>
             </div>
-        </header>
-
-        <!-- ================= SCROLLABLE CONTENT & FOOTER ================= -->
-        <div class="flex-1 overflow-y-auto flex flex-col bg-gray-50/50">
-            <main class="flex-grow p-6">
-                {% else %}
-                <!-- 🟢 Agar User Login NAHI Hai (Matlab Login/Signup Page hai) -->
-                <main class="flex-1 w-full flex items-center justify-center min-h-screen bg-gray-50">
-                    {% endif %}
+            {% endif %}
+        </div>
 
 
-                    <!-- 🟢 SIRF EK BLOCK CONTENT YAHAN HAI 🟢 -->
-                    {% block content %}
-                    {% endblock %}
+        <!-- 🟢 My Team (Manager) -->
+        {% if request.user.profile.role == 'manager' %}
+        {% url 'accounts:manager_dashboard' as my_team_url %}
+        <a href="{{ my_team_url }}"
+            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == my_team_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-user-tie text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">My Team</span>
+        </a>
+        {% endif %}
+
+        <!-- Tasks (Kanban) -->
+        {% url 'tasks:kanban' as kanban_url %}
+        <a href="{{ kanban_url }}"
+            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == kanban_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-tasks text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">Tasks</span>
+        </a>
+
+        <!-- Resources Tab -->
+        {% url 'resource:list' as resource_url %}
+        <a href="{{ resource_url }}"
+            class="flex items-center px-3 py-2.5 mx-1 mb-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == resource_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-folder-open text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">Resources</span>
+        </a>
 
 
-                    {% if request.user.is_authenticated %}
-                </main>
+        {% url 'tasks:calendar' as calendar_url %}
+        <a href="{{ calendar_url }}"
+            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == calendar_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-calendar-days text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">Calendar</span>
+        </a>
 
-                <!-- FOOTER -->
-                <footer class="bg-white border-t border-gray-200 flex-shrink-0">
-                    <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div class="text-left">
-                            <p class="text-sm font-bold text-gray-700">CollabPulse</p>
-                            <p class="text-xs text-gray-500 mt-0.5">© 2026 All Rights Reserved</p>
+        <!-- Leaves -->
+        {% url 'tasks:leave_list' as leaves_url %}
+        <a href="{{ leaves_url }}"
+            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == leaves_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-calendar-alt text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">Leaves</span>
+        </a>
+
+        <!-- My Profile -->
+        {% url 'accounts:profile' as profile_url %}
+        <a href="{{ profile_url }}"
+            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == profile_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-user-circle text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">My Profile</span>
+        </a>
+
+        <!-- Settings -->
+        <a href="#"
+            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/10">
+            <i class="fas fa-cog text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">Settings</span>
+        </a>
+    </nav>
+
+    <!-- BOTTOM LOGOUT BUTTON -->
+    <div class="p-4 border-t border-[#13273e] mt-auto">
+        <a href="{% url 'accounts:logout' %}"
+            class="flex items-center px-3 py-2.5 mx-1 text-sm font-bold rounded-lg text-red-400 hover:text-white hover:bg-red-500/20 transition-colors whitespace-nowrap">
+            <i class="fas fa-sign-out-alt text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">Logout</span>
+        </a>
+    </div>
+</aside>
+<!-- ================= MAIN CONTENT AREA ================= -->
+<div class="flex-1 flex flex-col overflow-hidden relative">
+
+    <!-- ================= TOP NAVBAR ================= -->
+    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
+        <!-- Search Bar & Toggle Button -->
+        <div class="flex-1 flex items-center">
+
+            <!-- 🟢 Sidebar Toggle Button -->
+            <button onclick="toggleSidebar()"
+                class="mr-4 p-2 text-gray-500 hover:bg-gray-100 hover:text-blue-600 rounded-lg transition-colors focus:outline-none"
+                title="Toggle Sidebar">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+
+            <div class="relative w-full max-w-md hidden sm:block">
+                <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                <input type="text" placeholder="Search users, tasks, projects, resources..."
+                    class="w-full pl-10 pr-12 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white">
+                <div
+                    class="absolute right-2 top-2 text-xs text-gray-400 font-semibold border border-gray-200 rounded px-1.5 py-0.5 bg-white">
+                    ⌘ </div>
+            </div>
+        </div>
+
+        <!-- Right: Actions & Profile -->
+        <div class="flex items-center gap-4 sm:gap-6 ml-4">
+            {% include 'includes/role_switcher.html' %}
+            <!-- Dark/Light Mode Toggle -->
+            <!-- Single Click Theme Toggle Button -->
+            <button onclick="toggleTheme()"
+                class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-700 rounded-full p-1 border border-gray-200 dark:border-slate-600 cursor-pointer transition-colors">
+                <div id="light-btn"
+                    class="p-1.5 bg-white rounded-full shadow-sm text-teal-500 w-8 h-8 flex items-center justify-center transition-all">
+                    <i class="fas fa-sun"></i>
+                </div>
+                <div id="dark-btn" class="p-1.5 text-gray-400 w-8 h-8 flex items-center justify-center transition-all">
+                    <i class="fas fa-moon"></i>
+                </div>
+            </button>
+
+            <button class="relative text-gray-500 hover:text-gray-700 transition-colors">
+                <i class="far fa-bell text-xl"></i>
+                <span
+                    class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-white">5</span>
+            </button>
+
+            <a href="{% url 'accounts:profile' %}"
+                class="flex items-center gap-3 border-l border-gray-200 pl-4 sm:pl-6 cursor-pointer group">
+                <div class="relative">
+                    <div
+                        class="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-md">
+                        {{ request.user.username|make_list|first|upper }}
+                    </div>
+                    <div class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white">
+                    </div>
+                </div>
+                <div class="hidden md:block text-left">
+                    <p class="text-sm font-semibold text-gray-800 leading-tight"> {{request.user.first_name|default:request.user.username }}</p>
+                    <p class="text-xs text-gray-500">
+                        {% if request.user.is_superuser %}Admin{% else %}{{ request.user.profile.role|title|default:"Employee" }}{% endif %}
+                    </p>
+                </div>
+            </a>
+        </div>
+    </header>
+
+    <!-- ================= SCROLLABLE CONTENT & FOOTER ================= -->
+    <div class="flex-1 overflow-y-auto flex flex-col bg-gray-50/50">
+        <main class="flex-grow p-6">
+            {% else %}
+            <!--  Agar User Login NAHI Hai (Matlab Login/Signup Page hai) -->
+            <main class="flex-1 w-full flex items-center justify-center min-h-screen bg-gray-50">
+                {% endif %}
+
+
+                <!-- SIRF EK BLOCK CONTENT YAHAN HAI -->
+                {% block content %}
+                {% endblock %}
+
+
+                {% if request.user.is_authenticated %}
+            </main>
+
+            <!-- FOOTER -->
+            <footer class="bg-white border-t border-gray-200 flex-shrink-0">
+                <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="text-left">
+                        <p class="text-sm font-bold text-gray-700">CollabPulse</p>
+                        <p class="text-xs text-gray-500 mt-0.5">© 2026 All Rights Reserved</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-6">
+                        <div class="flex items-center gap-4 text-xs font-semibold text-gray-500">
+                            <a href="#" class="hover:text-blue-600 transition-colors">About Us</a>
+                            <a href="#" class="hover:text-blue-600 transition-colors">Contact</a>
+                            <a href="#" class="hover:text-blue-600 transition-colors">Privacy Policy</a>
+                            <a href="#" class="hover:text-blue-600 transition-colors">Terms & Conditions</a>
                         </div>
-                        <div class="flex flex-wrap items-center gap-6">
-                            <div class="flex items-center gap-4 text-xs font-semibold text-gray-500">
-                                <a href="#" class="hover:text-blue-600 transition-colors">About Us</a>
-                                <a href="#" class="hover:text-blue-600 transition-colors">Contact</a>
-                                <a href="#" class="hover:text-blue-600 transition-colors">Privacy Policy</a>
-                                <a href="#" class="hover:text-blue-600 transition-colors">Terms & Conditions</a>
-                            </div>
-                            <div class="flex items-center gap-3 text-gray-400 border-l border-gray-300 pl-6">
-                                <a href="#" class="hover:text-blue-600 transition-colors"><i
-                                        class="fab fa-facebook"></i></a>
-                                <a href="#" class="hover:text-blue-600 transition-colors"><i
-                                        class="fab fa-twitter"></i></a>
-                                <a href="#" class="hover:text-blue-600 transition-colors"><i
-                                        class="fab fa-linkedin"></i></a>
-                                <a href="#" class="hover:text-blue-600 transition-colors"><i
-                                        class="fab fa-github"></i></a>
-                            </div>
+                        <div class="flex items-center gap-3 text-gray-400 border-l border-gray-300 pl-6">
+                            <a href="#" class="hover:text-blue-600 transition-colors"><i
+                                    class="fab fa-facebook"></i></a>
+                            <a href="#" class="hover:text-blue-600 transition-colors"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="hover:text-blue-600 transition-colors"><i
+                                    class="fab fa-linkedin"></i></a>
+                            <a href="#" class="hover:text-blue-600 transition-colors"><i class="fab fa-github"></i></a>
                         </div>
                     </div>
-                </footer>
-        </div>
+                </div>
+            </footer>
     </div>
-    {% else %}
-    </main>
-    {% endif %}
+</div>
+{% else %}
+</main>
+{% endif %}
 
-    <!-- ================= TOAST MESSAGES ================= -->
-    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">
-        {% if messages %}
-        {% for message in messages %}
-        <div class="toast-message pointer-events-auto flex items-center p-4 w-full max-w-xs text-gray-700 bg-white rounded-lg shadow-lg border-l-4 
+<!-- ================= TOAST MESSAGES ================= -->
+<div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="toast-message pointer-events-auto flex items-center p-4 w-full max-w-xs text-gray-700 bg-white rounded-lg shadow-lg border-l-4 
                 {% if message.tags == 'success' %}border-green-500{% elif message.tags == 'error' %}border-red-500{% else %}border-blue-500{% endif %} transition-all duration-300"
-            role="alert">
-            <div class="ml-3 text-sm font-medium">{{ message }}</div>
-            <button type="button"
-                class="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg p-1.5 hover:bg-gray-100 inline-flex h-8 w-8"
-                onclick="this.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        {% endfor %}
-        {% endif %}
+        role="alert">
+        <div class="ml-3 text-sm font-medium">{{ message }}</div>
+        <button type="button"
+            class="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg p-1.5 hover:bg-gray-100 inline-flex h-8 w-8"
+            onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
+    {% endfor %}
+    {% endif %}
+</div>
 
-    <!-- 🟢 JAVASCRIPT LOGIC FOR MINI SIDEBAR 🟢 -->
-   <!-- 🟢 MAIN JAVASCRIPT LOGIC 🟢 -->
 <script>
     // 1. Mini Sidebar Toggle Logic
     function toggleSidebar() {
@@ -288,16 +298,16 @@
         const texts = document.querySelectorAll('.sidebar-text');
 
         if (window.innerWidth >= 768) {
-            // Desktop Mode: Toggle between w-64 (256px) and w-20 (80px)
+            // Desktop Mode
             if (sidebar.classList.contains('w-64')) {
                 sidebar.classList.replace('w-64', 'w-20');
-                texts.forEach(t => t.classList.add('hidden')); // Text hide
+                texts.forEach(t => t.classList.add('hidden'));
             } else {
                 sidebar.classList.replace('w-20', 'w-64');
-                texts.forEach(t => t.classList.remove('hidden')); // Text wapas
+                texts.forEach(t => t.classList.remove('hidden'));
             }
         } else {
-            // Mobile Mode: Full Slide In/Out
+            // Mobile Mode
             sidebar.classList.toggle('-ml-64');
             sidebar.classList.toggle('ml-0');
         }
@@ -310,8 +320,49 @@
         subMenu.classList.toggle('flex');
     }
 
-    // 3. Toast Fade JS (Auto-hide alerts)
+    // 🟢 1. Naya function jo click karne par theme badlega
+    function toggleTheme() {
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        if (currentTheme === 'light') {
+            setTheme('dark');
+        } else {
+            setTheme('light');
+        }
+    }
+
+    // 🟢 2. Purana setTheme function (Thode naye dark colors ke sath)
+    function setTheme(mode) {
+        const lightBtn = document.getElementById('light-btn');
+        const darkBtn = document.getElementById('dark-btn');
+
+        if (mode === 'dark') {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+
+            // Dark mode me Moon icon ko highlight karo
+            if (darkBtn && lightBtn) {
+                darkBtn.className = "p-1.5 bg-slate-600 rounded-full shadow-sm text-teal-400 w-8 h-8 flex items-center justify-center transition-all";
+                lightBtn.className = "p-1.5 text-gray-400 w-8 h-8 flex items-center justify-center transition-all text-gray-500";
+            }
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+
+            // Light mode me Sun icon ko highlight karo
+            if (darkBtn && lightBtn) {
+                lightBtn.className = "p-1.5 bg-white rounded-full shadow-sm text-teal-500 w-8 h-8 flex items-center justify-center transition-all";
+                darkBtn.className = "p-1.5 text-gray-400 w-8 h-8 flex items-center justify-center transition-all";
+            }
+        }
+    }
+
+    // 4. Page Load Events (Theme Load & Toast Fade)
     document.addEventListener("DOMContentLoaded", function () {
+        // A. Purana theme yaad rakhna aur apply karna
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+
+        // B. Toast Message Auto-hide Logic
         setTimeout(() => {
             const toasts = document.querySelectorAll('.toast-message');
             toasts.forEach(toast => {
@@ -321,22 +372,9 @@
             });
         }, 4000);
     });
-
-    // 4. Dark/Light Theme Logic
-    function setTheme(mode) {
-        document.documentElement.classList.toggle('dark', mode === 'dark');
-        localStorage.setItem('theme', mode);
-    }
-    
-    // Auto-apply theme on page load
-    (function () {
-        if (localStorage.getItem('theme') === 'dark') {
-            document.documentElement.classList.add('dark');
-        }
-    })();
 </script>
 
-    {% block scripts %}{% endblock %}
+{% block scripts %}{% endblock %}
 </body>
 
 </html>
