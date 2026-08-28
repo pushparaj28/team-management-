@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ resource.title }} | CollabPulse
+{% endblock %}
+
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto">
+
+    <!-- BACK TO RESOURCES -->
+    <a href="{% url 'resource:list' %}" class="back-link">
+        <i data-lucide="arrow-left"></i>
+        Back to Resources
+    </a>
+
+
+    <!-- DETAIL CARD -->
+    <div class="detail-card mt-5">
+
+        <!-- TOP SECTION -->
+        <div class="detail-top">
+
+            <!-- FILE ICON -->
+            <div class="detail-file-icon file-{{ resource.icon_type }}">
+
+                {% if resource.icon_type == "pdf" %}
+                    PDF
+
+                {% elif resource.icon_type == "media" %}
+                    <i data-lucide="video"></i>
+
+                {% elif resource.icon_type == "design" %}
+                    <i data-lucide="image"></i>
+
+                {% elif resource.icon_type == "technical" %}
+                    <i data-lucide="database"></i>
+
+                {% elif resource.icon_type == "document" %}
+                    <i data-lucide="file-text"></i>
+
+                {% elif resource.icon_type == "links" %}
+                    <i data-lucide="link-2"></i>
+
+                {% else %}
+                    <i data-lucide="file"></i>
+                {% endif %}
+
+            </div>
+
+
+            <!-- RESOURCE INFO -->
+            <div class="flex-1 min-w-0">
+
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+
+                    <span class="category-pill category-{{ resource.category }}">
+                        {{ resource.category_label }}
+                    </span>
+
+                    <span class="text-xs text-slate-400">
+                        Updated {{ resource.updated_at|timesince }} ago
+                    </span>
+
+                </div>
+
+
+                <h1 class="text-2xl lg:text-3xl font-bold break-words">
+                    {{ resource.title }}
+                </h1>
+
+
+                <p class="text-sm text-slate-500 mt-2">
+                    {{ resource.description|default:"No description added." }}
+                </p>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+            <div class="flex gap-2">
+
+                {% if resource.file or resource.external_url %}
+
+                    <a
+                        href="{% url 'resource:download' resource.pk %}"
+                        class="primary-btn">
+
+                        <i data-lucide="download"></i>
+                        Open / Download
+
+                    </a>
+
+                {% endif %}
+
+
+                {% if request.user == resource.uploaded_by or request.user.is_staff %}
+
+                    <a
+                        href="{% url 'resource:edit' resource.pk %}"
+                        class="secondary-btn"
+                        title="Edit Resource">
+
+                        <i data-lucide="pencil"></i>
+
+                    </a>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- STATS -->
+        <div class="detail-stats">
+
+            <!-- UPLOADED BY -->
+            <div>
+
+                <span>
+                    Uploaded By
+                </span>
+
+                <strong>
+
+                    {% if resource.uploaded_by %}
+
+                        {% if resource.uploaded_by.get_full_name %}
+                            {{ resource.uploaded_by.get_full_name }}
+                        {% elif resource.uploaded_by.username %}
+                            {{ resource.uploaded_by.username }}
+                        {% else %}
+                            Unknown User
+                        {% endif %}
+
+                    {% else %}
+
+                        Unknown User
+
+                    {% endif %}
+
+                </strong>
+
+            </div>
+
+
+            <!-- VIEWS -->
+            <div>
+
+                <span>
+                    Views
+                </span>
+
+                <strong>
+                    {{ resource.views|default:"0" }}
+                </strong>
+
+            </div>
+
+
+            <!-- DOWNLOADS -->
+            <div>
+
+                <span>
+                    Downloads
+                </span>
+
+                <strong>
+                    {{ resource.downloads|default:"0" }}
+                </strong>
+
+            </div>
+
+
+            <!-- FILE TYPE -->
+            <div>
+
+                <span>
+                    File Type
+                </span>
+
+                <strong>
+
+                    {% if resource.file_extension %}
+                        {{ resource.file_extension|upper }}
+                    {% elif resource.external_url %}
+                        LINK
+                    {% else %}
+                        -
+                    {% endif %}
+
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- FILE PREVIEW -->
+        {% if resource.file %}
+
+            <div class="preview-box">
+
+                <i
+                    data-lucide="file-check-2"
+                    class="w-10 h-10 text-violet-500">
+                </i>
+
+                <div>
+
+                    <p class="font-semibold">
+                        File ready
+                    </p>
+
+                    <p class="text-xs text-slate-500 break-all">
+                        {{ resource.file.name }}
+                    </p>
+
+                </div>
+
+            </div>
+
+
+        {% elif resource.external_url %}
+
+            <div class="preview-box">
+
+                <i
+                    data-lucide="external-link"
+                    class="w-10 h-10 text-violet-500">
+                </i>
+
+                <div>
+
+                    <p class="font-semibold">
+                        External resource
+                    </p>
+
+                    <p class="text-xs text-slate-500 break-all">
+                        {{ resource.external_url }}
+                    </p>
+
+                </div>
+
+            </div>
+
+        {% endif %}
+
+
+        <!-- COMMENTS BUTTON -->
+        <div class="mt-6 pt-5 border-t border-slate-100">
+
+            <a
+                href="{% url 'resource:comments' resource.pk %}"
+                class="primary-btn">
+
+                <i data-lucide="message-circle"></i>
+                View Comments
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

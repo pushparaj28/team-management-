@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} | CollabPulse{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-6">
+        <a href="{% url 'resource:list' %}" class="back-link">
+            <i data-lucide="arrow-left"></i> Back to Resources
+        </a>
+        <h1 class="page-title mt-4">{{ page_title }}</h1>
+        <p class="page-subtitle">Add documents, technical files, designs, links or media to the team workspace.</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="form-card">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="form-error mb-5">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-grid">
+            <div class="form-field full">
+                <label>Resource Name</label>
+                {{ form.title }}
+                {% for error in form.title.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+            </div>
+
+            <div class="form-field full">
+                <label>Description</label>
+                {{ form.description }}
+                {% for error in form.description.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+            </div>
+
+            <div class="form-field">
+                <label>Category</label>
+                {{ form.category }}
+            </div>
+
+            <div class="form-field">
+                <label>External URL <span class="optional">(optional if file is uploaded)</span></label>
+                {{ form.external_url }}
+            </div>
+
+            <div class="form-field full">
+                <label>Upload File <span class="optional">(optional if URL is provided)</span></label>
+                <div class="upload-zone">
+                    {{ form.file }}
+                    <div class="upload-content">
+                        <i data-lucide="cloud-upload" class="w-8 h-8 mx-auto mb-2 text-violet-500"></i>
+                        <p class="font-medium">Choose a file to upload</p>
+                        <p class="text-xs text-slate-400 mt-1">PDF, SQL, PNG, XLSX, MP4 and more</p>
+                    </div>
+                </div>
+                {% for error in form.file.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-7 pt-5 border-t border-slate-100">
+            <a href="{% url 'resource:list' %}" class="secondary-btn">Cancel</a>
+            <button type="submit" class="primary-btn">{{ submit_text }}</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
