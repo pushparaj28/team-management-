@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Comments | {{ resource.title }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+<a href="{% url 'resource:detail' resource.pk %}" class="back-link">← Back to Resource</a>
+<div class="mt-5"><h1 class="page-title">Comments</h1><p class="page-subtitle">{{ resource.title }}</p></div>
+<div class="detail-card mt-6">
+{% if request.user.is_authenticated %}
+<form class="comment-form" method="post" action="{% url 'resource:add_comment' resource.pk %}" data-ajax-comment="true">{% csrf_token %}{{ comment_form.text }}<div class="flex justify-end mt-2"><button type="submit" class="primary-btn">Post Comment</button></div></form>
+{% else %}<div class="login-comment-box">Login to join the discussion.</div>{% endif %}
+<div id="commentsList" class="mt-6">
+{% for comment in comments %}
+<div class="comment-row" data-comment-id="{{ comment.id }}"><div class="comment-avatar">{{ comment.user.get_full_name|default:comment.user.username|slice:":1"|upper }}</div><div class="flex-1"><div class="flex justify-between"><strong class="text-sm">{{ comment.user.get_full_name|default:comment.user.username }}</strong><span class="text-[10px] text-slate-400">{{ comment.created_at|timesince }} ago</span></div><p class="text-sm text-slate-600 mt-2 whitespace-pre-wrap">{{ comment.text }}</p>{% if request.user == comment.user or request.user.is_staff %}<button class="delete-comment text-xs text-red-500 mt-2" data-url="{% url 'resources:delete_comment' comment.pk %}">Delete</button>{% endif %}</div></div>
+{% empty %}<div id="emptyComments" class="empty-comments">No comments yet. Start the discussion.</div>{% endfor %}
+</div></div></div>
+{% endblock %}
