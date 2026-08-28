@@ -5,6 +5,7 @@ app_name = 'tasks'
 
 urlpatterns = [
     path('overview/', views.overview, name='overview'),
+    path('api/overview-data/', views.overview_data_api, name='overview_data_api'),
     path('', views.dashboard, name='dashboard'),
     path('kanban/', views.kanban_board, name='kanban'),
     path('task/<int:pk>/', views.task_detail, name='task_detail'),
@@ -19,4 +20,5 @@ urlpatterns = [
     path('leaves/new/', views.leave_request_create, name='leave_request_create'),
     path('leaves/<int:pk>/review/', views.leave_review, name='leave_review'),
     path('calendar/', views.calendar_view, name='calendar'),
+    path('calendar/event/new/', views.event_create, name='event_create'),
 ]

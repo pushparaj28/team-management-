@@ -64,6 +64,39 @@
       <p class="text-xs text-gray-500 mt-4">Overdue</p>
       <p class="text-3xl font-bold {% if overdue_count > 0 %}text-rose-600{% else %}text-gray-800{% endif %} mt-1">{{ overdue_count }}</p>
     </a>
+
+    {% if request.user.is_superuser %}
+    <a href="{% url 'accounts:managers_list' %}" class="group bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div class="flex items-center justify-between">
+        <div class="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+          <i class="fas fa-user-tie text-indigo-500"></i>
+        </div>
+        <i class="fas fa-arrow-right text-gray-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all text-xs"></i>
+      </div>
+      <p class="text-xs text-gray-500 mt-4">Total managers</p>
+      <p class="text-3xl font-bold text-gray-800 mt-1">{{ total_managers }}</p>
+    </a>
+
+    <a href="{% url 'accounts:employees_list' %}" class="group bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div class="flex items-center justify-between">
+        <div class="w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center">
+          <i class="fas fa-users text-cyan-500"></i>
+        </div>
+        <i class="fas fa-arrow-right text-gray-300 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all text-xs"></i>
+      </div>
+      <p class="text-xs text-gray-500 mt-4">Total employees</p>
+      <p class="text-3xl font-bold text-gray-800 mt-1">{{ total_employees }}</p>
+    </a>
+    {% elif can_manage %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div class="w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center">
+        <i class="fas fa-users text-cyan-500"></i>
+      </div>
+      <p class="text-xs text-gray-500 mt-4">My employees</p>
+      <p class="text-3xl font-bold text-gray-800 mt-1">{{ total_employees }}</p>
+    </div>
+    {% endif %}
+
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

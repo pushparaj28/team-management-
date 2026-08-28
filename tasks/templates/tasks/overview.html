@@ -28,10 +28,26 @@
         <option value="{{ code }}" {% if selected_department == code %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
+      <select id="filter_status" class="border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 bg-white">
+        <option value="">All statuses</option>
+        {% for code, label in status_choices %}<option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
 
-      <button type="submit" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
-        Apply
-      </button>
+      <select id="filter_priority" class="border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 bg-white">
+        <option value="">All priorities</option>
+        {% for code, label in priority_choices %}<option value="{{ code }}" {% if selected_priority == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+
+      <select id="filter_assignee" class="border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 bg-white">
+        <option value="">All assignees</option>
+        {% for u in assignee_choices %}<option value="{{ u.id }}" {% if selected_assignee == u.id|stringformat:"s" %}selected{% endif %}>{{ u.username }}</option>{% endfor %}
+      </select>
+
+      <select id="filter_milestone" class="border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 bg-white">
+        <option value="">All milestones</option>
+        {% for m in milestone_choices %}<option value="{{ m.id }}" {% if selected_milestone == m.id|stringformat:"s" %}selected{% endif %}>{{ m.title }}</option>{% endfor %}
+      </select>
+      <button type="button" onclick="applyOverviewFilters()" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-xs font-semibold px-4 py-2 rounded-lg transition">Apply</button>
     </form>
   </div>
 
@@ -113,7 +129,7 @@ function onRangeChange() {
   document.getElementById('customRangeFields').classList.toggle('hidden', val !== 'custom');
 }
 
-new Chart(document.getElementById('taskChart'), {
+window.taskChartInstance = new Chart(document.getElementById('taskChart'), {
   type: 'line',
   data: {
     labels: {{ chart_labels|safe }},
@@ -130,7 +146,7 @@ new Chart(document.getElementById('taskChart'), {
   }
 });
 
-new Chart(document.getElementById('projectChart'), {
+window.projectChartInstance = new Chart(document.getElementById('projectChart'), {
   type: 'doughnut',
   data: {
     labels: [{% for k in milestone_counts.keys %}'{{ k }}',{% endfor %}],
@@ -148,4 +164,5 @@ new Chart(document.getElementById('teamChart'), {
   options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
 });
 </script>
+
 {% endblock %}
