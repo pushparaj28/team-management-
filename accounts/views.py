@@ -382,3 +382,70 @@ def add_user(request):
 
     # Agar GET request hai, toh form dikhao
     return render(request, 'accounts/add_user.html')
+
+
+@login_required
+def my_team_view(request):
+    # 🟢 UPDATE: __iexact lagane se 'Manager', 'manager', 'MANAGER' sab filter ho jayenge
+    managers = User.objects.filter(profile__role__iexact='manager').select_related('profile')
+    
+    # 🟢 DEBUG LINE: Terminal me print karega ki kitne manager mile
+    print(f"==== DEBUG: MY TEAM ME {managers.count()} MANAGERS MILE ====")
+    
+    manager_data = []
+    for manager in managers:
+        employees = User.objects.filter(profile__manager=manager)
+        manager_data.append({
+            'manager': manager,
+            'report_count': employees.count(),
+            'employees': employees,
+        })
+
+    context = {
+        'manager_data': manager_data,
+        'page_title': 'My Team',
+    }
+    return render(request, 'accounts/my_team.html', context)
+
+
+@login_required
+def manager_roster_view(request):
+    if request.user.profile.role != 'manager' and not request.user.is_superuser:
+        messages.error(request, "Access Denied: Only managers have a squad.")
+        return redirect('tasks:dashboard')
+
+    # Current Manager ke employees
+    my_squad = User.objects.filter(profile__manager=request.user).select_related('profile')
+    
+    # 🟢 NEW: Wo employees jinka abhi koi manager nahi hai (Add karne ke liye)
+    available_employees = User.objects.filter(profile__role__iexact='employee', profile__manager__isnull=True)
+
+    context = {
+        'my_squad': my_squad,
+        'squad_count': my_squad.count(),
+        'available_employees': available_employees,
+        'page_title': 'My Squad',
+    }
+    return render(request, 'accounts/manager_roster.html', context)
+
+# 🟢 NEW: Employee ko squad me Add karne ka logic
+@login_required
+def add_to_squad(request):
+    if request.method == 'POST':
+        emp_id = request.POST.get('employee_id')
+        if emp_id:
+            emp = get_object_or_404(User, id=emp_id)
+            emp.profile.manager = request.user
+            emp.profile.save()
+            messages.success(request, f"{emp.first_name} has been added to your squad!")
+    return redirect('accounts:manager_roster')
+
+# 🟢 NEW: Employee ko squad se Remove karne ka logic
+@login_required
+def remove_from_squad(request, emp_id):
+    emp = get_object_or_404(User, id=emp_id)
+    if emp.profile.manager == request.user:
+        emp.profile.manager = None
+        emp.profile.save()
+        messages.success(request, f"{emp.first_name} was removed from your squad.")
+    return redirect('accounts:manager_roster')
