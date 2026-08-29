@@ -19,6 +19,59 @@
             transition: width 0.3s ease, margin 0.3s ease;
             overflow-x: hidden;
         }
+
+        /* ============================================================
+        DARK THEME OVERRIDES
+        Tailwind's dark: prefix only works on classes explicitly
+        written as dark:*, and none of our templates have those yet.
+        Rather than editing every single template, this block
+        re-targets the common utility classes we already use
+        everywhere (bg-white, text-gray-*, border-gray-*, form
+        inputs, tables) whenever the <html> element has the "dark"
+        class. This keeps light mode completely untouched.
+        ============================================================ */
+
+        .dark body { background-color: #0f172a; }
+        .dark main, .dark .bg-gray-50, .dark .bg-gray-50\/50, .dark .bg-gray-50\/60 {
+            background-color: #0f172a !important;
+        }
+
+        .dark .bg-white { background-color: #1e293b !important; }
+        .dark .bg-gray-50\/70 { background-color: #16213a !important; }
+
+        .dark .border-gray-100, .dark .border-gray-200, .dark .divide-gray-50, .dark .divide-gray-100 {
+            border-color: #334155 !important;
+        }
+
+        .dark .text-gray-800, .dark .text-gray-900 { color: #f1f5f9 !important; }
+        .dark .text-gray-700 { color: #e2e8f0 !important; }
+        .dark .text-gray-600 { color: #cbd5e1 !important; }
+        .dark .text-gray-500 { color: #94a3b8 !important; }
+        .dark .text-gray-400 { color: #64748b !important; }
+
+        .dark input, .dark select, .dark textarea {
+            background-color: #1e293b !important;
+            color: #e2e8f0 !important;
+            border-color: #334155 !important;
+        }
+        .dark input::placeholder, .dark textarea::placeholder { color: #64748b !important; }
+
+        .dark table thead tr { background-color: #0f172a !important; }
+        .dark tbody tr:hover { background-color: #16213a !important; }
+
+        .dark .shadow-sm, .dark .shadow-md { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }
+
+        /* Colored badge backgrounds (bg-emerald-50/100, bg-rose-50/100, etc.)
+        stay saturated but get a translucent dark-safe treatment so
+        text inside them stays readable */
+        .dark [class*="bg-emerald-50"], .dark [class*="bg-emerald-100"] { background-color: rgba(16,185,129,0.15) !important; }
+        .dark [class*="bg-rose-50"], .dark [class*="bg-rose-100"] { background-color: rgba(244,63,94,0.15) !important; }
+        .dark [class*="bg-amber-50"], .dark [class*="bg-amber-100"] { background-color: rgba(245,158,11,0.15) !important; }
+        .dark [class*="bg-blue-50"], .dark [class*="bg-blue-100"] { background-color: rgba(59,130,246,0.15) !important; }
+        .dark [class*="bg-indigo-50"], .dark [class*="bg-indigo-100"] { background-color: rgba(99,102,241,0.15) !important; }
+        .dark [class*="bg-[#fdf1e4]"] { background-color: rgba(122,38,86,0.15) !important; }
+
+        .dark footer { background-color: #1e293b !important; border-color: #334155 !important; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -220,16 +273,14 @@
             {% include 'includes/role_switcher.html' %}
             <!-- Dark/Light Mode Toggle -->
             <!-- Single Click Theme Toggle Button -->
-            <button onclick="toggleTheme()"
-                class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-700 rounded-full p-1 border border-gray-200 dark:border-slate-600 cursor-pointer transition-colors">
-                <div id="light-btn"
-                    class="p-1.5 bg-white rounded-full shadow-sm text-teal-500 w-8 h-8 flex items-center justify-center transition-all">
-                    <i class="fas fa-sun"></i>
-                </div>
-                <div id="dark-btn" class="p-1.5 text-gray-400 w-8 h-8 flex items-center justify-center transition-all">
-                    <i class="fas fa-moon"></i>
-                </div>
-            </button>
+            <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 border border-gray-200 dark:border-slate-700">
+                <button id="lightThemeBtn" onclick="setTheme('light')"
+                    class="p-1.5 rounded-full w-8 h-8 flex items-center justify-center transition-colors"><i
+                        class="fas fa-sun"></i></button>
+                <button id="darkThemeBtn" onclick="setTheme('dark')"
+                    class="p-1.5 rounded-full w-8 h-8 flex items-center justify-center transition-colors"><i
+                        class="fas fa-moon"></i></button>
+            </div>
 
             <button class="relative text-gray-500 hover:text-gray-700 transition-colors">
                 <i class="far fa-bell text-xl"></i>
@@ -364,46 +415,71 @@
 
     // 🟢 2. Purana setTheme function (Thode naye dark colors ke sath)
     function setTheme(mode) {
-        const lightBtn = document.getElementById('light-btn');
-        const darkBtn = document.getElementById('dark-btn');
-
-        if (mode === 'dark') {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-
-            // Dark mode me Moon icon ko highlight karo
-            if (darkBtn && lightBtn) {
-                darkBtn.className = "p-1.5 bg-slate-600 rounded-full shadow-sm text-teal-400 w-8 h-8 flex items-center justify-center transition-all";
-                lightBtn.className = "p-1.5 text-gray-400 w-8 h-8 flex items-center justify-center transition-all text-gray-500";
-            }
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-
-            // Light mode me Sun icon ko highlight karo
-            if (darkBtn && lightBtn) {
-                lightBtn.className = "p-1.5 bg-white rounded-full shadow-sm text-teal-500 w-8 h-8 flex items-center justify-center transition-all";
-                darkBtn.className = "p-1.5 text-gray-400 w-8 h-8 flex items-center justify-center transition-all";
-            }
-        }
+        document.documentElement.classList.toggle('dark', mode === 'dark');
+        localStorage.setItem('theme', mode);
+        applyChartTheme(mode);
+        updateThemeToggleUI(mode);
     }
 
-    // 4. Page Load Events (Theme Load & Toast Fade)
-    document.addEventListener("DOMContentLoaded", function () {
-        // A. Purana theme yaad rakhna aur apply karna
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        setTheme(savedTheme);
+    // Highlights whichever icon (sun/moon) matches the ACTUAL current
+    // theme, instead of the old version where sun was always styled
+    // "active" no matter which mode was really on.
+    function updateThemeToggleUI(mode) {
+        const lightBtn = document.getElementById('lightThemeBtn');
+        const darkBtn = document.getElementById('darkThemeBtn');
+        if (!lightBtn || !darkBtn) return;
 
-        // B. Toast Message Auto-hide Logic
-        setTimeout(() => {
-            const toasts = document.querySelectorAll('.toast-message');
-            toasts.forEach(toast => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100%)';
-                setTimeout(() => toast.remove(), 300);
-            });
-        }, 4000);
-    });
+        const activeClasses = ['bg-white', 'shadow-sm', 'text-amber-500'];
+        const inactiveClasses = ['text-gray-400', 'hover:text-gray-600'];
+        const darkActiveClasses = ['bg-slate-700', 'shadow-sm', 'text-indigo-300'];
+
+        lightBtn.className = 'p-1.5 rounded-full w-8 h-8 flex items-center justify-center transition-colors ' +
+            (mode === 'light' ? activeClasses.join(' ') : inactiveClasses.join(' '));
+        darkBtn.className = 'p-1.5 rounded-full w-8 h-8 flex items-center justify-center transition-colors ' +
+            (mode === 'dark' ? darkActiveClasses.join(' ') : inactiveClasses.join(' '));
+    }
+
+    // Keeps any Chart.js instances on the current page readable in
+    // dark mode — canvas text isn't touched by CSS, so this updates
+    // axis labels, legend text, and gridlines directly via Chart.js's
+    // own API whenever the theme is switched.
+    function applyChartTheme(mode) {
+        if (typeof Chart === 'undefined') return;
+        const textColor = mode === 'dark' ? '#cbd5e1' : '#374151';
+        const gridColor = mode === 'dark' ? '#334155' : '#e5e7eb';
+
+        [window.taskChartInstance, window.projectChartInstance, window.teamChartInstance].forEach(chart => {
+            if (!chart) return;
+            try {
+                if (chart.options.plugins && chart.options.plugins.legend) {
+                    chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
+                    chart.options.plugins.legend.labels.color = textColor;
+                }
+                if (chart.options.scales) {
+                    Object.values(chart.options.scales).forEach(scale => {
+                        scale.ticks = scale.ticks || {};
+                        scale.ticks.color = textColor;
+                        scale.grid = scale.grid || {};
+                        scale.grid.color = gridColor;
+                    });
+                }
+                chart.update();
+            } catch (err) {
+                console.error('Chart theme update failed:', err);
+            }
+        });
+    }
+
+    // Auto-apply theme on page load
+    (function () {
+        const saved = localStorage.getItem('theme') || 'light';
+        if (saved === 'dark') {
+            document.documentElement.classList.add('dark');
+        }
+        document.addEventListener('DOMContentLoaded', () => updateThemeToggleUI(saved));
+    })();
+
+ 
 
     // 🟢 Resources Dropdown Toggle Logic
     function toggleResourceMenu() {
@@ -424,7 +500,11 @@
 
 </script>
 
-{% block scripts %}{% endblock %}
+{% block scripts %}
+
+
+
+{% endblock %}
 </body>
 
 </html>

@@ -13,6 +13,8 @@ from .forms import UserUpdateForm
 from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Q
 from django.core.paginator import Paginator
+from tasks.models import Task
+from django.utils import timezone
 
 
 def register_user(request):
@@ -267,6 +269,52 @@ def edit_manager(request, user_id):
         'profile': profile
     }
     return render(request, 'accounts/edit_manager.html', context)
+
+@login_required
+def manager_detail(request, user_id):
+    # Admin-only — enforced at the backend, not just hidden in UI
+    if not (request.user.is_superuser or request.session.get('is_original_admin')):
+        messages.error(request, "Aapko permission nahi hai.")
+        return redirect('tasks:dashboard')
+
+    manager_obj = get_object_or_404(User, id=user_id)
+    manager_profile = get_object_or_404(UserProfile, user=manager_obj, role='manager')
+
+    team_profiles = UserProfile.objects.filter(manager=manager_obj, role='employee').select_related('user')
+
+    # KPI cards — all computed from real data
+    total_employees = team_profiles.count()
+    active_employees = team_profiles.filter(user__is_active=True).count()
+
+    team_user_ids = team_profiles.values_list('user_id', flat=True)
+    team_tasks = Task.objects.filter(assigned_to_id__in=team_user_ids)
+    total_tasks = team_tasks.count()
+    completed_tasks = team_tasks.filter(status='Done').count()
+    completion_rate = round((completed_tasks / total_tasks) * 100) if total_tasks else 0
+    overdue_tasks = team_tasks.filter(due_date__lt=timezone.localdate()).exclude(status='Done').count()
+
+    # Last login is the closest real signal we have to "recent activity"
+    # — there's no session-duration tracking in this project, so we
+    # show recency rather than a fabricated "average time active".
+    last_login_display = manager_obj.last_login.strftime('%b %d, %Y %I:%M %p') if manager_obj.last_login else 'Never logged in'
+
+    # Pagination — 8 employees per page
+    paginator = Paginator(team_profiles.order_by('user__first_name'), 8)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    context = {
+        'manager': manager_obj,
+        'manager_profile': manager_profile,
+        'total_employees': total_employees,
+        'active_employees': active_employees,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'completion_rate': completion_rate,
+        'overdue_tasks': overdue_tasks,
+        'last_login_display': last_login_display,
+        'page_obj': page_obj,
+    }
+    return render(request, 'accounts/manager_detail.html', context)
 
 def employees_list(request):
     # 1. Sirf 'employee' role wale users nikalenge
