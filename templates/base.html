@@ -112,14 +112,7 @@
         </a>
            
 
-        
-  <!-- 🟢 Fixed My Team Link (Corrected URL Name) -->
-        {% if request.user.is_superuser %}
-        <a href="{% url 'accounts:my_team' %}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if '/my-team/' in request.path %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-            <i class="fas fa-users text-lg w-8 text-center flex-shrink-0"></i>
-            <span class="sidebar-text ml-2">My Team</span>
-        </a>
-        {% endif %}
+    
 
 
 

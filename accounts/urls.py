@@ -11,7 +11,7 @@ urlpatterns = [
     path('edit-profile/', views.edit_profile, name='edit_profile'),
     
     # 🟢 Sirf ek My Team URL (Purana wala hata diya gaya hai)
-    path('my-team/', views.my_team_view, name='my_team'),
+    
     path('my-team/add/<int:profile_id>/', views.add_employee_to_team, name='add_employee_to_team'),
     
     path('switch-role/<str:role>/', views.switch_role, name='switch_role'),

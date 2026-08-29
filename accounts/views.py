@@ -62,6 +62,7 @@ def edit_profile(request):
 
 
 def login_user(request):
+    # 🟢 STEP 1: Sirf POST request (Form Submit ya AJAX) par check karein
     if request.method == 'POST':
         if request.headers.get('Content-Type') == 'application/json':
             data = json.loads(request.body)
@@ -71,25 +72,32 @@ def login_user(request):
             username = request.POST.get('username')
             password = request.POST.get('password')
 
-        user = authenticate(request, username=username, password=password)#Check karein ki username aur password database me match hota hai ya nahi
+        user = authenticate(request, username=username, password=password)
         
+        # 🟢 STEP 2: Agar User sahi hai (Success)
         if user is not None:
-            login(request, user) # User ko login kara diya
+            login(request, user)
             
-        if request.headers.get('Content-Type') == 'application/json':
-            return JsonResponse({
-                'status': 'success', 
-                'message': 'Login successful!', 
-                'redirect_url': '/tasks/' 
-            })
+            if request.headers.get('Content-Type') == 'application/json':
+                return JsonResponse({
+                    'status': 'success', 
+                    'message': 'Login successful!', 
+                    'redirect_url': '/tasks/' 
+                })
+                
+            return redirect('tasks:dashboard')
             
-        return redirect('tasks:dashboard')
-    else:
-            if request.headers.get('Content-Type') == 'application/json': # Agar details galat hain
+        # 🟢 STEP 3: Agar details galat hain (Failed Login)
+        else:
+            if request.headers.get('Content-Type') == 'application/json':
                 return JsonResponse({'status': 'error', 'message': 'Invalid username or password.'}, status=400)
             
+            # Form wale user ko error dikhaye aur wapas login page par bhej de
             messages.error(request, 'Invalid username or password.')
-    
+            return redirect('accounts:login') 
+
+    # 🟢 STEP 4: Agar normal page refresh ho raha hai (GET request)
+    # Yahan koi error message nahi chalega, sirf khali form dikhega
     form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form})
 
@@ -382,31 +390,6 @@ def add_user(request):
 
     # Agar GET request hai, toh form dikhao
     return render(request, 'accounts/add_user.html')
-
-
-@login_required
-def my_team_view(request):
-    # 🟢 UPDATE: __iexact lagane se 'Manager', 'manager', 'MANAGER' sab filter ho jayenge
-    managers = User.objects.filter(profile__role__iexact='manager').select_related('profile')
-    
-    # 🟢 DEBUG LINE: Terminal me print karega ki kitne manager mile
-    print(f"==== DEBUG: MY TEAM ME {managers.count()} MANAGERS MILE ====")
-    
-    manager_data = []
-    for manager in managers:
-        employees = User.objects.filter(profile__manager=manager)
-        manager_data.append({
-            'manager': manager,
-            'report_count': employees.count(),
-            'employees': employees,
-        })
-
-    context = {
-        'manager_data': manager_data,
-        'page_title': 'My Team',
-    }
-    return render(request, 'accounts/my_team.html', context)
-
 
 @login_required
 def manager_roster_view(request):
