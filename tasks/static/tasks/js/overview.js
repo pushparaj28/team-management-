@@ -26,9 +26,20 @@
             } catch (error) {
                 console.warn(`Could not destroy ${name}`, error);
             }
-
             window[name] = null;
         }
+    }
+
+    // ✅ FIX: theme chart create hone se PEHLE hi padh lo, taaki chart
+    // sahi colors ke saath ek hi baar me bane — dobara applyChartTheme()
+    // se update() na chalana pade (jo flicker/disappear ka कारण tha)
+    function getThemeColors() {
+        const mode = localStorage.getItem('theme') || 'light';
+        return {
+            mode: mode,
+            textColor: mode === 'dark' ? '#cbd5e1' : '#374151',
+            gridColor: mode === 'dark' ? '#334155' : '#e5e7eb'
+        };
     }
 
     function createTaskChart() {
@@ -43,15 +54,14 @@
         const completed = getJsonData('completed-series-data');
         const inProgress = getJsonData('in-progress-series-data');
         const overdue = getJsonData('overdue-series-data');
+        const theme = getThemeColors();
 
         destroyChart('taskChartInstance');
 
         window.taskChartInstance = new Chart(canvas, {
             type: 'line',
-
             data: {
                 labels: labels,
-
                 datasets: [
                     {
                         label: 'Completed',
@@ -88,64 +98,50 @@
                     }
                 ]
             },
-
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-
                 interaction: {
                     intersect: false,
                     mode: 'index'
                 },
-
                 plugins: {
                     legend: {
                         position: 'bottom',
-
                         labels: {
                             boxWidth: 10,
                             boxHeight: 10,
                             padding: 15,
-                            font: {
-                                size: 11
-                            }
+                            font: { size: 11 },
+                            color: theme.textColor
                         }
                     },
-
                     tooltip: {
                         mode: 'index',
                         intersect: false
                     }
                 },
-
                 scales: {
                     x: {
-                        ticks: {
-                            font: {
-                                size: 10
-                            }
-                        },
-
-                        grid: {
-                            display: false
-                        }
+                        ticks: { font: { size: 10 }, color: theme.textColor },
+                        grid: { display: false }
                     },
-
                     y: {
                         beginAtZero: true,
-
                         ticks: {
                             precision: 0,
-                            font: {
-                                size: 10
-                            }
-                        }
+                            font: { size: 10 },
+                            color: theme.textColor
+                        },
+                        grid: { color: theme.gridColor }
                     }
                 }
             }
         });
-    }
 
+        // Ek hi update — chart ab sahi theme ke saath already ban chuka hai
+        window.taskChartInstance.update();
+    }
 
     function createProjectChart() {
         const canvas = document.getElementById('projectChart');
@@ -156,62 +152,49 @@
         }
 
         const milestoneCounts = getJsonData('milestone-counts-data', {});
-
         const labels = Object.keys(milestoneCounts);
         const values = Object.values(milestoneCounts);
+        const theme = getThemeColors();
 
         destroyChart('projectChartInstance');
 
         window.projectChartInstance = new Chart(canvas, {
             type: 'doughnut',
-
             data: {
                 labels: labels,
-
                 datasets: [
                     {
                         data: values,
-
                         backgroundColor: [
-                            '#10b981',
-                            '#3b82f6',
-                            '#f59e0b',
-                            '#8b5cf6',
-                            '#ef4444',
-                            '#06b6d4'
+                            '#10b981', '#3b82f6', '#f59e0b',
+                            '#8b5cf6', '#ef4444', '#06b6d4'
                         ],
-
                         borderWidth: 0,
-
                         hoverOffset: 6
                     }
                 ]
             },
-
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-
                 cutout: '65%',
-
                 plugins: {
                     legend: {
                         position: 'bottom',
-
                         labels: {
                             boxWidth: 10,
                             boxHeight: 10,
                             padding: 12,
-                            font: {
-                                size: 11
-                            }
+                            font: { size: 11 },
+                            color: theme.textColor
                         }
                     }
                 }
             }
         });
-    }
 
+        window.projectChartInstance.update();
+    }
 
     function createTeamChart() {
         const canvas = document.getElementById('teamChart');
@@ -222,114 +205,79 @@
         }
 
         const teamData = getJsonData('team-distribution-data', []);
+        const theme = getThemeColors();
 
         destroyChart('teamChartInstance');
-
-        /*
-         * Expected backend format:
-         *
-         * [
-         *     {"label": "Development", "value": 4},
-         *     {"label": "Design", "value": 2},
-         *     {"label": "Marketing", "value": 3}
-         * ]
-         */
 
         const labels = teamData.map(item => item.label);
         const values = teamData.map(item => item.value);
 
         window.teamChartInstance = new Chart(canvas, {
             type: 'doughnut',
-
             data: {
                 labels: labels,
-
                 datasets: [
                     {
                         data: values,
-
                         backgroundColor: [
-                            '#3b82f6',
-                            '#8b5cf6',
-                            '#10b981',
-                            '#f59e0b',
-                            '#f43f5e',
-                            '#06b6d4'
+                            '#3b82f6', '#8b5cf6', '#10b981',
+                            '#f59e0b', '#f43f5e', '#06b6d4'
                         ],
-
                         borderWidth: 0,
-
                         hoverOffset: 6
                     }
                 ]
             },
-
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-
                 cutout: '65%',
-
                 plugins: {
                     legend: {
                         position: 'bottom',
-
                         labels: {
                             boxWidth: 10,
                             boxHeight: 10,
                             padding: 10,
-                            font: {
-                                size: 10
-                            }
+                            font: { size: 10 },
+                            color: theme.textColor
                         }
                     }
                 }
             }
         });
-    }
 
+        window.teamChartInstance.update();
+    }
 
     function initializeCharts() {
         if (typeof Chart === 'undefined') {
-            console.error(
-                'Chart.js is not loaded. Make sure the Chart.js CDN is available.'
-            );
-
+            console.error('Chart.js is not loaded. Make sure the Chart.js CDN is available.');
             return;
         }
 
-        try {
-            createTaskChart();
-        } catch (error) {
-            console.error('Task chart initialization failed:', error);
-        }
+        try { createTaskChart(); } catch (error) { console.error('Task chart initialization failed:', error); }
+        try { createProjectChart(); } catch (error) { console.error('Project chart initialization failed:', error); }
+        try { createTeamChart(); } catch (error) { console.error('Team chart initialization failed:', error); }
 
-        try {
-            createProjectChart();
-        } catch (error) {
-            console.error('Project chart initialization failed:', error);
-        }
-
-        try {
-            createTeamChart();
-        } catch (error) {
-            console.error('Team chart initialization failed:', error);
-        }
+        // Layout fully settle hone ke baad ek extra resize — safe net,
+        // isse chart.data ko haath nahi lagta, sirf sizing theek hoti hai
+        requestAnimationFrame(() => {
+            if (window.taskChartInstance) window.taskChartInstance.resize();
+            if (window.projectChartInstance) window.projectChartInstance.resize();
+            if (window.teamChartInstance) window.teamChartInstance.resize();
+        });
 
         chartsInitialized = true;
 
-        /*
-         * Re-apply the existing application's theme.
-         * This does NOT change your theme implementation.
-         */
-        if (typeof applyChartTheme === 'function') {
-            const currentTheme =
-                localStorage.getItem('theme') || 'light';
-
-            applyChartTheme(currentTheme);
-        }
+        // ✅ FIX: yahan se applyChartTheme() ka dobara call hata diya —
+        // charts ab creation ke waqt hi sahi theme colors ke saath ban
+        // chuke hain. Isliye ek extra update() nahi chalta aur data
+        // flicker/disappear nahi hota. applyChartTheme() sirf tab
+        // chalega jab USER manually theme toggle button dabayega
+        // (setTheme() ke through) — us waqt sirf colors update honge,
+        // data ko haath nahi lagega.
     }
-
 
     function waitForChartJs() {
         if (typeof Chart !== 'undefined') {
@@ -338,224 +286,101 @@
         }
 
         let attempts = 0;
-
         const interval = setInterval(() => {
             attempts++;
-
             if (typeof Chart !== 'undefined') {
                 clearInterval(interval);
                 initializeCharts();
                 return;
             }
-
             if (attempts >= 50) {
                 clearInterval(interval);
-
-                console.error(
-                    'Chart.js could not be loaded after waiting.'
-                );
+                console.error('Chart.js could not be loaded after waiting.');
             }
         }, 100);
     }
 
-
-    /*
-     * Apply overview filters
-     */
     window.applyOverviewFilters = function () {
         const params = new URLSearchParams();
 
         const range = document.getElementById('rangeSelect');
-        const department =
-            document.getElementById('filter_department');
+        const department = document.getElementById('filter_department');
+        const status = document.getElementById('filter_status');
+        const priority = document.getElementById('filter_priority');
+        const assignee = document.getElementById('filter_assignee');
+        const milestone = document.getElementById('filter_milestone');
 
-        const status =
-            document.getElementById('filter_status');
-
-        const priority =
-            document.getElementById('filter_priority');
-
-        const assignee =
-            document.getElementById('filter_assignee');
-
-        const milestone =
-            document.getElementById('filter_milestone');
-
-
-        if (range && range.value) {
-            params.set('range', range.value);
-        }
-
-        if (department && department.value) {
-            params.set('department', department.value);
-        }
-
-        if (status && status.value) {
-            params.set('status', status.value);
-        }
-
-        if (priority && priority.value) {
-            params.set('priority', priority.value);
-        }
-
-        if (assignee && assignee.value) {
-            params.set('assignee', assignee.value);
-        }
-
-        if (milestone && milestone.value) {
-            params.set('milestone', milestone.value);
-        }
-
+        if (range && range.value) params.set('range', range.value);
+        if (department && department.value) params.set('department', department.value);
+        if (status && status.value) params.set('status', status.value);
+        if (priority && priority.value) params.set('priority', priority.value);
+        if (assignee && assignee.value) params.set('assignee', assignee.value);
+        if (milestone && milestone.value) params.set('milestone', milestone.value);
 
         fetch(`/tasks/api/overview-data/?${params.toString()}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(
-                        `HTTP ${response.status}`
-                    );
-                }
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                console.error('Overview API error:', data.error);
+                return;
+            }
 
-                return response.json();
-            })
+            const kpis = {
+                kpi_total_users: data.total_users,
+                kpi_active_projects: data.active_projects,
+                kpi_in_progress: data.tasks_in_progress,
+                kpi_completed: data.tasks_completed,
+                kpi_overdue: data.overdue_tasks
+            };
 
-            .then(data => {
-
-                if (data.error) {
-                    console.error(
-                        'Overview API error:',
-                        data.error
-                    );
-
-                    return;
-                }
-
-
-                /*
-                 * Update KPI cards
-                 */
-                const kpis = {
-                    kpi_total_users: data.total_users,
-                    kpi_active_projects: data.active_projects,
-                    kpi_in_progress: data.tasks_in_progress,
-                    kpi_completed: data.tasks_completed,
-                    kpi_overdue: data.overdue_tasks
-                };
-
-                Object.entries(kpis).forEach(
-                    ([id, value]) => {
-                        const element =
-                            document.getElementById(id);
-
-                        if (element) {
-                            element.textContent = value;
-                        }
-                    }
-                );
-
-
-                /*
-                 * Update Task Chart
-                 */
-                if (window.taskChartInstance) {
-
-                    window.taskChartInstance.data.labels =
-                        data.chart_labels || [];
-
-                    window.taskChartInstance.data.datasets[0].data =
-                        data.completed_series || [];
-
-                    window.taskChartInstance.data.datasets[1].data =
-                        data.in_progress_series || [];
-
-                    window.taskChartInstance.data.datasets[2].data =
-                        data.overdue_series || [];
-
-                    window.taskChartInstance.update();
-                }
-
-
-                /*
-                 * Update Project Chart
-                 */
-                if (window.projectChartInstance) {
-
-                    const milestoneCounts =
-                        data.milestone_counts || {};
-
-                    window.projectChartInstance.data.labels =
-                        Object.keys(milestoneCounts);
-
-                    window.projectChartInstance.data.datasets[0].data =
-                        Object.values(milestoneCounts);
-
-                    window.projectChartInstance.update();
-                }
-
-
-                /*
-                 * Update Team Chart if API returns it.
-                 */
-                if (
-                    window.teamChartInstance &&
-                    Array.isArray(data.team_distribution)
-                ) {
-
-                    window.teamChartInstance.data.labels =
-                        data.team_distribution.map(
-                            item => item.label
-                        );
-
-                    window.teamChartInstance.data.datasets[0].data =
-                        data.team_distribution.map(
-                            item => item.value
-                        );
-
-                    window.teamChartInstance.update();
-                }
-
-
-                /*
-                 * Keep URL synchronized with filters.
-                 */
-                const queryString =
-                    params.toString();
-
-                window.history.replaceState(
-                    {},
-                    '',
-                    queryString
-                        ? `${window.location.pathname}?${queryString}`
-                        : window.location.pathname
-                );
-            })
-
-            .catch(error => {
-                console.error(
-                    'Failed to load overview data:',
-                    error
-                );
+            Object.entries(kpis).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = value;
             });
+
+            if (window.taskChartInstance) {
+                window.taskChartInstance.data.labels = data.chart_labels || [];
+                window.taskChartInstance.data.datasets[0].data = data.completed_series || [];
+                window.taskChartInstance.data.datasets[1].data = data.in_progress_series || [];
+                window.taskChartInstance.data.datasets[2].data = data.overdue_series || [];
+                window.taskChartInstance.update();
+            }
+
+            if (window.projectChartInstance) {
+                const milestoneCounts = data.milestone_counts || {};
+                window.projectChartInstance.data.labels = Object.keys(milestoneCounts);
+                window.projectChartInstance.data.datasets[0].data = Object.values(milestoneCounts);
+                window.projectChartInstance.update();
+            }
+
+            if (window.teamChartInstance && Array.isArray(data.team_distribution)) {
+                window.teamChartInstance.data.labels = data.team_distribution.map(item => item.label);
+                window.teamChartInstance.data.datasets[0].data = data.team_distribution.map(item => item.value);
+                window.teamChartInstance.update();
+            }
+
+            const queryString = params.toString();
+            window.history.replaceState(
+                {}, '', queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname
+            );
+        })
+        .catch(error => {
+            console.error('Failed to load overview data:', error);
+        });
     };
 
-
-    /*
-     * Range selector helper.
-     */
     window.onRangeChange = function () {
+        const range = document.getElementById('rangeSelect');
+        const customFields = document.getElementById('customRangeFields');
 
-        const range =
-            document.getElementById('rangeSelect');
-
-        const customFields =
-            document.getElementById('customRangeFields');
-
-        if (!range || !customFields) {
-            return;
-        }
+        if (!range || !customFields) return;
 
         if (range.value === 'custom') {
             customFields.classList.remove('hidden');
@@ -564,19 +389,9 @@
         }
     };
 
-
-    /*
-     * Initialize after DOM is ready.
-     */
     if (document.readyState === 'loading') {
-
-        document.addEventListener(
-            'DOMContentLoaded',
-            waitForChartJs
-        );
-
+        document.addEventListener('DOMContentLoaded', waitForChartJs);
     } else {
-
         waitForChartJs();
     }
 
