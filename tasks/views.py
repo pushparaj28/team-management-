@@ -195,11 +195,11 @@ def overview(request):
     }
 
     # ---------------- Team distribution donut (always the full picture, not date/dept scoped) ----------------
-    dept_counts = {}
+    team_distribution = []
     for code, label in UserProfile.DEPARTMENT_CHOICES:
-        count = UserProfile.objects.filter(department=code).count()
-        if count:
-            dept_counts[label] = count
+     count = UserProfile.objects.filter(department=code).count()
+    if count:
+        team_distribution.append({"label": label, "value": count})
 
     # ---------------- Recent activity, scoped to the selected range ----------------
     activity = []
@@ -227,7 +227,7 @@ def overview(request):
         'in_progress_series': in_progress_series,
         'overdue_series': overdue_series,
         'milestone_counts': milestone_counts,
-        'dept_counts': dept_counts,
+        'team_distribution': team_distribution,
         'activity': activity,
         'upcoming': upcoming,
         'today': today,
