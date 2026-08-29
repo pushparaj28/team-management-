@@ -198,7 +198,7 @@ def overview(request):
     team_distribution = []
     for code, label in UserProfile.DEPARTMENT_CHOICES:
      count = UserProfile.objects.filter(department=code).count()
-    if count:
+     if count:
         team_distribution.append({"label": label, "value": count})
 
     # ---------------- Recent activity, scoped to the selected range ----------------
