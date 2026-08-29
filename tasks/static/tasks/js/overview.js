@@ -1,34 +1,583 @@
-function applyOverviewFilters() {
-  const params = new URLSearchParams();
-  ['range', 'department', 'status', 'priority', 'assignee', 'milestone'].forEach(id => {
-    const el = document.getElementById(`filter_${id}`);
-    if (el && el.value) params.set(id, el.value);
-  });
+(function () {
+    'use strict';
 
-  fetch(`/tasks/api/overview-data/?${params.toString()}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) return;
+    let chartsInitialized = false;
 
-      document.getElementById('kpi_total_users').textContent = data.total_users;
-      document.getElementById('kpi_active_projects').textContent = data.active_projects;
-      document.getElementById('kpi_in_progress').textContent = data.tasks_in_progress;
-      document.getElementById('kpi_completed').textContent = data.tasks_completed;
-      document.getElementById('kpi_overdue').textContent = data.overdue_tasks;
+    function getJsonData(id, fallback = []) {
+        const element = document.getElementById(id);
 
-      if (window.taskChartInstance) {
-        taskChartInstance.data.labels = data.chart_labels;
-        taskChartInstance.data.datasets[0].data = data.completed_series;
-        taskChartInstance.data.datasets[1].data = data.in_progress_series;
-        taskChartInstance.data.datasets[2].data = data.overdue_series;
-        taskChartInstance.update();
-      }
-      if (window.projectChartInstance) {
-        projectChartInstance.data.labels = Object.keys(data.milestone_counts);
-        projectChartInstance.data.datasets[0].data = Object.values(data.milestone_counts);
-        projectChartInstance.update();
-      }
+        if (!element) {
+            console.warn(`Chart data element not found: ${id}`);
+            return fallback;
+        }
 
-      window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
-    });
-}
+        try {
+            return JSON.parse(element.textContent);
+        } catch (error) {
+            console.error(`Failed to parse chart data: ${id}`, error);
+            return fallback;
+        }
+    }
+
+    function destroyChart(name) {
+        if (window[name]) {
+            try {
+                window[name].destroy();
+            } catch (error) {
+                console.warn(`Could not destroy ${name}`, error);
+            }
+
+            window[name] = null;
+        }
+    }
+
+    function createTaskChart() {
+        const canvas = document.getElementById('taskChart');
+
+        if (!canvas) {
+            console.warn('Task chart canvas not found.');
+            return;
+        }
+
+        const labels = getJsonData('chart-labels-data');
+        const completed = getJsonData('completed-series-data');
+        const inProgress = getJsonData('in-progress-series-data');
+        const overdue = getJsonData('overdue-series-data');
+
+        destroyChart('taskChartInstance');
+
+        window.taskChartInstance = new Chart(canvas, {
+            type: 'line',
+
+            data: {
+                labels: labels,
+
+                datasets: [
+                    {
+                        label: 'Completed',
+                        data: completed,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.10)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        tension: 0.35,
+                        fill: true
+                    },
+                    {
+                        label: 'In Progress',
+                        data: inProgress,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.10)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        tension: 0.35,
+                        fill: true
+                    },
+                    {
+                        label: 'Overdue',
+                        data: overdue,
+                        borderColor: '#f43f5e',
+                        backgroundColor: 'rgba(244, 63, 94, 0.08)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        tension: 0.35,
+                        fill: true
+                    }
+                ]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+
+                        labels: {
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            padding: 15,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+
+                scales: {
+                    x: {
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        },
+
+                        grid: {
+                            display: false
+                        }
+                    },
+
+                    y: {
+                        beginAtZero: true,
+
+                        ticks: {
+                            precision: 0,
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    function createProjectChart() {
+        const canvas = document.getElementById('projectChart');
+
+        if (!canvas) {
+            console.warn('Project chart canvas not found.');
+            return;
+        }
+
+        const milestoneCounts = getJsonData('milestone-counts-data', {});
+
+        const labels = Object.keys(milestoneCounts);
+        const values = Object.values(milestoneCounts);
+
+        destroyChart('projectChartInstance');
+
+        window.projectChartInstance = new Chart(canvas, {
+            type: 'doughnut',
+
+            data: {
+                labels: labels,
+
+                datasets: [
+                    {
+                        data: values,
+
+                        backgroundColor: [
+                            '#10b981',
+                            '#3b82f6',
+                            '#f59e0b',
+                            '#8b5cf6',
+                            '#ef4444',
+                            '#06b6d4'
+                        ],
+
+                        borderWidth: 0,
+
+                        hoverOffset: 6
+                    }
+                ]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                cutout: '65%',
+
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+
+                        labels: {
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            padding: 12,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    function createTeamChart() {
+        const canvas = document.getElementById('teamChart');
+
+        if (!canvas) {
+            console.warn('Team chart canvas not found.');
+            return;
+        }
+
+        const teamData = getJsonData('team-distribution-data', []);
+
+        destroyChart('teamChartInstance');
+
+        /*
+         * Expected backend format:
+         *
+         * [
+         *     {"label": "Development", "value": 4},
+         *     {"label": "Design", "value": 2},
+         *     {"label": "Marketing", "value": 3}
+         * ]
+         */
+
+        const labels = teamData.map(item => item.label);
+        const values = teamData.map(item => item.value);
+
+        window.teamChartInstance = new Chart(canvas, {
+            type: 'doughnut',
+
+            data: {
+                labels: labels,
+
+                datasets: [
+                    {
+                        data: values,
+
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#8b5cf6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#f43f5e',
+                            '#06b6d4'
+                        ],
+
+                        borderWidth: 0,
+
+                        hoverOffset: 6
+                    }
+                ]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                cutout: '65%',
+
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+
+                        labels: {
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            padding: 10,
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    function initializeCharts() {
+        if (typeof Chart === 'undefined') {
+            console.error(
+                'Chart.js is not loaded. Make sure the Chart.js CDN is available.'
+            );
+
+            return;
+        }
+
+        try {
+            createTaskChart();
+        } catch (error) {
+            console.error('Task chart initialization failed:', error);
+        }
+
+        try {
+            createProjectChart();
+        } catch (error) {
+            console.error('Project chart initialization failed:', error);
+        }
+
+        try {
+            createTeamChart();
+        } catch (error) {
+            console.error('Team chart initialization failed:', error);
+        }
+
+        chartsInitialized = true;
+
+        /*
+         * Re-apply the existing application's theme.
+         * This does NOT change your theme implementation.
+         */
+        if (typeof applyChartTheme === 'function') {
+            const currentTheme =
+                localStorage.getItem('theme') || 'light';
+
+            applyChartTheme(currentTheme);
+        }
+    }
+
+
+    function waitForChartJs() {
+        if (typeof Chart !== 'undefined') {
+            initializeCharts();
+            return;
+        }
+
+        let attempts = 0;
+
+        const interval = setInterval(() => {
+            attempts++;
+
+            if (typeof Chart !== 'undefined') {
+                clearInterval(interval);
+                initializeCharts();
+                return;
+            }
+
+            if (attempts >= 50) {
+                clearInterval(interval);
+
+                console.error(
+                    'Chart.js could not be loaded after waiting.'
+                );
+            }
+        }, 100);
+    }
+
+
+    /*
+     * Apply overview filters
+     */
+    window.applyOverviewFilters = function () {
+        const params = new URLSearchParams();
+
+        const range = document.getElementById('rangeSelect');
+        const department =
+            document.getElementById('filter_department');
+
+        const status =
+            document.getElementById('filter_status');
+
+        const priority =
+            document.getElementById('filter_priority');
+
+        const assignee =
+            document.getElementById('filter_assignee');
+
+        const milestone =
+            document.getElementById('filter_milestone');
+
+
+        if (range && range.value) {
+            params.set('range', range.value);
+        }
+
+        if (department && department.value) {
+            params.set('department', department.value);
+        }
+
+        if (status && status.value) {
+            params.set('status', status.value);
+        }
+
+        if (priority && priority.value) {
+            params.set('priority', priority.value);
+        }
+
+        if (assignee && assignee.value) {
+            params.set('assignee', assignee.value);
+        }
+
+        if (milestone && milestone.value) {
+            params.set('milestone', milestone.value);
+        }
+
+
+        fetch(`/tasks/api/overview-data/?${params.toString()}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(
+                        `HTTP ${response.status}`
+                    );
+                }
+
+                return response.json();
+            })
+
+            .then(data => {
+
+                if (data.error) {
+                    console.error(
+                        'Overview API error:',
+                        data.error
+                    );
+
+                    return;
+                }
+
+
+                /*
+                 * Update KPI cards
+                 */
+                const kpis = {
+                    kpi_total_users: data.total_users,
+                    kpi_active_projects: data.active_projects,
+                    kpi_in_progress: data.tasks_in_progress,
+                    kpi_completed: data.tasks_completed,
+                    kpi_overdue: data.overdue_tasks
+                };
+
+                Object.entries(kpis).forEach(
+                    ([id, value]) => {
+                        const element =
+                            document.getElementById(id);
+
+                        if (element) {
+                            element.textContent = value;
+                        }
+                    }
+                );
+
+
+                /*
+                 * Update Task Chart
+                 */
+                if (window.taskChartInstance) {
+
+                    window.taskChartInstance.data.labels =
+                        data.chart_labels || [];
+
+                    window.taskChartInstance.data.datasets[0].data =
+                        data.completed_series || [];
+
+                    window.taskChartInstance.data.datasets[1].data =
+                        data.in_progress_series || [];
+
+                    window.taskChartInstance.data.datasets[2].data =
+                        data.overdue_series || [];
+
+                    window.taskChartInstance.update();
+                }
+
+
+                /*
+                 * Update Project Chart
+                 */
+                if (window.projectChartInstance) {
+
+                    const milestoneCounts =
+                        data.milestone_counts || {};
+
+                    window.projectChartInstance.data.labels =
+                        Object.keys(milestoneCounts);
+
+                    window.projectChartInstance.data.datasets[0].data =
+                        Object.values(milestoneCounts);
+
+                    window.projectChartInstance.update();
+                }
+
+
+                /*
+                 * Update Team Chart if API returns it.
+                 */
+                if (
+                    window.teamChartInstance &&
+                    Array.isArray(data.team_distribution)
+                ) {
+
+                    window.teamChartInstance.data.labels =
+                        data.team_distribution.map(
+                            item => item.label
+                        );
+
+                    window.teamChartInstance.data.datasets[0].data =
+                        data.team_distribution.map(
+                            item => item.value
+                        );
+
+                    window.teamChartInstance.update();
+                }
+
+
+                /*
+                 * Keep URL synchronized with filters.
+                 */
+                const queryString =
+                    params.toString();
+
+                window.history.replaceState(
+                    {},
+                    '',
+                    queryString
+                        ? `${window.location.pathname}?${queryString}`
+                        : window.location.pathname
+                );
+            })
+
+            .catch(error => {
+                console.error(
+                    'Failed to load overview data:',
+                    error
+                );
+            });
+    };
+
+
+    /*
+     * Range selector helper.
+     */
+    window.onRangeChange = function () {
+
+        const range =
+            document.getElementById('rangeSelect');
+
+        const customFields =
+            document.getElementById('customRangeFields');
+
+        if (!range || !customFields) {
+            return;
+        }
+
+        if (range.value === 'custom') {
+            customFields.classList.remove('hidden');
+        } else {
+            customFields.classList.add('hidden');
+        }
+    };
+
+
+    /*
+     * Initialize after DOM is ready.
+     */
+    if (document.readyState === 'loading') {
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            waitForChartJs
+        );
+
+    } else {
+
+        waitForChartJs();
+    }
+
+})();

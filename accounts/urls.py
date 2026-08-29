@@ -20,6 +20,7 @@ urlpatterns = [
     path('toggle-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
     path('delete-user/<int:user_id>/', views.delete_user, name='delete_user'),
     path('edit-manager/<int:user_id>/', views.edit_manager, name='edit_manager'),
+    path('managers/<int:user_id>/', views.manager_detail, name='manager_detail'),
 
     path('employees/', views.employees_list, name='employees_list'),
     path('edit-employee/<int:user_id>/', views.edit_employee, name='edit_employee'),
