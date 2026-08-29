@@ -23,9 +23,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 
-<body
-    class="bg-slate-50 dark:bg-slate-900 text-gray-800 dark:text-gray-100 flex h-screen overflow-hidden transition-colors duration-200">
-</body>
+<body class="bg-slate-50 dark:bg-slate-900 text-gray-800 dark:text-gray-100 flex h-screen overflow-hidden transition-colors duration-200">
 {% if request.user.is_authenticated %}
 <!-- ================= SIDEBAR (Now with Mini-Sidebar Logic) ================= -->
 <aside id="app-sidebar"
@@ -90,18 +88,15 @@
             {% endif %}
         </div>
 
-
-        <!-- 🟢 My Team (Manager) -->
+<!-- 🟢 Manager's Personal Team Page -->
         {% if request.user.profile.role == 'manager' %}
-        {% url 'accounts:manager_dashboard' as my_team_url %}
-        <a href="{{ my_team_url }}"
-            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == my_team_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-            <i class="fas fa-user-tie text-lg w-8 text-center flex-shrink-0"></i>
-            <span class="sidebar-text ml-2">My Team</span>
+        <a href="{% url 'accounts:manager_roster' %}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if '/my-squad/' in request.path %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-user-shield text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">My_Team</span>
         </a>
         {% endif %}
 
-        <!-- Tasks (Kanban) -->
+<!-- Tasks (Kanban) -->
         {% url 'tasks:kanban' as kanban_url %}
         <a href="{{ kanban_url }}"
             class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == kanban_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
@@ -115,7 +110,19 @@
             <i class="fas fa-calendar-days text-lg w-8 text-center flex-shrink-0"></i>
             <span class="sidebar-text ml-2">Calendar</span>
         </a>
-         
+           
+
+        
+  <!-- 🟢 Fixed My Team Link (Corrected URL Name) -->
+        {% if request.user.is_superuser %}
+        <a href="{% url 'accounts:my_team' %}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if '/my-team/' in request.path %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-users text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">My Team</span>
+        </a>
+        {% endif %}
+
+
+
 <!-- 🟢 RESOURCES HOVER DROPDOWN SECTION (Without Arrow) -->
 <div class="mb-1 group">
     
