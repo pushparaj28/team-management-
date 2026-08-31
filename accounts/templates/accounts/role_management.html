@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="p-6 bg-gray-50 min-h-screen">
+
+    <!-- Header & Button -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Role Management</h1>
+            <p class="text-sm text-gray-500 mt-1">Manage administrators and staff accounts</p>
+        </div>
+        <button onclick="openAddModal()"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md font-medium flex items-center gap-2 transition-colors">
+            <i class="fas fa-plus"></i> Add New User
+        </button>
+    </div>
+
+    <!-- 🟢 TOP 4 STAT CARDS (upgraded) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Card 1 -->
+        <div class="relative bg-white p-6 rounded-2xl shadow-sm hover:shadow-lg border border-gray-100 flex items-center gap-4 overflow-hidden transition-all duration-300 hover:-translate-y-1">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+            <div class="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 text-xl ring-1 ring-blue-100">
+                <i class="fas fa-users"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Total Staff</p>
+                <p class="text-2xl font-bold text-gray-800 mt-0.5">{{ total_users }}</p>
+            </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="relative bg-white p-6 rounded-2xl shadow-sm hover:shadow-lg border border-gray-100 flex items-center gap-4 overflow-hidden transition-all duration-300 hover:-translate-y-1">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-400 to-purple-600"></div>
+            <div class="w-14 h-14 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 text-xl ring-1 ring-purple-100">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Total Admins</p>
+                <p class="text-2xl font-bold text-gray-800 mt-0.5">{{ total_admins }}</p>
+            </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="relative bg-white p-6 rounded-2xl shadow-sm hover:shadow-lg border border-gray-100 flex items-center gap-4 overflow-hidden transition-all duration-300 hover:-translate-y-1">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
+            <div class="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 text-xl ring-1 ring-emerald-100">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Active Admins</p>
+                <p class="text-2xl font-bold text-gray-800 mt-0.5">{{ active_admins }}</p>
+            </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="relative bg-white p-6 rounded-2xl shadow-sm hover:shadow-lg border border-gray-100 flex items-center gap-4 overflow-hidden transition-all duration-300 hover:-translate-y-1">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-400 to-rose-600"></div>
+            <div class="w-14 h-14 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 text-xl ring-1 ring-rose-100">
+                <i class="fas fa-user-times"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Inactive Admins</p>
+                <p class="text-2xl font-bold text-gray-800 mt-0.5">{{ inactive_admins }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🟢 DATA TABLE (upgraded) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gradient-to-r from-blue-50 to-indigo-50 text-gray-600 text-xs uppercase tracking-wider border-b-2 border-blue-100">
+                    <th class="p-4 font-bold">Username</th>
+                    <th class="p-4 font-bold">Name</th>
+                    <th class="p-4 font-bold">Email</th>
+                    <th class="p-4 font-bold">Mobile</th>
+                    <th class="p-4 font-bold">Role</th>
+                    <th class="p-4 font-bold">Status</th>
+                    <th class="p-4 font-bold text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for p in profiles %}
+                <tr class="hover:bg-blue-50/40 transition-colors">
+                    <td class="p-4 text-sm font-medium text-gray-700 border-r border-gray-100">{{ p.user.username }}</td>
+                    <td class="p-4 border-r border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+                                {{ p.user.first_name|make_list|first|default:p.user.username|make_list|first|upper }}
+                            </div>
+                            <span class="text-sm font-medium text-gray-800">{{ p.user.first_name }} {{ p.user.last_name }}</span>
+                        </div>
+                    </td>
+                    <td class="p-4 text-sm text-gray-600 border-r border-gray-100">{{ p.user.email }}</td>
+                    <td class="p-4 text-sm text-gray-600 border-r border-gray-100">{{ p.phone_number|default:"-" }}</td>
+                    <td class="p-4 border-r border-gray-100">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold ring-1
+                            {% if p.role == 'admin' %}bg-purple-50 text-purple-700 ring-purple-200
+                            {% elif p.role == 'manager' %}bg-blue-50 text-blue-700 ring-blue-200
+                            {% else %}bg-gray-50 text-gray-700 ring-gray-200{% endif %}">
+                            {{ p.role|title }}
+                        </span>
+                    </td>
+                    <td class="p-4 border-r border-gray-100">
+                        {% if p.user.is_active %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Active
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 ring-1 ring-rose-200">
+                            <div class="w-1.5 h-1.5 rounded-full bg-rose-500"></div> Inactive
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 text-center space-x-1">
+                        <!-- 🟢 Edit Button -->
+                        <button type="button"
+                            onclick="openEditRoleModal('{{ p.user.id }}', '{{ p.user.first_name }}', '{{ p.user.last_name }}', '{{ p.user.username }}', '{{ p.user.email }}', '{{ p.phone_number|default:'' }}', '{{ p.role }}')"
+                            class="text-blue-500 hover:text-white hover:bg-blue-500 w-8 h-8 inline-flex items-center justify-center rounded-lg transition-colors" title="Edit User">
+                            <i class="fas fa-edit"></i>
+                        </button>
+
+                        <!-- Delete Form -->
+                        <form action="{% url 'accounts:role_management' %}" method="POST" class="inline"
+                            onsubmit="return confirm('Are you sure you want to delete this user?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete_user">
+                            <input type="hidden" name="user_id" value="{{ p.user.id }}">
+                            <button type="submit" class="text-rose-500 hover:text-white hover:bg-rose-500 w-8 h-8 inline-flex items-center justify-center rounded-lg transition-colors" title="Delete">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="p-8 text-center text-gray-400 text-sm">No users found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<!-- 🟢 ADD USER MODAL (professional inputs) -->
+<div id="addUserModal"
+    class="hidden fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <form action="{% url 'accounts:role_management' %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_user">
+
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center px-6 py-5 border-b border-gray-100 bg-gray-50">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">Add New Member</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Fill in the details to create a new staff account</p>
+                </div>
+                <button type="button" onclick="closeAddModal()"
+                    class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 w-8 h-8 rounded-lg inline-flex items-center justify-center transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="px-6 py-6 grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">First Name</label>
+                    <input type="text" name="first_name" required placeholder="Enter first name"
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Last Name</label>
+                    <input type="text" name="last_name" placeholder="Enter last name"
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Email Address</label>
+                    <input type="email" name="email" required placeholder="name@example.com"
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Mobile Number</label>
+                    <input type="text" name="phone_number" placeholder="+91 00000 00000"
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Assign Role</label>
+                    <select name="role" required
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white">
+                        <option value="employee">Employee</option>
+                        <option value="manager">Manager</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Temporary Password</label>
+                    <input type="text" name="password" required value="TempPass@123"
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-gray-50">
+                    <p class="text-[11px] text-gray-400 mt-1.5">User can change this password later from their profile.</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                <button type="button" onclick="closeAddModal()"
+                    class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">Cancel</button>
+                <button type="submit"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm transition-colors">Save User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 🟢 FULL EDIT USER MODAL (professional inputs) -->
+<div id="editRoleModal"
+    class="hidden fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <form action="{% url 'accounts:role_management' %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit_user">
+            <input type="hidden" name="user_id" id="edit_user_id">
+
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center px-6 py-5 border-b border-gray-100 bg-gray-50">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">Edit User Details</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Update account information and role</p>
+                </div>
+                <button type="button" onclick="closeEditRoleModal()"
+                    class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 w-8 h-8 rounded-lg inline-flex items-center justify-center transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="px-6 py-6 grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">First Name</label>
+                    <input type="text" name="first_name" id="edit_first_name" required placeholder="Enter first name"
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Last Name</label>
+                    <input type="text" name="last_name" id="edit_last_name" placeholder="Enter last name"
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Username</label>
+                    <input type="text" name="username" id="edit_username" required placeholder="Enter username"
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Mobile Number</label>
+                    <input type="text" name="phone_number" id="edit_phone" placeholder="+91 00000 00000"
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Email Address</label>
+                    <input type="email" name="email" id="edit_email" required placeholder="name@example.com"
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Select Role</label>
+                    <select name="new_role" id="edit_role_select" required
+                        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white">
+                        <option value="employee">Employee</option>
+                        <option value="manager">Manager</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                <button type="button" onclick="closeEditRoleModal()"
+                    class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">Cancel</button>
+                <button type="submit"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm transition-colors">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ==========================================
+    // 1. ADD USER MODAL LOGIC
+    // ==========================================
+    function openAddModal() {
+        const modal = document.getElementById('addUserModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        } else {
+            console.error("Error: 'addUserModal' ID wala element HTML me nahi mila.");
+        }
+    }
+
+    function closeAddModal() {
+        const modal = document.getElementById('addUserModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    // ==========================================
+    // 2. EDIT ROLE MODAL LOGIC
+    // ==========================================
+    function openEditRoleModal(userId, firstName, lastName, username, email, phone, currentRole) {
+        document.getElementById('edit_user_id').value = userId;
+        document.getElementById('edit_first_name').value = firstName;
+        document.getElementById('edit_last_name').value = lastName;
+        document.getElementById('edit_username').value = username;
+        document.getElementById('edit_email').value = email;
+        document.getElementById('edit_phone').value = phone;
+        document.getElementById('edit_role_select').value = currentRole;
+
+
+        
+        const modal = document.getElementById('editRoleModal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeEditRoleModal() {
+        const modal = document.getElementById('editRoleModal');
+        if (modal) modal.classList.add('hidden');
+    }
+</script>
+{% endblock %}

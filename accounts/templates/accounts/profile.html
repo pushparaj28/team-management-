@@ -1,156 +1,685 @@
-{% extends 'base.html' %}
-
-{% block title %}My Profile - Team Management{% endblock %}
+{% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-<div class="flex items-center justify-center py-10 px-4 sm:px-6 h-full mt-4 sm:mt-10">
+<div class="p-6 bg-gray-50 min-h-screen relative">
 
-    <!-- Contained Profile Card -->
-    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-lg border border-gray-200 flex flex-col md:flex-row overflow-hidden">
+    <!-- 🟢 DJANGO MESSAGES (TOAST NOTIFICATIONS) -->
+    {% if messages %}
+    <div id="toast-container" class="absolute top-4 right-4 z-50 flex flex-col gap-2">
+        {% for message in messages %}
+        <div class="px-4 py-3 rounded-lg shadow-lg text-sm text-white flex items-center gap-2 transition-all duration-500 ease-in-out {% if message.tags == 'error' %}bg-rose-500{% else %}bg-emerald-500{% endif %}">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 ml-4 font-bold">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-        <!-- Left Side: Avatar & Basic Info -->
-        <div class="md:w-1/3 bg-gray-50/70 p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gray-100 relative">
+    <!-- 🟢 BREADCRUMB & TITLE -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">My Profile</h1>
+        <p class="text-sm text-gray-500 mt-1">Dashboard > My Profile</p>
+    </div>
 
-            <!-- Online Status Indicator (Blinking Green Dot) -->
-            <span class="absolute top-6 right-6 flex h-3 w-3">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" title="Active"></span>
-            </span>
-
-            <!-- Avatar -->
-            <div class="h-28 w-28 rounded-full bg-[#7a2656] text-white flex items-center justify-center text-4xl font-bold shadow-md border-4 border-white">
-                {{ user.username|make_list|first|upper }}
+    <!-- 🟢 HERO BANNER SECTION -->
+    <div class="bg-[#0a1929] rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row items-center gap-6 mb-6">
+        <!-- Profile Picture Wrapper -->
+        <div class="relative w-28 h-28 shrink-0">
+            {% if profile.profile_pic %}
+                <img id="hero_profile_pic" src="{{ profile.profile_pic.url }}" alt="Profile" class="w-28 h-28 rounded-full border-4 border-white object-cover shadow-md">
+            {% else %}
+                <div id="hero_profile_pic_placeholder" class="w-28 h-28 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center text-4xl font-bold text-gray-500 shadow-md">
+                    {{ request.user.username|make_list|first|upper }}
+                </div>
+            {% endif %}
+            <!-- Small camera icon indicator -->
+            <div class="absolute bottom-1 right-1 bg-white p-1.5 rounded-full shadow cursor-pointer" onclick="openEditModal()">
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             </div>
-
-            <!-- Name & Role -->
-            <h2 class="mt-5 text-xl font-extrabold text-gray-800 text-center tracking-tight">{{ user.first_name }} {{ user.last_name }}</h2>
-            <p class="text-sm text-gray-500 mt-1 font-medium">@{{ user.username }}</p>
-
-            <!-- Role Badge -->
-            <span
-                class="mt-4 bg-pink-50 text-[#7a2656] text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider border border-pink-100 shadow-sm">
-                {{ profile.get_role_display|upper }}
-            </span>
         </div>
 
-        <!-- Right Side: Details & Actions -->
-        <div class="md:w-2/3 p-8 sm:p-10 flex flex-col justify-center">
+        <!-- User Info -->
+        <div class="flex-grow text-center md:text-left text-white z-10">
+            <h2 class="text-2xl font-bold flex items-center justify-center md:justify-start gap-2">
+                {{ request.user.first_name }} {{ request.user.last_name }}
+                <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            </h2>
+            <p class="text-blue-400 font-medium text-sm mt-1">{{ profile.get_role_display|default:"Admin" }}</p>
+            <p class="text-gray-300 text-sm mt-1 flex items-center justify-center md:justify-start gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                {% if profile.city %}{{ profile.city }}, {{ profile.country }}{% else %}Location not provided{% endif %}
+            </p>
+        </div>
 
-            <!-- Section Header -->
-            <div class="flex items-center justify-between mb-6 border-b border-gray-100 pb-3">
-                <h3 class="text-xl font-bold text-gray-800">Account Details</h3>
-            </div>
-
-            <!-- Details Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">
-
-                <div>
-                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Email Address</p>
-                    <p class="text-gray-800 font-semibold text-sm">{{ user.email }}</p>
-                </div>
-
-                <div>
-                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Phone Number</p>
-                    <p class="text-gray-800 font-semibold text-sm">{{ user.userprofile.phone_number|default:"Not Provided" }}</p>
-                </div>
-
-                <div>
-                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">First Name</p>
-                    <p class="text-gray-800 font-semibold text-sm">{{ user.first_name }}</p>
-                </div>
-
-                <div>
-                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Last Name</p>
-                    <p class="text-gray-800 font-semibold text-sm">{{ user.last_name }}</p>
-                </div>
-
-                <div>
-                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Joined Date</p>
-                    <p class="text-gray-800 font-semibold text-sm">{{ user.date_joined|date:"F d, Y" }}</p>
-                </div>
-
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="mt-10 pt-5 border-t border-gray-100 flex flex-col sm:flex-row gap-3 justify-end">
-                
-                <button onclick="toggleEditProfileModal()"
-                    class="px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg border border-gray-200 transition duration-200 text-center">
-                    Edit Profile
-                </button>
-                <a href="{% url 'accounts:logout' %}"
-                    class="px-5 py-2.5 bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-semibold rounded-lg transition duration-200 shadow-md text-center">
-                    Logout
-                </a>
-            </div>
-
+        <!-- Action Buttons -->
+        <div class="flex gap-3 z-10">
+            <button onclick="openEditModal()" class="px-4 py-2 border border-blue-400/30 text-blue-400 rounded-lg text-sm hover:bg-blue-400/10 transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Edit Profile
+            </button>
+            <button onclick="openPasswordModal()" class="px-4 py-2 border border-gray-400/30 text-white rounded-lg text-sm hover:bg-white/10 transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                Change Password
+            </button>
         </div>
     </div>
 
-    <!-- ========================================= -->
-       <!-- edit profile   -->
-    <!-- ========================================= -->
-    <div id="editProfileModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm flex items-center justify-center">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden transform transition-all">
-            
-            <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+    <!-- 🟢 MAIN GRID CONTENT -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- PERSONAL INFO CARD -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    Personal Information
+                </h3>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
                 <div>
-                    <h3 class="text-lg font-bold text-gray-800">Edit Profile</h3>
-                    <p class="text-xs text-gray-500 mt-1">Update your personal information</p>
+                    <p class="text-xs text-gray-400 mb-1">First Name</p>
+                    <p class="text-sm font-medium text-gray-800">{{ request.user.first_name|default:"-" }}</p>
                 </div>
-                <button onclick="toggleEditProfileModal()" class="text-gray-400 hover:text-red-500 transition-colors focus:outline-none">
-                    <i class="fas fa-times text-lg"></i>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Last Name</p>
+                    <p class="text-sm font-medium text-gray-800">{{ request.user.last_name|default:"-" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Email Address</p>
+                    <p class="text-sm font-medium text-gray-800">{{ request.user.email|default:"-" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Phone Number</p>
+                    <p class="text-sm font-medium text-gray-800">{{ profile.phone_number|default:"-" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Department</p>
+                    <p class="text-sm font-medium text-gray-800">{{ profile.get_department_display|default:"-" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Employee ID</p>
+                    <p class="text-sm font-medium text-gray-800">{{ profile.employee_id|default:"-" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Date of Birth</p>
+                    <p class="text-sm font-medium text-gray-800">{{ profile.dob|date:"d M Y"|default:"-" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Blood Group</p>
+                    <p class="text-sm font-medium text-gray-800">{{ profile.blood_group|default:"-" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Nationality</p>
+                    <p class="text-sm font-medium text-gray-800">{{ profile.nationality|default:"-" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Gender</p>
+                    <p class="text-sm font-medium text-gray-800">{{ profile.gender|default:"-" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Joining Date</p>
+                    <p class="text-sm font-medium text-gray-800">{{ profile.joining_date|date:"d M Y"|default:"-" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Role</p>
+                    <p class="text-sm font-medium text-gray-800">{{ profile.get_role_display|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- OVERVIEW / STATS CARD (Static for now) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                Overview
+            </h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 p-4 rounded-lg flex gap-3 items-center">
+                    <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></div>
+                    <div><p class="text-xl font-bold text-gray-800">{{ stats.projects_count|default:0 }}</p><p class="text-xs text-gray-500">Projects</p></div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg flex gap-3 items-center">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                    <div><p class="text-xl font-bold text-gray-800">{{ stats.tasks_completed|default:0 }}</p><p class="text-xs text-gray-500">Tasks Completed</p></div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg flex gap-3 items-center">
+                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                    <div><p class="text-xl font-bold text-gray-800">{{ stats.hours_logged|default:0 }}</p><p class="text-xs text-gray-500">Hours</p></div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg flex gap-3 items-center">
+                    <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+                    <div><p class="text-xl font-bold text-gray-800">{{ stats.team_count|default:0 }}</p><p class="text-xs text-gray-500">Team</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🟢 ROW 2 (Address, Skills) -->
+    <div class="grid grid-cols-1 gap-6 mt-6">
+        <!-- Address Card (with live map preview) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                    Address
+                </h3>
+                <button onclick="openEditModal()" type="button" class="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-blue-200 hover:bg-blue-50 transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Edit
                 </button>
             </div>
-            
-            <!-- Modal Body (Form) -->
-            <form action="{% url 'accounts:edit_profile' %}" method="POST" class="p-6">
-                {% csrf_token %}
-                
-                <div class="space-y-4">
-                    <!-- Name Grid -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">First Name</label>
-                            <input type="text" name="first_name" value="{{ user.first_name }}" required 
-                                class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656]">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Last Name</label>
-                            <input type="text" name="last_name" value="{{ user.last_name }}" 
-                                class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656]">
-                        </div>
-                    </div>
-                    
-                    <!-- Phone Number -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                <!-- Text details -->
+                <div class="md:col-span-2 grid grid-cols-2 gap-x-4 gap-y-5 content-start">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Phone Number</label>
-                        <input type="text" name="phone" value="{{ user.userprofile.phone_number|default:'' }}" 
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656]" placeholder="+91...">
+                        <p class="text-xs text-gray-400 mb-1">Country</p>
+                        <p class="text-sm font-semibold text-gray-800">{{ profile.country|default:"-" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 mb-1">City</p>
+                        <p class="text-sm font-semibold text-gray-800">{{ profile.city|default:"-" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 mb-1">Postal Code</p>
+                        <p class="text-sm font-semibold text-gray-800">{{ profile.postal_code|default:"-" }}</p>
+                    </div>
+                    <div class="col-span-2">
+                        <p class="text-xs text-gray-400 mb-1">Full Address</p>
+                        <p class="text-sm font-semibold text-gray-800">{{ profile.address_line|default:"-" }}</p>
                     </div>
                 </div>
-
-                <!-- Modal Footer -->
-                <div class="mt-6 pt-4 border-t border-gray-100 flex justify-end gap-3">
-                    <button type="button" onclick="toggleEditProfileModal()" class="px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-bold py-2 px-6 rounded-lg transition-colors shadow-md">
-                        Save Changes
-                    </button>
+                <!-- Live map preview -->
+                <div class="md:col-span-3">
+                    <div id="address_map_preview" class="w-full h-56 md:h-full min-h-[200px] rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center text-xs text-gray-400 text-center px-6">
+                        {% if profile.city or profile.postal_code %}Loading map...{% else %}Add your address to see it on the map{% endif %}
+                    </div>
                 </div>
-            </form>
-            
+            </div>
+        </div>
+
+        <!-- Skills Card (Dynamic: add / edit / delete) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    Skills &amp; Expertise
+                </h3>
+                <button id="skills_edit_toggle" onclick="toggleSkillsEditMode()" type="button" class="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    <span id="skills_edit_toggle_label">Edit</span>
+                </button>
+            </div>
+            <div id="skills_list" class="space-y-4"></div>
+            <div id="skills_add_row" class="hidden mt-4">
+                <button type="button" onclick="addSkill()" class="w-full flex items-center justify-center gap-1 border border-dashed border-blue-300 text-blue-600 rounded-lg py-2 text-sm font-medium hover:bg-blue-50 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Add Skill
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- ============================================== -->
+<!-- 🟢 MODAL: EDIT PROFILE -->
+<!-- ============================================== -->
+<div id="editProfileModal" class="hidden fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <form action="{% url 'accounts:profile' %}" method="POST" enctype="multipart/form-data" class="p-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_profile">
 
+            <div class="flex justify-between items-center mb-6 pb-4 border-b">
+                <h2 class="text-xl font-bold text-gray-800">Edit Profile</h2>
+                <button type="button" onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- DP Upload Column -->
+                <div class="w-full md:w-1/3 flex flex-col items-center">
+                    <div class="w-32 h-32 rounded-full border-4 border-gray-100 overflow-hidden mb-4 bg-gray-50">
+                        <img id="profile_pic_preview" src="{% if profile.profile_pic %}{{ profile.profile_pic.url }}{% else %}https://via.placeholder.com/150{% endif %}" class="w-full h-full object-cover">
+                    </div>
+                    <label class="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium cursor-pointer hover:bg-blue-100 transition border border-blue-200">
+                        Change Picture
+                        <input type="file" name="profile_pic" id="profile_pic_upload" class="hidden" accept="image/*">
+                    </label>
+                    <p class="text-xs text-gray-400 mt-2 text-center">JPG or PNG. Saved when you click "Save Changes".</p>
+                </div>
+
+                <!-- Form Fields Column -->
+                <div class="w-full md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Basics -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">First Name</label>
+                        <input type="text" name="first_name" value="{{ request.user.first_name }}" class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Last Name</label>
+                        <input type="text" name="last_name" value="{{ request.user.last_name }}" class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                        <input type="email" name="email" value="{{ request.user.email }}" class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Phone Number</label>
+                        <input type="text" name="phone_number" value="{{ profile.phone_number|default:'' }}" class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+
+                    <!-- Personal Details -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Date of Birth</label>
+                        <input type="date" name="dob" value="{{ profile.dob|date:'Y-m-d' }}" class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Blood Group</label>
+                        <select name="blood_group" class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            <option value="">Select</option>
+                            <option value="A+" {% if profile.blood_group == 'A+' %}selected{% endif %}>A+</option>
+                            <option value="A-" {% if profile.blood_group == 'A-' %}selected{% endif %}>A-</option>
+                            <option value="B+" {% if profile.blood_group == 'B+' %}selected{% endif %}>B+</option>
+                            <option value="B-" {% if profile.blood_group == 'B-' %}selected{% endif %}>B-</option>
+                            <option value="O+" {% if profile.blood_group == 'O+' %}selected{% endif %}>O+</option>
+                            <option value="O-" {% if profile.blood_group == 'O-' %}selected{% endif %}>O-</option>
+                            <option value="AB+" {% if profile.blood_group == 'AB+' %}selected{% endif %}>AB+</option>
+                            <option value="AB-" {% if profile.blood_group == 'AB-' %}selected{% endif %}>AB-</option>
+                        </select>
+                    </div>
+
+                    <!-- 🟢 ADDRESS SECTION WITH PINCODE API -->
+                    <div class="col-span-full mt-4 border-t pt-4">
+                        <h4 class="text-sm font-bold text-gray-700 mb-3">Address Details</h4>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Postal Code (Auto-fills City)</label>
+                        <input type="text" name="postal_code" id="postal_code_input" value="{{ profile.postal_code|default:'' }}" placeholder="e.g. 110001" maxlength="6" inputmode="numeric" class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                        <p id="pincode_msg" class="text-xs mt-1 hidden"></p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">City</label>
+                        <input type="text" name="city" id="city_input" value="{{ profile.city|default:'' }}" class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <div class="col-span-full">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Address Line</label>
+                        <input type="text" name="address_line" value="{{ profile.address_line|default:'' }}" class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+
+                    <!-- 🟢 LIVE MAP PREVIEW (updates from pincode via OpenStreetMap) -->
+                    <div class="col-span-full">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Location Preview</label>
+                        <div id="map_preview" class="w-full h-48 rounded-lg overflow-hidden border border-gray-300 bg-gray-50 flex items-center justify-center text-xs text-gray-400 text-center px-4">
+                            Enter a valid 6-digit postal code above to preview the location on the map
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="mt-8 pt-4 border-t flex justify-end gap-3">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-[#0a1929] text-white rounded-lg text-sm hover:bg-[#132a44] transition">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- 🟢 MODAL: CHANGE PASSWORD (with Forgot Current Password mode) -->
+<!-- ============================================== -->
+<div id="passwordModal" class="hidden fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <form action="{% url 'accounts:profile' %}" method="POST" class="p-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="change_password">
+            <input type="hidden" name="forgot_mode" id="forgot_mode_flag" value="0">
+
+            <div class="flex justify-between items-center mb-6 pb-4 border-b">
+                <h2 class="text-xl font-bold text-gray-800">Change Password</h2>
+                <button type="button" onclick="closePasswordModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- 🟢 CURRENT PASSWORD (hidden in forgot mode) -->
+                <div id="current_password_field">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-bold text-[#2a3547]">Current Password</label>
+                        <button type="button" onclick="toggleForgotMode(true)" class="text-xs text-blue-600 hover:underline font-medium">
+                            Forgot current password?
+                        </button>
+                    </div>
+                    <input type="password" name="current_password" id="current_password_input" required class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+
+                <!-- 🟢 FORGOT MODE NOTICE (hidden by default) -->
+                <div id="forgot_mode_notice" class="hidden bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-lg px-3 py-2 flex items-center justify-between gap-2">
+                    <span>Current password not required — a new password will be set directly.</span>
+                    <button type="button" onclick="toggleForgotMode(false)" class="text-amber-800 font-semibold hover:underline shrink-0">
+                        Cancel
+                    </button>
+                </div>
+
+                <!-- 🟢 TEMPORARY PASSWORD GENERATOR -->
+                <div>
+                    <label class="block text-sm font-bold text-[#2a3547] mb-1">New Password</label>
+                    <div class="flex gap-2">
+                        <input type="text" name="new_password" id="new_password_input" required class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                        <button type="button" onclick="generateTempPassword()" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 transition shadow-sm">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd"></path></svg>
+                            Generate
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Temporary password for initial login</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-[#2a3547] mb-1">Confirm New Password</label>
+                    <input type="text" name="confirm_password" id="confirm_password_input" required class="w-full border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+            </div>
+
+            <div class="mt-8 pt-4 border-t flex justify-end gap-3">
+                <button type="button" onclick="closePasswordModal()" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 font-semibold">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-[#0a1929] text-white rounded-lg text-sm hover:bg-[#132a44] transition font-semibold">Update Password</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
 <script>
-    function toggleEditProfileModal() {
-        const modal = document.getElementById('editProfileModal');
-        modal.classList.toggle('hidden');
+    /* ================= Modal Controls ================= */
+    function openEditModal() { document.getElementById('editProfileModal').classList.remove('hidden'); }
+    function closeEditModal() { document.getElementById('editProfileModal').classList.add('hidden'); }
+
+    function openPasswordModal() { document.getElementById('passwordModal').classList.remove('hidden'); }
+    function closePasswordModal() {
+        document.getElementById('passwordModal').classList.add('hidden');
+        toggleForgotMode(false);
     }
+
+    /* ================= Forgot Current Password Mode ================= */
+    function toggleForgotMode(enable) {
+        let currentField = document.getElementById('current_password_field');
+        let notice = document.getElementById('forgot_mode_notice');
+        let currentInput = document.getElementById('current_password_input');
+        let flag = document.getElementById('forgot_mode_flag');
+
+        if (enable) {
+            currentField.classList.add('hidden');
+            notice.classList.remove('hidden');
+            currentInput.value = '';
+            currentInput.removeAttribute('required');
+            flag.value = '1';
+        } else {
+            currentField.classList.remove('hidden');
+            notice.classList.add('hidden');
+            currentInput.setAttribute('required', 'required');
+            flag.value = '0';
+        }
+    }
+
+    /* ================= Live DP Preview (modal + hero banner) ================= */
+    document.getElementById('profile_pic_upload').addEventListener('change', function (e) {
+        if (e.target.files && e.target.files[0]) {
+            let reader = new FileReader();
+            reader.onload = function (event) {
+                document.getElementById('profile_pic_preview').src = event.target.result;
+                // also live-update the hero banner picture so the user sees the change immediately
+                let heroImg = document.getElementById('hero_profile_pic');
+                let heroPlaceholder = document.getElementById('hero_profile_pic_placeholder');
+                if (heroImg) {
+                    heroImg.src = event.target.result;
+                } else if (heroPlaceholder) {
+                    heroPlaceholder.outerHTML = '<img id="hero_profile_pic" src="' + event.target.result + '" alt="Profile" class="w-28 h-28 rounded-full border-4 border-white object-cover shadow-md">';
+                }
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+
+    /* ================= Pincode Auto-Fill (City) + Map Update ================= */
+    document.getElementById('postal_code_input').addEventListener('blur', function () {
+        let pincode = this.value.trim();
+        let msgBox = document.getElementById('pincode_msg');
+        let mapBox = document.getElementById('map_preview');
+
+        if (!/^\d{6}$/.test(pincode)) {
+            return;
+        }
+
+        msgBox.textContent = "Fetching city...";
+        msgBox.className = "text-xs mt-1 text-blue-500 block";
+        mapBox.textContent = "Loading map...";
+
+        fetch(`https://api.postalpincode.in/pincode/${pincode}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data[0] && data[0].Status === "Success") {
+                    let postOffice = data[0].PostOffice[0];
+                    let city = postOffice.District;
+                    let state = postOffice.State;
+
+                    document.getElementById('city_input').value = city;
+
+                    msgBox.textContent = "City found!";
+                    msgBox.className = "text-xs mt-1 text-emerald-500 block";
+                    setTimeout(() => msgBox.classList.add('hidden'), 2000);
+
+                    // Geocode using the postal code itself (structured search) — far more accurate
+                    // than searching by district/city name, which can match an unrelated place.
+                    return fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&postalcode=${pincode}&country=India`)
+                        .then(res => res.json())
+                        .then(geoData => {
+                            if (geoData && geoData.length > 0) {
+                                return geoData;
+                            }
+                            // Fallback: postcode not indexed by Nominatim — try district/state text search
+                            return fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(city + ', ' + state + ', India')}`)
+                                .then(res => res.json());
+                        });
+                } else {
+                    msgBox.textContent = "Invalid Pincode";
+                    msgBox.className = "text-xs mt-1 text-rose-500 block";
+                    mapBox.textContent = "Enter a valid 6-digit postal code above to preview the location on the map";
+                    return null;
+                }
+            })
+            .then(geoData => {
+                if (geoData && geoData.length > 0) {
+                    let lat = parseFloat(geoData[0].lat);
+                    let lon = parseFloat(geoData[0].lon);
+                    let delta = 0.08;
+                    let bbox = `${lon - delta},${lat - delta},${lon + delta},${lat + delta}`;
+                    mapBox.innerHTML = `<iframe width="100%" height="100%" frameborder="0" scrolling="no"
+                        src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}"
+                        style="border:0;"></iframe>`;
+                } else if (geoData) {
+                    mapBox.textContent = "Map not available for this location";
+                }
+            })
+            .catch(() => {
+                msgBox.textContent = "Error fetching location";
+                msgBox.className = "text-xs mt-1 text-rose-500 block";
+                mapBox.textContent = "Could not load map";
+            });
+    });
+
+    /* ================= Temporary Password Generator ================= */
+    function generateTempPassword() {
+        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+        let tempPass = "";
+        for (let i = 0; i < 10; i++) {
+            tempPass += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('new_password_input').value = tempPass;
+        document.getElementById('confirm_password_input').value = tempPass;
+    }
+
+    /* ================= Skills & Expertise (Add / Edit / Delete) ================= */
+    let skillsData = [
+        { name: "Project Management", value: 95 },
+        { name: "Team Leadership", value: 90 },
+        { name: "Communication", value: 85 }
+    ];
+    let skillsEditMode = false;
+    let skillsEditingIndex = null;
+
+    function renderSkills() {
+        let list = document.getElementById('skills_list');
+        list.innerHTML = "";
+
+        skillsData.forEach((skill, index) => {
+            let row = document.createElement('div');
+
+            if (skillsEditMode && skillsEditingIndex === index) {
+                // Inline edit form for this skill
+                row.className = "flex items-center gap-2 bg-gray-50 border border-blue-200 rounded-lg p-3";
+                row.innerHTML = `
+                    <input type="text" value="${skill.name}" id="skill_name_edit_${index}" class="flex-grow border border-gray-300 rounded-lg text-sm px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="number" min="0" max="100" value="${skill.value}" id="skill_value_edit_${index}" class="w-20 border border-gray-300 rounded-lg text-sm px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span class="text-xs text-gray-400">%</span>
+                    <button type="button" onclick="saveSkillEdit(${index})" class="text-blue-600 hover:text-blue-700 p-1" title="Save">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </button>
+                    <button type="button" onclick="cancelSkillEdit()" class="text-gray-400 hover:text-gray-600 p-1" title="Cancel">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                `;
+            } else {
+                row.className = "group";
+                row.innerHTML = `
+                    <div class="flex justify-between items-center text-sm mb-1">
+                        <span class="text-gray-700">${skill.name}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-500">${skill.value}%</span>
+                            ${skillsEditMode ? `
+                            <button type="button" onclick="editSkill(${index})" class="text-gray-400 hover:text-blue-600 p-0.5" title="Edit">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                            <button type="button" onclick="deleteSkill(${index})" class="text-gray-400 hover:text-rose-500 p-0.5" title="Delete">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>` : ``}
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                        <div class="bg-blue-600 h-1.5 rounded-full" style="width: ${skill.value}%"></div>
+                    </div>
+                `;
+            }
+            list.appendChild(row);
+        });
+    }
+
+    function toggleSkillsEditMode() {
+        skillsEditMode = !skillsEditMode;
+        skillsEditingIndex = null;
+        document.getElementById('skills_edit_toggle_label').textContent = skillsEditMode ? "Done" : "Edit";
+        document.getElementById('skills_add_row').classList.toggle('hidden', !skillsEditMode);
+        renderSkills();
+    }
+
+    function editSkill(index) {
+        skillsEditingIndex = index;
+        renderSkills();
+    }
+
+    function cancelSkillEdit() {
+        skillsEditingIndex = null;
+        renderSkills();
+    }
+
+    function saveSkillEdit(index) {
+        let nameInput = document.getElementById(`skill_name_edit_${index}`);
+        let valueInput = document.getElementById(`skill_value_edit_${index}`);
+        let newName = nameInput.value.trim();
+        let newValue = Math.max(0, Math.min(100, parseInt(valueInput.value, 10) || 0));
+
+        if (newName === "") {
+            nameInput.classList.add('border-rose-400');
+            return;
+        }
+
+        skillsData[index] = { name: newName, value: newValue };
+        skillsEditingIndex = null;
+        renderSkills();
+    }
+
+    function deleteSkill(index) {
+        skillsData.splice(index, 1);
+        renderSkills();
+    }
+
+    function addSkill() {
+        skillsData.push({ name: "New Skill", value: 50 });
+        skillsEditingIndex = skillsData.length - 1;
+        renderSkills();
+    }
+
+    // Initial render on page load
+    renderSkills();
+
+    /* ================= Address Card: Map Preview from Saved Profile ================= */
+    (function () {
+        let savedCity = "{{ profile.city|default:''|escapejs }}";
+        let savedState = "{{ profile.state|default:''|escapejs }}";
+        let savedCountry = "{{ profile.country|default:'India'|escapejs }}";
+        let savedPostalCode = "{{ profile.postal_code|default:''|escapejs }}";
+        let mapBox = document.getElementById('address_map_preview');
+
+        if (!mapBox || (!savedCity && !savedPostalCode)) {
+            return;
+        }
+
+        // Prefer the postal code for geocoding — it's far more precise than a district/city
+        // name, which can be ambiguous and match an unrelated place on the map.
+        let geoRequest = savedPostalCode
+            ? fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&postalcode=${encodeURIComponent(savedPostalCode)}&country=${encodeURIComponent(savedCountry)}`)
+                .then(res => res.json())
+                .then(geoData => {
+                    if (geoData && geoData.length > 0) {
+                        return geoData;
+                    }
+                    // Fallback if the postcode isn't indexed by Nominatim
+                    let fallbackQuery = [savedCity, savedState, savedCountry].filter(Boolean).join(', ');
+                    return fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(fallbackQuery)}`)
+                        .then(res => res.json());
+                })
+            : fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent([savedCity, savedState, savedCountry].filter(Boolean).join(', '))}`)
+                .then(res => res.json());
+
+        geoRequest
+            .then(geoData => {
+                if (geoData && geoData.length > 0) {
+                    let lat = parseFloat(geoData[0].lat);
+                    let lon = parseFloat(geoData[0].lon);
+                    let delta = 0.06;
+                    let bbox = `${lon - delta},${lat - delta},${lon + delta},${lat + delta}`;
+                    mapBox.innerHTML = `<iframe width="100%" height="100%" frameborder="0" scrolling="no"
+                        src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}"
+                        style="border:0;"></iframe>`;
+                } else {
+                    mapBox.textContent = "Map not available for this address";
+                }
+            })
+            .catch(() => {
+                mapBox.textContent = "Could not load map";
+            });
+    })();
+
+    // Auto-hide Django messages after 4 seconds
+    setTimeout(() => {
+        let toastContainer = document.getElementById('toast-container');
+        if (toastContainer) { toastContainer.style.opacity = '0'; setTimeout(() => toastContainer.remove(), 500); }
+    }, 4000);
 </script>
 {% endblock %}

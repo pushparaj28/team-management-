@@ -533,7 +533,6 @@ def leave_list(request):
 
     return render(request, 'tasks/leaves.html', context)
 
-
 @login_required
 def leave_request_create(request):
     # Unchanged — employees, managers, and admins can all apply for
