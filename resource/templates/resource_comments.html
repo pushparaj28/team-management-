@@ -1,16 +1,129 @@
 {% extends "base.html" %}
+
 {% block title %}Comments | {{ resource.title }}{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto">
-<a href="{% url 'resource:detail' resource.pk %}" class="back-link">← Back to Resource</a>
-<div class="mt-5"><h1 class="page-title">Comments</h1><p class="page-subtitle">{{ resource.title }}</p></div>
-<div class="detail-card mt-6">
-{% if request.user.is_authenticated %}
-<form class="comment-form" method="post" action="{% url 'resource:add_comment' resource.pk %}" data-ajax-comment="true">{% csrf_token %}{{ comment_form.text }}<div class="flex justify-end mt-2"><button type="submit" class="primary-btn">Post Comment</button></div></form>
-{% else %}<div class="login-comment-box">Login to join the discussion.</div>{% endif %}
-<div id="commentsList" class="mt-6">
-{% for comment in comments %}
-<div class="comment-row" data-comment-id="{{ comment.id }}"><div class="comment-avatar">{{ comment.user.get_full_name|default:comment.user.username|slice:":1"|upper }}</div><div class="flex-1"><div class="flex justify-between"><strong class="text-sm">{{ comment.user.get_full_name|default:comment.user.username }}</strong><span class="text-[10px] text-slate-400">{{ comment.created_at|timesince }} ago</span></div><p class="text-sm text-slate-600 mt-2 whitespace-pre-wrap">{{ comment.text }}</p>{% if request.user == comment.user or request.user.is_staff %}<button class="delete-comment text-xs text-red-500 mt-2" data-url="{% url 'resources:delete_comment' comment.pk %}">Delete</button>{% endif %}</div></div>
-{% empty %}<div id="emptyComments" class="empty-comments">No comments yet. Start the discussion.</div>{% endfor %}
-</div></div></div>
+<div class="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    
+    <!-- Back Link -->
+    <a href="{% url 'resource:detail' resource.pk %}" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-6 group">
+        <svg class="mr-2 w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Resource
+    </a>
+
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Discussion</h1>
+        <p class="text-base text-slate-500 mt-2">Thoughts and comments on <span class="font-semibold text-slate-700">"{{ resource.title }}"</span></p>
+    </div>
+
+    <!-- Main Card Container -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        
+        <!-- Form / Login Section -->
+        <div class="p-6 sm:p-8 border-b border-slate-100 bg-slate-50/50">
+            {% if request.user.is_authenticated %}
+                <form method="post" action="{% url 'resource:add_comment' resource.pk %}" data-ajax-comment="true" class="space-y-4">
+                    {% csrf_token %}
+                    <!-- Wrapper for styling Django's default textarea -->
+                    <div class="w-full form-group-wrapper">
+                        {{ comment_form.text }}
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ease-in-out shadow-sm">
+                            Post Comment
+                        </button>
+                    </div>
+                </form>
+            {% else %}
+                <div class="text-center py-6 px-4 bg-white rounded-xl border border-dashed border-slate-300">
+                    <svg class="mx-auto h-12 w-12 text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <h3 class="text-sm font-medium text-slate-900">Join the discussion</h3>
+                    <p class="mt-1 text-sm text-slate-500">You must be logged in to post a comment.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Comments List Section -->
+        <div id="commentsList" class="p-6 sm:p-8 divide-y divide-slate-100">
+            {% for comment in comments %}
+                <div class="py-6 first:pt-0 last:pb-0 flex gap-4 group" data-comment-id="{{ comment.id }}">
+                    
+                    <!-- User Avatar (Initials) -->
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-100 to-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm shadow-inner ring-1 ring-blue-100">
+                            {{ comment.user.get_full_name|default:comment.user.username|slice:":1"|upper }}
+                        </div>
+                    </div>
+
+                    <!-- Comment Content -->
+                    <div class="flex-1 min-w-0">
+                        <!-- Name & Time -->
+                        <div class="flex items-center justify-between gap-x-2">
+                            <div class="flex items-center gap-x-2">
+                                <strong class="text-sm font-semibold text-slate-900 truncate">
+                                    {{ comment.user.get_full_name|default:comment.user.username }}
+                                </strong>
+                                <span class="text-xs text-slate-400 flex items-center gap-1">
+                                    &bull; {{ comment.created_at|timesince }} ago
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Text -->
+                        <p class="mt-2 text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{{ comment.text }}</p>
+                        
+                        <!-- Actions (Delete) -->
+                        {% if request.user == comment.user or request.user.is_staff %}
+                            <div class="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button class="delete-comment inline-flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors" data-url="{% url 'resources:delete_comment' comment.pk %}">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <!-- Empty State -->
+                <div id="emptyComments" class="text-center py-12 px-4">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 mb-4 ring-8 ring-slate-50/50">
+                        <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-base font-medium text-slate-900">No comments yet</h3>
+                    <p class="mt-1 text-sm text-slate-500">Be the first to share your thoughts!</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Fallback styles to ensure Django's textarea looks nice with Tailwind -->
+<style>
+    .form-group-wrapper textarea {
+        width: 100%;
+        border-radius: 0.5rem;
+        border: 1px solid #cbd5e1; /* slate-300 */
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        color: #334155; /* slate-700 */
+        background-color: #ffffff;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        min-height: 100px;
+        transition: all 0.2s ease-in-out;
+    }
+    .form-group-wrapper textarea:focus {
+        outline: none;
+        border-color: #2563eb; /* blue-600 */
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+</style>
 {% endblock %}

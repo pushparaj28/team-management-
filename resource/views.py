@@ -242,11 +242,10 @@ def resource_detail(request, pk):
         context
     )
 
-
 @login_required
 def resource_create(request):
 
-    if request.method == 'POST':
+    if request.method == "POST":
 
         form = ResourceForm(
             request.POST,
@@ -259,44 +258,37 @@ def resource_create(request):
                 commit=False
             )
 
-            resource.uploaded_by = (
-                request.user
-            )
+            resource.uploaded_by = request.user
 
             resource.save()
 
             messages.success(
                 request,
-                'Resource added successfully.'
+                "Resource added successfully."
             )
 
             return redirect(
-                'resources:detail',
+                "resource:detail",
                 pk=resource.pk
             )
+
+        else:
+            print("FORM ERRORS:", form.errors)
 
     else:
 
         form = ResourceForm()
 
     return render(
-
         request,
-
-        'resource_form.html',
-
+        "resource_form.html",
         {
-            'form': form,
-
-            'page_title':
-                'Add Resource',
-
-            'submit_text':
-                'Add Resource',
+            "form": form,
+            "page_title": "Add Resource",
+            "submit_text": "Add Resource",
         }
     )
-
-
+    
 @login_required
 def resource_edit(request, pk):
 
@@ -306,28 +298,24 @@ def resource_edit(request, pk):
     )
 
     if (
-        resource.uploaded_by_id
-        != request.user.id
+        resource.uploaded_by_id != request.user.id
         and not request.user.is_staff
     ):
 
         messages.error(
             request,
-            'You cannot edit this resource.'
+            "You cannot edit this resource."
         )
 
         return redirect(
-            'resources:list'
+            "resource:list"
         )
 
-    if request.method == 'POST':
+    if request.method == "POST":
 
         form = ResourceForm(
-
             request.POST,
-
             request.FILES,
-
             instance=resource
         )
 
@@ -337,11 +325,11 @@ def resource_edit(request, pk):
 
             messages.success(
                 request,
-                'Resource updated successfully.'
+                "Resource updated successfully."
             )
 
             return redirect(
-                'resources:detail',
+                "resource:detail",
                 pk=resource.pk
             )
 
@@ -352,26 +340,15 @@ def resource_edit(request, pk):
         )
 
     return render(
-
         request,
-
-        'resource_form.html',
-
+        "resource_form.html",
         {
-            'form':
-                form,
-
-            'resource':
-                resource,
-
-            'page_title':
-                'Edit Resource',
-
-            'submit_text':
-                'Save Changes',
+            "form": form,
+            "resource": resource,
+            "page_title": "Edit Resource",
+            "submit_text": "Save Changes",
         }
     )
-
 
 @login_required
 @require_POST
