@@ -15,7 +15,101 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from tasks.models import Task
 from django.utils import timezone
+from django.urls import reverse, NoReverseMatch
 
+# Optional app models import
+try:
+    from tasks.models import Task
+except Exception:
+    Task = None
+
+try:
+    from resource.models import Resource
+except Exception:
+    Resource = None
+
+
+def safe_reverse(url_name, default="#"):
+    """Crash hone se bachane ke liye safe URL reverse"""
+    try:
+        return reverse(url_name)
+    except NoReverseMatch:
+        return default
+
+@login_required
+def global_search_api(request):
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse({"results": []})
+
+    results = []
+
+    try:
+        # 1. Search Users with dynamic role check
+        users = User.objects.filter(
+            Q(username__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(email__icontains=query)
+        ).select_related('profile')[:5]
+
+        # Target fallback URL
+        user_target_url = safe_reverse("accounts:employees_list", safe_reverse("accounts:attendance", "/accounts/attendance/"))
+
+        for u in users:
+            # Dynamic role detection
+            if u.is_superuser:
+                user_role = "Admin"
+                user_icon = "fas fa-user-shield"
+            elif hasattr(u, "profile") and getattr(u.profile, "role", None):
+                user_role = u.profile.role.title()
+                user_icon = "fas fa-user-tie" if user_role.lower() == "manager" else "fas fa-user"
+            else:
+                user_role = "Employee"
+                user_icon = "fas fa-user"
+
+            results.append({
+                "type": user_role,
+                "icon": user_icon,
+                "title": u.get_full_name() or u.username,
+                "subtitle": u.email or f"Active {user_role}",
+                "url": user_target_url,
+            })
+
+        # 2. Search Tasks
+        if Task:
+            tasks = Task.objects.filter(
+                Q(title__icontains=query) | Q(description__icontains=query)
+            )[:5]
+            task_target_url = safe_reverse("tasks:overview", safe_reverse("tasks:task_list", "/tasks/overview/"))
+            for t in tasks:
+                results.append({
+                    "type": "Task",
+                    "icon": "fas fa-tasks",
+                    "title": t.title,
+                    "subtitle": f"Status: {getattr(t, 'status', 'Active')}",
+                    "url": task_target_url,
+                })
+
+        # 3. Search Resources
+        if Resource:
+            resources = Resource.objects.filter(
+                Q(title__icontains=query) | Q(description__icontains=query)
+            )[:5]
+            res_target_url = safe_reverse("resource:resource_list", "/resource/")
+            for r in resources:
+                results.append({
+                    "type": "Resource",
+                    "icon": "fas fa-folder-open",
+                    "title": r.title,
+                    "subtitle": getattr(r, "category", "Resource File"),
+                    "url": res_target_url,
+                })
+
+    except Exception as e:
+        return JsonResponse({"results": [], "error": str(e)}, status=500)
+
+    return JsonResponse({"results": results})
 
 def register_user(request):
     if request.method == 'POST':
@@ -57,14 +151,14 @@ def edit_profile(request):
         profile.phone = request.POST.get('phone', '')
         profile.save()
         
-        messages.success(request, "Aapki profile update ho gayi hai!")
+        messages.success(request, "Your profile has been updated successfully.")
         return redirect('accounts:profile')
         
     return render(request, 'accounts/edit_profile.html', {'profile': profile})
 
 
 def login_user(request):
-    # 🟢 STEP 1: Sirf POST request (Form Submit ya AJAX) par check karein
+    # STEP 1: Sirf POST request (Form Submit ya AJAX) par check karein
     if request.method == 'POST':
         if request.headers.get('Content-Type') == 'application/json':
             data = json.loads(request.body)
@@ -76,7 +170,7 @@ def login_user(request):
 
         user = authenticate(request, username=username, password=password)
         
-        # 🟢 STEP 2: Agar User sahi hai (Success)
+        # STEP 2: Agar User sahi hai (Success)
         if user is not None:
             login(request, user)
             
@@ -89,17 +183,15 @@ def login_user(request):
                 
             return redirect('tasks:dashboard')
             
-        # 🟢 STEP 3: Agar details galat hain (Failed Login)
+        # STEP 3: Agar details galat hain (Failed Login)
         else:
             if request.headers.get('Content-Type') == 'application/json':
                 return JsonResponse({'status': 'error', 'message': 'Invalid username or password.'}, status=400)
-            
             # Form wale user ko error dikhaye aur wapas login page par bhej de
             messages.error(request, 'Invalid username or password.')
             return redirect('accounts:login') 
 
-    # 🟢 STEP 4: Agar normal page refresh ho raha hai (GET request)
-    # Yahan koi error message nahi chalega, sirf khali form dikhega
+    # STEP 4: Agar normal page refresh ho raha hai (GET request)
     form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form})
 
@@ -111,7 +203,7 @@ def profile_view(request):
     if request.method == 'POST':
         action = request.POST.get('action')
 
-        # 🟢 1. Profile Edit Logic
+        # 1. Profile Edit Logic
         if action == 'update_profile':
             user = request.user
             user.first_name = request.POST.get('first_name', user.first_name)
@@ -138,7 +230,7 @@ def profile_view(request):
             messages.success(request, 'Profile updated successfully!')
             return redirect('accounts:profile')
 
-        # 🟢 2. Change Password Logic (supports "Forgot current password?" mode)
+        # 2. Change Password Logic (supports "Forgot current password?" mode)
         elif action == 'change_password':
             forgot_mode = request.POST.get('forgot_mode') == '1'
             current_password = request.POST.get('current_password')
@@ -193,34 +285,16 @@ def add_employee_to_team(request, profile_id):
     return redirect('accounts:manager_dashboard')
 
 def switch_role(request, role):
-    # Only a genuine superuser, or someone mid-simulation who was
-    # originally a superuser, may switch roles.
     if request.user.is_superuser or request.session.get('is_original_admin'):
-
         request.session['is_original_admin'] = True
-
         user = request.user
         profile, created = UserProfile.objects.get_or_create(user=user)
-
-        # 🔒 Safety fix: we NEVER touch user.is_superuser or
-        # user.is_staff here anymore. Flipping those to False used to
-        # permanently strip Django admin/superuser access from the
-        # account in the database — if the session was lost before
-        # switching back (logout, expired session, cleared cookies),
-        # there was no way back in except manually editing the DB.
-        # Only UserProfile.role changes now, which is app-level and
-        # trivially reversible (re-run this same switch, or fix it
-        # via /admin/ if needed).
         if role in ('admin', 'manager', 'employee'):
             profile.role = role
             profile.save()
             request.session['current_role'] = role
             messages.success(request, f"Now viewing as {role.title()}. Your real admin access is unaffected.")
-
     return redirect(request.META.get('HTTP_REFERER', '/tasks/dashboard/'))
-
-
-
 
 def managers_list(request):
     # 1. Sirf un users ko nikalo jinka role 'manager' hai
@@ -257,6 +331,7 @@ def managers_list(request):
     }
     
     return render(request, 'accounts/managers_list.html', context)
+
 def make_manager(request, user_id):
     if request.user.is_superuser or request.session.get('is_original_admin'):
         profile = get_object_or_404(UserProfile, user__id=user_id)
@@ -264,8 +339,6 @@ def make_manager(request, user_id):
         profile.save()
         messages.success(request, f"{profile.user.first_name} is now a Manager!")
     return redirect('accounts:managers_list')
-
-
 
 def toggle_user_status(request, user_id):
     if request.user.is_superuser or request.session.get('is_original_admin'):
@@ -286,7 +359,7 @@ def delete_user(request, user_id):
 def edit_manager(request, user_id):
     # Sirf Admin ko allow karein
     if not (request.user.is_superuser or request.session.get('is_original_admin')):
-        messages.error(request, "Aapko permission nahi hai.")
+        messages.error(request, "You don't have permission to perform this action.")
         return redirect('tasks:dashboard') 
 
     # Database se Manager (User) aur uski Profile nikaalein
@@ -305,7 +378,7 @@ def edit_manager(request, user_id):
         profile.role = request.POST.get('role')
         profile.save()
 
-        messages.success(request, f"{manager_obj.first_name} ki details successfully update ho gayi!")
+        messages.success(request, f"{manager_obj.first_name} : Your details have been updated successfully!")
         
         # Agar edit karte waqt role "Employee" kar diya, toh usko employees list me bhej do
         if profile.role == 'employee':
@@ -325,7 +398,7 @@ def edit_manager(request, user_id):
 def manager_detail(request, user_id):
     # Admin-only — enforced at the backend, not just hidden in UI
     if not (request.user.is_superuser or request.session.get('is_original_admin')):
-        messages.error(request, "Aapko permission nahi hai.")
+        messages.error(request, "You don't have permission to perform this action.")
         return redirect('tasks:dashboard')
 
     manager_obj = get_object_or_404(User, id=user_id)
@@ -403,7 +476,7 @@ def employees_list(request):
 def edit_employee(request, user_id):
     # Sirf Admin allow hoga
     if not (request.user.is_superuser or request.session.get('is_original_admin')):
-        messages.error(request, "Aapko permission nahi hai.")
+        messages.error(request, "You don't have permission to perform this action.")
         return redirect('tasks:dashboard')
 
     employee_obj = get_object_or_404(User, id=user_id)
@@ -421,12 +494,11 @@ def edit_employee(request, user_id):
         profile.role = request.POST.get('role')
         profile.save()
 
-        messages.success(request, f"{employee_obj.first_name} ki details update ho gayi!")
+        messages.success(request, f"{employee_obj.first_name}:Your details have been updated successfully!")
         
         # Agar role change karke 'Manager' kar diya, toh managers list me bhejo
         if profile.role == 'manager':
             return redirect('accounts:managers_list')
-        
         return redirect('accounts:employees_list')
 
     context = {
@@ -439,7 +511,7 @@ def edit_employee(request, user_id):
 def add_user(request):
     # Sirf Admin naye users add kar sakta hai
     if not (request.user.is_superuser or request.session.get('is_original_admin')):
-        messages.error(request, "Aapko naye users add karne ki permission nahi hai.")
+        messages.error(request, "You don't have permission to add new users.")
         return redirect('tasks:dashboard')
 
     if request.method == 'POST':
@@ -452,7 +524,7 @@ def add_user(request):
 
         # Check karna ki is email se koi pehle se toh nahi hai
         if User.objects.filter(email=email).exists() or User.objects.filter(username=email).exists():
-            messages.error(request, "Is email id se user pehle se exist karta hai!")
+            messages.error(request, "A user with this email address already exists!")
             return redirect('accounts:add_user')
 
         # 1. Naya User Create Karna (Username ko hi email maan rahe hain)
@@ -491,7 +563,7 @@ def manager_roster_view(request):
     # Current Manager ke employees
     my_squad = User.objects.filter(profile__manager=request.user).select_related('profile')
     
-    # 🟢 NEW: Wo employees jinka abhi koi manager nahi hai (Add karne ke liye)
+    # NEW: Wo employees jinka abhi koi manager nahi hai (Add karne ke liye)
     available_employees = User.objects.filter(profile__role__iexact='employee', profile__manager__isnull=True)
 
     context = {
@@ -502,7 +574,7 @@ def manager_roster_view(request):
     }
     return render(request, 'accounts/manager_roster.html', context)
 
-# 🟢 NEW: Employee ko squad me Add karne ka logic
+# NEW: Employee ko squad me Add karne ka logic
 @login_required
 def add_to_squad(request):
     if request.method == 'POST':
@@ -514,7 +586,7 @@ def add_to_squad(request):
             messages.success(request, f"{emp.first_name} has been added to your squad!")
     return redirect('accounts:manager_roster')
 
-# 🟢 NEW: Employee ko squad se Remove karne ka logic
+# NEW: Employee ko squad se Remove karne ka logic
 @login_required
 def remove_from_squad(request, emp_id):
     emp = get_object_or_404(User, id=emp_id)
@@ -523,7 +595,6 @@ def remove_from_squad(request, emp_id):
         emp.profile.save()
         messages.success(request, f"{emp.first_name} was removed from your squad.")
     return redirect('accounts:manager_roster')
-
 
 @login_required
 def role_management(request):
@@ -603,7 +674,7 @@ def role_management(request):
 
             return redirect('accounts:role_management')
 
-    # 🟢 SIRF ADMINS KO TABLE ME DIKHANE KE LIYE FILTER
+    # SIRF ADMINS KO TABLE ME DIKHANE KE LIYE FILTER
     admin_profiles = all_profiles.filter(role='admin').order_by('-created_at')
 
     context = {

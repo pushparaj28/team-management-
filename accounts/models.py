@@ -14,7 +14,7 @@ class UserProfile(models.Model):
         ('Marketing', 'Marketing'),
         ('HR', 'Human Resources'),
         ('Sales', 'Sales'),
-        ('Administration', 'Administration'), # Naye design ke according add kiya
+        ('Administration', 'Administration'),
     ]
     
     GENDER_CHOICES = [
@@ -22,8 +22,6 @@ class UserProfile(models.Model):
         ('Female', 'Female'),
         ('Other', 'Other'),
     ]
-
-    # --- Aapki Purani Basic Fields ---
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     theme_preference = models.CharField(max_length=10, choices=[('light', 'Light'), ('dark', 'Dark')], default='light')
     email_notifications = models.BooleanField(default=True) 
@@ -33,7 +31,6 @@ class UserProfile(models.Model):
     is_active_team_member = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # --- 🟢 Nayi Fields (Advance Profile Design Ke Liye) ---
     profile_pic = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True) # Duplicate phone field hatakar ek kiya
     

@@ -274,14 +274,27 @@
                 <i class="fas fa-bars text-xl"></i>
             </button>
 
-            <div class="relative w-full max-w-md hidden sm:block">
-                <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
-                <input type="text" placeholder="Search users, tasks, projects, resources..."
-                    class="w-full pl-10 pr-12 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white">
-                <div
-                    class="absolute right-2 top-2 text-xs text-gray-400 font-semibold border border-gray-200 rounded px-1.5 py-0.5 bg-white">
-                    ⌘ </div>
-            </div>
+           <div class="relative w-full max-w-md hidden sm:block">
+    <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+    <input type="text" id="globalSearchInput" placeholder="Search users, tasks, projects, resources..." autocomplete="off"
+        class="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white">
+    
+    <!-- ⌘K Icon Badge -->
+    <div id="searchKbdBadge"
+        class="absolute right-2.5 top-2 text-xs text-gray-400 font-semibold border border-gray-200 rounded px-1.5 py-0.5 bg-white pointer-events-none">
+        🕵
+    </div>
+
+    <!-- Clear (✕) Button -->
+    <button type="button" id="clearSearchBtn" class="hidden absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600 focus:outline-none">
+        <i class="fas fa-times-circle text-sm"></i>
+    </button>
+
+    <!-- Dropdown Results Container -->
+    <div id="searchResultsDropdown" class="hidden absolute left-0 right-0 top-12 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-80 overflow-y-auto">
+        <div id="searchResultsList" class="divide-y divide-gray-100 text-xs"></div>
+    </div>
+</div>
         </div>
 
         <!-- Right: Actions & Profile -->
@@ -540,6 +553,94 @@ function applyChartTheme(mode) {
     }
     document.addEventListener('DOMContentLoaded', () => updateThemeToggleUI(saved));
 })();
+
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('globalSearchInput');
+    const resultsDropdown = document.getElementById('searchResultsDropdown');
+    const resultsList = document.getElementById('searchResultsList');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    const kbdBadge = document.getElementById('searchKbdBadge');
+
+    if (!searchInput) return;
+
+    function toggleIcons(hasText) {
+        if (hasText) {
+            kbdBadge?.classList.add('hidden');
+            clearBtn?.classList.remove('hidden');
+        } else {
+            clearBtn?.classList.add('hidden');
+            kbdBadge?.classList.remove('hidden');
+        }
+    }
+
+    // Clear search on cross click
+    clearBtn?.addEventListener('click', function () {
+        searchInput.value = '';
+        toggleIcons(false);
+        resultsDropdown.classList.add('hidden');
+        resultsList.innerHTML = '';
+        searchInput.focus();
+    });
+
+    let searchTimer = null;
+
+    searchInput.addEventListener('input', function () {
+        const query = this.value.trim();
+        toggleIcons(query.length > 0);
+        clearTimeout(searchTimer);
+
+        if (query.length < 2) {
+            resultsDropdown.classList.add('hidden');
+            resultsList.innerHTML = '';
+            return;
+        }
+
+        resultsDropdown.classList.remove('hidden');
+        resultsList.innerHTML = '<div class="p-3 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i> Searching...</div>';
+
+        searchTimer = setTimeout(() => {
+            fetch(`/accounts/api/global-search/?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        resultsList.innerHTML = data.results.map(item => `
+                            <a href="${item.url}" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700/60 transition group">
+                                <div class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs flex-shrink-0">
+                                    <i class="${item.icon}"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between">
+                                        <p class="font-semibold text-gray-800 dark:text-gray-200 truncate group-hover:text-blue-600">${item.title}</p>
+                                        <span class="text-[10px] uppercase font-bold text-gray-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">${item.type}</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-400 truncate">${item.subtitle || ''}</p>
+                                </div>
+                            </a>
+                        `).join('');
+                    } else {
+                        resultsList.innerHTML = `<div class="p-4 text-center text-gray-400">No results found for "${query}"</div>`;
+                    }
+                })
+                .catch(err => {
+                    console.error("Search Error:", err);
+                    resultsList.innerHTML = '<div class="p-3 text-center text-rose-500">Failed to load results.</div>';
+                });
+        }, 300);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!searchInput.contains(e.target) && !resultsDropdown.contains(e.target)) {
+            resultsDropdown.classList.add('hidden');
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+    });
+});
 
 </script>
 

@@ -12,11 +12,11 @@
         </div>
         <button onclick="openAddModal()"
             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md font-medium flex items-center gap-2 transition-colors">
-            <i class="fas fa-plus"></i> Add New User
+            <i class="fas fa-plus"></i> Add New Admin
         </button>
     </div>
 
-    <!-- 🟢 TOP 4 STAT CARDS (upgraded) -->
+    <!-- TOP 4 STAT CARDS (upgraded) -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Card 1 -->
         <div class="relative bg-white p-6 rounded-2xl shadow-sm hover:shadow-lg border border-gray-100 flex items-center gap-4 overflow-hidden transition-all duration-300 hover:-translate-y-1">
@@ -67,7 +67,7 @@
         </div>
     </div>
 
-    <!-- 🟢 DATA TABLE (upgraded) -->
+    <!-- DATA TABLE (upgraded) -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
@@ -116,7 +116,7 @@
                         {% endif %}
                     </td>
                     <td class="p-4 text-center space-x-1">
-                        <!-- 🟢 Edit Button -->
+                        <!-- . Edit Button -->
                         <button type="button"
                             onclick="openEditRoleModal('{{ p.user.id }}', '{{ p.user.first_name }}', '{{ p.user.last_name }}', '{{ p.user.username }}', '{{ p.user.email }}', '{{ p.phone_number|default:'' }}', '{{ p.role }}')"
                             class="text-blue-500 hover:text-white hover:bg-blue-500 w-8 h-8 inline-flex items-center justify-center rounded-lg transition-colors" title="Edit User">
@@ -146,7 +146,7 @@
     </div>
 </div>
 
-<!-- 🟢 ADD USER MODAL (professional inputs) -->
+<!-- . ADD USER MODAL (professional inputs) -->
 <div id="addUserModal"
     class="hidden fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
@@ -216,7 +216,7 @@
     </div>
 </div>
 
-<!-- 🟢 FULL EDIT USER MODAL (professional inputs) -->
+<!-- . FULL EDIT USER MODAL (professional inputs) -->
 <div id="editRoleModal"
     class="hidden fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">

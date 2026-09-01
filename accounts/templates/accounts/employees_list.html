@@ -4,7 +4,7 @@
 {% block title %}Employees - Team Management{% endblock %}
 
 {% block content %}
-<!-- 🟢 1. PAGE HEADER & ADD BUTTON 🟢 -->
+<!-- 1. PAGE HEADER & ADD BUTTON  -->
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
     <div>
         <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Employees</h1>
@@ -15,7 +15,7 @@
 </a>
 </div>
 
-<!-- 🟢 2. TOP METRIC CARDS (upgraded) 🟢 -->
+<!-- 2. TOP METRIC CARDS (upgraded) -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
     <!-- Card 1: Total -->
     <div class="relative bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5">
@@ -63,7 +63,7 @@
     </div>
 </div>
 
-<!-- 🟢 3. TABLE SECTION (With Search) (upgraded) 🟢 -->
+<!-- 3. TABLE SECTION (With Search) -->
 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
 
     <!-- Table Header & Search -->
@@ -165,7 +165,7 @@
         </table>
     </div>
 
-    <!-- 🟢 4. PAGINATION 🟢 -->
+    <!-- 4. PAGINATION -->
     {% if page_obj.has_other_pages %}
     <div class="p-4 border-t border-gray-200 flex items-center justify-between bg-gray-50/50">
         <p class="text-xs text-gray-500">
