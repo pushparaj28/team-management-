@@ -389,6 +389,56 @@
         }
     };
 
+    window.clearOverviewFilters = function () {
+        const rangeSelect = document.getElementById('rangeSelect');
+        const customFields = document.getElementById('customRangeFields');
+
+        const startInput = document.querySelector(
+            '#customRangeFields input[name="start"]'
+        );
+
+        const endInput = document.querySelector(
+            '#customRangeFields input[name="end"]'
+        );
+
+        if (rangeSelect) {
+            rangeSelect.value = '7';
+        }
+
+        if (customFields) {
+            customFields.classList.add('hidden');
+        }
+
+        if (startInput) {
+            startInput.value = '';
+        }
+
+        if (endInput) {
+            endInput.value = '';
+        }
+
+        [
+            'filter_department',
+            'filter_status',
+            'filter_priority',
+            'filter_assignee',
+            'filter_milestone'
+        ].forEach(function (id) {
+            const element = document.getElementById(id);
+
+            if (element) {
+                element.value = '';
+            }
+        });
+
+        if (typeof window.applyOverviewFilters === 'function') {
+            window.applyOverviewFilters();
+        } else {
+            console.error('applyOverviewFilters is not available.');
+        }
+    };
+
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', waitForChartJs);
     } else {
