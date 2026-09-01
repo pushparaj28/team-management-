@@ -65,3 +65,21 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #9ca3af;
 }
+
+  #editForm input {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.875rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        background-color: #fafafa;
+        outline: none;
+        transition: all 0.3s ease;
+        margin-top: 0.25rem;
+    }
+    #editForm input:focus {
+        border-color: #7a2656;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(122, 38, 86, 0.1);
+    }
+    .helptext { display: none; } /* Default Django text hide karne ke liye */

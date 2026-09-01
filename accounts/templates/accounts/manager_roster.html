@@ -8,21 +8,23 @@
         <div>
             <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white">My_Team</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                You are currently managing <span class="font-bold text-blue-600 dark:text-blue-400">{{ squad_count }}</span> employees.
+                You are currently managing <span class="font-bold text-blue-600 dark:text-blue-400">{{ squad_count}}</span> employees.
             </p>
         </div>
-     <!-- 🟢 SEARCH & FILTER SECTION -->
+        <!-- SEARCH & FILTER SECTION -->
         <div class="flex flex-wrap items-center gap-3">
-            
+
             <!-- Search Bar -->
             <div class="relative">
                 <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
-                <input type="text" id="searchInput" onkeyup="filterSquadTable()" placeholder="Search name or email..." class="pl-9 pr-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 w-full sm:w-56 outline-none transition-all">
+                <input type="text" id="searchInput" onkeyup="filterSquadTable()" placeholder="Search name or email..."
+                    class="pl-9 pr-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 w-full sm:w-56 outline-none transition-all">
             </div>
 
             <!-- Department Filter Dropdown -->
             <div class="relative">
-                <select id="deptFilter" onchange="filterSquadTable()" class="appearance-none pl-4 pr-10 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                <select id="deptFilter" onchange="filterSquadTable()"
+                    class="appearance-none pl-4 pr-10 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
                     <option value="all">All Departments</option>
                     <option value="it / development">IT / Development</option>
                     <option value="ui/ux design">UI/UX Design</option>
@@ -30,33 +32,37 @@
                     <option value="human resources">Human Resources</option>
                     <option value="sales">Sales</option>
                 </select>
-                <i data-lucide="chevron-down" class="absolute right-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none"></i>
+                <i data-lucide="chevron-down"
+                    class="absolute right-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none"></i>
             </div>
 
-            <!-- 🟢 NEW: SMART CLEAR BUTTON (Hidden by default) -->
-            <!-- 🟢 SMART CLEAR BUTTON (Matched Design) -->
-<button id="clearBtn" onclick="clearFilters()" class="hidden flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-sm font-medium text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-slate-700 transition-colors">
-    <i data-lucide="x-circle" class="w-4 h-4"></i> Clear
-</button>
+
+            <button id="clearBtn" onclick="clearFilters()"
+                class="hidden flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-sm font-medium text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-slate-700 transition-colors">
+                <i data-lucide="x-circle" class="w-4 h-4"></i> Clear
+            </button>
 
             <!-- Export Button
             <button class="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
                 <i data-lucide="download" class="w-4 h-4"></i> Export
             </button> -->
-            
+
             <!-- ADD MEMBER BUTTON -->
-            <button onclick="openAddModal()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+            <button onclick="openAddModal()"
+                class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
                 <i data-lucide="user-plus" class="w-4 h-4"></i> Add Member
             </button>
         </div>
-        
+
     </div>
 
     <!-- SQUAD DATA TABLE -->
-    <div class="bg-white dark:bg-[#0b1120] rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+    <div
+        class="bg-white dark:bg-[#0b1120] rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse whitespace-nowrap" id="squadTable">
-                <thead class="bg-gray-50/80 dark:bg-slate-800/50 text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-700">
+                <thead
+                    class="bg-gray-50/80 dark:bg-slate-800/50 text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-700">
                     <tr>
                         <th class="px-6 py-4 font-semibold">Username</th>
                         <th class="px-6 py-4 font-semibold">Employee Details</th>
@@ -69,43 +75,51 @@
                 <tbody class="divide-y divide-gray-50 dark:divide-slate-800/80">
 
                     {% for emp in my_squad %}
-                    <!-- 🟢 Added class 'squad-row' for JS targeting -->
+                    <!-- Added class 'squad-row' for JS targeting -->
                     <tr class="squad-row hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors group">
 
-                       <td class="px-6 py-4">
-                            <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1 rounded-md border border-blue-100 dark:border-blue-800/50">
+                        <td class="px-6 py-4">
+                            <span
+                                class="inline-flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1 rounded-md border border-blue-100 dark:border-blue-800/50">
                                 @{{ emp.username }}
                             </span>
                         </td>
 
-    
+
 
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-slate-700 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-blue-100 dark:bg-slate-700 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400">
                                     {{ emp.first_name|make_list|first|default:emp.username|make_list|first|upper }}
                                 </div>
                                 <div>
-                                    <p class="text-sm font-bold text-gray-900 dark:text-white emp-name">{{ emp.first_name }} {{ emp.last_name }}</p>
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white emp-name">{{emp.first_name }} {{ emp.last_name }}</p>
                                     <p class="text-xs text-gray-500 emp-email">{{ emp.email }}</p>
                                 </div>
                             </div>
                         </td>
-                        
+
                         <td class="px-6 py-4">
-                            <span class="emp-dept px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 rounded-md">
+                            <span
+                                class="emp-dept px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 rounded-md">
                                 {{ emp.profile.department|default:"General Team" }}
                             </span>
                         </td>
- 
+
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
                                 <div class="relative w-9 h-9 flex items-center justify-center">
                                     <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                        <path class="text-gray-100 dark:text-slate-700/80" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                        <path class="text-orange-500" stroke-dasharray="60, 100" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                        <path class="text-gray-100 dark:text-slate-700/80" stroke-width="3"
+                                            stroke="currentColor" fill="none"
+                                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                        <path class="text-orange-500" stroke-dasharray="60, 100" stroke-width="3"
+                                            stroke-linecap="round" stroke="currentColor" fill="none"
+                                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                     </svg>
-                                    <span class="absolute text-[9px] font-extrabold text-gray-800 dark:text-gray-100">60%</span>
+                                    <span
+                                        class="absolute text-[9px] font-extrabold text-gray-800 dark:text-gray-100">60%</span>
                                 </div>
                                 <span class="text-xs font-bold text-orange-600 dark:text-orange-400">Optimal</span>
                             </div>
@@ -114,11 +128,13 @@
                         <!-- ACTIVE / INACTIVE STATUS -->
                         <td class="px-6 py-4">
                             {% if emp.is_active %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                            <span
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
                                 <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Active
                             </span>
                             {% else %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                            <span
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
                                 <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Inactive
                             </span>
                             {% endif %}
@@ -139,12 +155,15 @@
                     <tr>
                         <td colspan="5" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center justify-center">
-                                <div class="w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                                <div
+                                    class="w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
                                     <i data-lucide="users" class="w-8 h-8 text-blue-500"></i>
                                 </div>
                                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">Your Squad is Empty</h3>
-                                <p class="text-sm text-gray-500 mt-1 mb-4 max-w-sm">You haven't added any team members yet.</p>
-                                <button onclick="openAddModal()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                                <p class="text-sm text-gray-500 mt-1 mb-4 max-w-sm">You haven't added any team members
+                                    yet.</p>
+                                <button onclick="openAddModal()"
+                                    class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
                                     Add First Member
                                 </button>
                             </div>
@@ -153,12 +172,12 @@
                     {% endfor %}
                 </tbody>
             </table>
-            
-            <!-- 🟢 No Results Message (Hidden by default) -->
+
+            <!-- No Results Message (Hidden by default) -->
             <div id="noResultsMsg" class="hidden px-6 py-12 text-center">
                 <p class="text-gray-500 dark:text-gray-400">No employees match your search criteria.</p>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -169,7 +188,8 @@
     <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 mx-4">
         <div class="flex justify-between items-center mb-5">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">Add Team Member</h3>
-            <button onclick="closeAddModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
+            <button onclick="closeAddModal()"
+                class="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
         </div>
@@ -178,10 +198,12 @@
             {% csrf_token %}
             <div class="mb-5">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Employee</label>
-                <select name="employee_id" required class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                <select name="employee_id" required
+                    class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
                     <option value="" disabled selected>-- Choose from available employees --</option>
                     {% for av_emp in available_employees %}
-                    <option value="{{ av_emp.id }}">{{ av_emp.first_name }} {{ av_emp.last_name }} ({{ av_emp.email }})</option>
+                    <option value="{{ av_emp.id }}">{{ av_emp.first_name }} {{ av_emp.last_name }} ({{ av_emp.email }})
+                    </option>
                     {% empty %}
                     <option value="" disabled>No unassigned employees available</option>
                     {% endfor %}
@@ -189,8 +211,11 @@
             </div>
 
             <div class="flex justify-end gap-3">
-                <button type="button" onclick="closeAddModal()" class="px-4 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Add to Squad</button>
+                <button type="button" onclick="closeAddModal()"
+                    class="px-4 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700">Cancel</button>
+                <button type="submit"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Add
+                    to Squad</button>
             </div>
         </form>
     </div>
@@ -201,17 +226,17 @@
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
 
-    // 🟢 SEARCH & FILTER JAVASCRIPT
+    //  SEARCH & FILTER JAVASCRIPT
     function filterSquadTable() {
         let searchInput = document.getElementById("searchInput").value.toLowerCase();
         let deptFilter = document.getElementById("deptFilter").value.toLowerCase();
         let clearBtn = document.getElementById("clearBtn");
-        
+
         let rows = document.querySelectorAll(".squad-row");
         let noResultsMsg = document.getElementById("noResultsMsg");
         let visibleCount = 0;
 
-        // 🟢 Show/Hide Smart Clear Button
+        // Show/Hide Smart Clear Button
         if (clearBtn) {
             if (searchInput !== "" || deptFilter !== "all") {
                 clearBtn.classList.remove("hidden");
@@ -246,13 +271,13 @@
         }
     }
 
-    // 🟢 CLEAR ALL FILTERS FUNCTION
+    // CLEAR ALL FILTERS FUNCTION
     function clearFilters() {
         document.getElementById("searchInput").value = "";
         document.getElementById("deptFilter").value = "all";
-        
+
         // Input reset karne ke baad wapas filter function chala do
-        filterSquadTable(); 
+        filterSquadTable();
     }
 
     // Add Member Modal Logic

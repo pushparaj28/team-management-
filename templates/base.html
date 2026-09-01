@@ -287,14 +287,27 @@
                 <i class="fas fa-bars text-xl"></i>
             </button>
 
-            <div class="relative w-full max-w-md hidden sm:block">
-                <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
-                <input type="text" placeholder="Search users, tasks, projects, resources..."
-                    class="w-full pl-10 pr-12 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white">
-                <div
-                    class="absolute right-2 top-2 text-xs text-gray-400 font-semibold border border-gray-200 rounded px-1.5 py-0.5 bg-white">
-                    ⌘ </div>
-            </div>
+           <div class="relative w-full max-w-md hidden sm:block">
+    <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+    <input type="text" id="globalSearchInput" placeholder="Search users, tasks, projects, resources..." autocomplete="off"
+        class="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white">
+    
+    <!-- ⌘K Icon Badge -->
+    <div id="searchKbdBadge"
+        class="absolute right-2.5 top-2 text-xs text-gray-400 font-semibold border border-gray-200 rounded px-1.5 py-0.5 bg-white pointer-events-none">
+        🕵
+    </div>
+
+    <!-- Clear (✕) Button -->
+    <button type="button" id="clearSearchBtn" class="hidden absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600 focus:outline-none">
+        <i class="fas fa-times-circle text-sm"></i>
+    </button>
+
+    <!-- Dropdown Results Container -->
+    <div id="searchResultsDropdown" class="hidden absolute left-0 right-0 top-12 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-80 overflow-y-auto">
+        <div id="searchResultsList" class="divide-y divide-gray-100 text-xs"></div>
+    </div>
+</div>
         </div>
 
         <!-- Right: Actions & Profile -->
@@ -311,11 +324,38 @@
                         class="fas fa-moon"></i></button>
             </div>
 
-            <button class="relative text-gray-500 hover:text-gray-700 transition-colors">
-                <i class="far fa-bell text-xl"></i>
-                <span
-                    class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-white">5</span>
-            </button>
+           <!-- 🟢 Notification Bell with Dropdown Container -->
+<div class="relative">
+    <button id="notificationBellBtn" type="button" class="relative p-1 text-gray-500 hover:text-gray-700 transition-colors focus:outline-none">
+        <i class="far fa-bell text-xl"></i>
+        <!-- Live Count Badge -->
+        <span id="notifBadge"
+            class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-white">
+            0
+        </span>
+    </button>
+
+    <!-- 🟢 Live Dropdown Panel -->
+    <div id="notificationDropdown"
+        class="hidden absolute right-0 top-10 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[9999] overflow-hidden">
+        
+        <!-- Dropdown Header -->
+        <div class="p-3.5 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-gray-800">Notifications</span>
+                <span id="notifHeaderCount" class="text-[11px] font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">0 new</span>
+            </div>
+           <button id="markAllReadBtn" type="button" onclick="markAllNotificationsAsRead()" class="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer focus:outline-none">
+    Mark all as read
+</button>
+        </div>
+
+        <!-- Dropdown Item List -->
+        <div id="notificationList" class="divide-y divide-gray-50 max-h-80 overflow-y-auto">
+            <div class="p-4 text-center text-xs text-gray-400">Loading notifications...</div>
+        </div>
+    </div>
+</div>
 
             <a href="{% url 'accounts:profile' %}"
                 class="flex items-center gap-3 border-l border-gray-200 pl-4 sm:pl-6 cursor-pointer group">
@@ -386,16 +426,17 @@
 {% endif %}
 
 <!-- ================= TOAST MESSAGES ================= -->
+<!-- ================= TOAST MESSAGES ================= -->
 <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">
     {% if messages %}
     {% for message in messages %}
     <div class="toast-message pointer-events-auto flex items-center p-4 w-full max-w-xs text-gray-700 bg-white rounded-lg shadow-lg border-l-4 
-                {% if message.tags == 'success' %}border-green-500{% elif message.tags == 'error' %}border-red-500{% else %}border-blue-500{% endif %} transition-all duration-300"
+                {% if message.tags == 'success' %}border-green-500{% elif message.tags == 'error' %}border-red-500{% else %}border-blue-500{% endif %} transition-all duration-500 transform translate-x-0 opacity-100"
         role="alert">
         <div class="ml-3 text-sm font-medium">{{ message }}</div>
         <button type="button"
             class="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg p-1.5 hover:bg-gray-100 inline-flex h-8 w-8"
-            onclick="this.parentElement.remove()">
+            onclick="dismissToastElement(this.parentElement)">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -404,13 +445,36 @@
 </div>
 
 <script>
-    // 1. Mini Sidebar Toggle Logic
+
+    // Function to smoothly remove a toast
+function dismissToastElement(toast) {
+    if (!toast) return;
+    toast.classList.add('opacity-0', 'translate-x-full');
+    setTimeout(() => {
+        toast.remove();
+    }, 500);
+}
+
+// Auto-hide each toast after 4 seconds (4000ms)
+document.addEventListener('DOMContentLoaded', function () {
+    const toastItems = document.querySelectorAll('.toast-message');
+    toastItems.forEach(toast => {
+        setTimeout(() => {
+            dismissToastElement(toast);
+        }, 4000);
+    });
+});
+/**
+ * --------------------------------------------------------------------------
+ * 1. SIDEBAR & SUBMENU CONTROLLER
+ * --------------------------------------------------------------------------
+ */
 function toggleSidebar() {
     const sidebar = document.getElementById('app-sidebar');
     const texts = document.querySelectorAll('.sidebar-text');
+    if (!sidebar) return;
 
     if (window.innerWidth >= 768) {
-        // Desktop Mode
         if (sidebar.classList.contains('w-64')) {
             sidebar.classList.replace('w-64', 'w-20');
             texts.forEach(t => t.classList.add('hidden'));
@@ -419,31 +483,26 @@ function toggleSidebar() {
             texts.forEach(t => t.classList.remove('hidden'));
         }
     } else {
-        // Mobile Mode
         sidebar.classList.toggle('-ml-64');
         sidebar.classList.toggle('ml-0');
     }
 }
 
-// 🟢 MASTER FUNCTION: Jo menu click nahi hua, use band karne ke liye
-function closeAllExcept(currentMenuId) {
-    const allDropdowns = [
+function closeAllSubmenusExcept(currentMenuId) {
+    const dropdowns = [
         { menu: 'dashboardSubMenu', arrow: 'dashboard-arrow' },
         { menu: 'resource-submenu', arrow: 'resource-arrow' },
         { menu: 'settings-submenu', arrow: 'settings-arrow' }
     ];
 
-    allDropdowns.forEach(item => {
+    dropdowns.forEach(item => {
         if (item.menu !== currentMenuId) {
-            let submenu = document.getElementById(item.menu);
-            let arrow = document.getElementById(item.arrow);
-            
+            const submenu = document.getElementById(item.menu);
+            const arrow = document.getElementById(item.arrow);
+
             if (submenu) {
                 submenu.classList.add('hidden');
-                // Dashboard ke liye flex hatana zaroori hai
-                if (item.menu === 'dashboardSubMenu') {
-                    submenu.classList.remove('flex');
-                }
+                if (item.menu === 'dashboardSubMenu') submenu.classList.remove('flex');
             }
             if (arrow && arrow.classList.contains('rotate-180')) {
                 arrow.classList.remove('rotate-180');
@@ -452,50 +511,28 @@ function closeAllExcept(currentMenuId) {
     });
 }
 
-// 2. Dashboard Dropdown Toggle Logic
-function toggleDashboardMenu() {
-    closeAllExcept('dashboardSubMenu');
-    const subMenu = document.getElementById('dashboardSubMenu');
-    const arrow = document.getElementById('dashboard-arrow');
-    
-    if (subMenu) {
-        subMenu.classList.toggle('hidden');
-        subMenu.classList.toggle('flex');
+function toggleDropdownMenu(menuId, arrowId, isFlex = false) {
+    closeAllSubmenusExcept(menuId);
+    const submenu = document.getElementById(menuId);
+    const arrow = document.getElementById(arrowId);
+
+    if (submenu) {
+        submenu.classList.toggle('hidden');
+        if (isFlex) submenu.classList.toggle('flex');
     }
     if (arrow) arrow.classList.toggle('rotate-180');
 }
 
-// 🟢 Resources Dropdown Toggle Logic
-function toggleResourceMenu() {
-    closeAllExcept('resource-submenu');
-    const submenu = document.getElementById('resource-submenu');
-    const arrow = document.getElementById('resource-arrow');
-    
-    if (submenu) submenu.classList.toggle('hidden');
-    if (arrow) arrow.classList.toggle('rotate-180');
-}
+function toggleDashboardMenu() { toggleDropdownMenu('dashboardSubMenu', 'dashboard-arrow', true); }
+function toggleResourceMenu()  { toggleDropdownMenu('resource-submenu', 'resource-arrow', false); }
+function toggleSettingsMenu()  { toggleDropdownMenu('settings-submenu', 'settings-arrow', false); }
 
-// 🟢 Settings Dropdown Toggle Logic
-function toggleSettingsMenu() {
-    closeAllExcept('settings-submenu');
-    const submenu = document.getElementById('settings-submenu');
-    const arrow = document.getElementById('settings-arrow');
-    
-    if (submenu) submenu.classList.toggle('hidden');
-    if (arrow) arrow.classList.toggle('rotate-180');
-}
 
-// 🟢 1. Naya function jo click karne par theme badlega
-function toggleTheme() {
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    if (currentTheme === 'light') {
-        setTheme('dark');
-    } else {
-        setTheme('light');
-    }
-}
-
-// 🟢 2. Purana setTheme function (Thode naye dark colors ke sath)
+/**
+ * --------------------------------------------------------------------------
+ * 2. THEME CONTROLLER (LIGHT / DARK)
+ * --------------------------------------------------------------------------
+ */
 function setTheme(mode) {
     document.documentElement.classList.toggle('dark', mode === 'dark');
     localStorage.setItem('theme', mode);
@@ -503,19 +540,24 @@ function setTheme(mode) {
     updateThemeToggleUI(mode);
 }
 
+function toggleTheme() {
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    setTheme(currentTheme === 'light' ? 'dark' : 'light');
+}
+
 function updateThemeToggleUI(mode) {
     const lightBtn = document.getElementById('lightThemeBtn');
     const darkBtn = document.getElementById('darkThemeBtn');
     if (!lightBtn || !darkBtn) return;
 
-    const activeClasses = ['bg-white', 'shadow-sm', 'text-amber-500'];
-    const inactiveClasses = ['text-gray-400', 'hover:text-gray-600'];
-    const darkActiveClasses = ['bg-slate-700', 'shadow-sm', 'text-indigo-300'];
+    const lightActive = ['bg-white', 'shadow-sm', 'text-amber-500'];
+    const darkActive = ['bg-slate-700', 'shadow-sm', 'text-indigo-300'];
+    const inactive = ['text-gray-400', 'hover:text-gray-600'];
 
     lightBtn.className = 'p-1.5 rounded-full w-8 h-8 flex items-center justify-center transition-colors ' +
-        (mode === 'light' ? activeClasses.join(' ') : inactiveClasses.join(' '));
+        (mode === 'light' ? lightActive.join(' ') : inactive.join(' '));
     darkBtn.className = 'p-1.5 rounded-full w-8 h-8 flex items-center justify-center transition-colors ' +
-        (mode === 'dark' ? darkActiveClasses.join(' ') : inactiveClasses.join(' '));
+        (mode === 'dark' ? darkActive.join(' ') : inactive.join(' '));
 }
 
 function applyChartTheme(mode) {
@@ -526,7 +568,7 @@ function applyChartTheme(mode) {
     [window.taskChartInstance, window.projectChartInstance, window.teamChartInstance].forEach(chart => {
         if (!chart) return;
         try {
-            if (chart.options.plugins && chart.options.plugins.legend) {
+            if (chart.options.plugins?.legend) {
                 chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
                 chart.options.plugins.legend.labels.color = textColor;
             }
@@ -540,20 +582,272 @@ function applyChartTheme(mode) {
             }
             chart.update();
         } catch (err) {
-            console.error('Chart theme update failed:', err);
+            console.error('Chart update failed:', err);
         }
     });
 }
 
-// Auto-apply theme on page load
-(function () {
-    const saved = localStorage.getItem('theme') || 'light';
-    if (saved === 'dark') {
-        document.documentElement.classList.add('dark');
-    }
-    document.addEventListener('DOMContentLoaded', () => updateThemeToggleUI(saved));
-})();
 
+/**
+ * --------------------------------------------------------------------------
+ * 3. GLOBAL LIVE SEARCH MODULE
+ * --------------------------------------------------------------------------
+ */
+function initGlobalSearch() {
+    const searchInput = document.getElementById('globalSearchInput');
+    const resultsDropdown = document.getElementById('searchResultsDropdown');
+    const resultsList = document.getElementById('searchResultsList');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    const kbdBadge = document.getElementById('searchKbdBadge');
+
+    if (!searchInput) return;
+
+    let searchTimer = null;
+
+    function toggleSearchIcons(hasText) {
+        if (hasText) {
+            kbdBadge?.classList.add('hidden');
+            clearBtn?.classList.remove('hidden');
+        } else {
+            clearBtn?.classList.add('hidden');
+            kbdBadge?.classList.remove('hidden');
+        }
+    }
+
+    clearBtn?.addEventListener('click', () => {
+        searchInput.value = '';
+        toggleSearchIcons(false);
+        resultsDropdown?.classList.add('hidden');
+        if (resultsList) resultsList.innerHTML = '';
+        searchInput.focus();
+    });
+
+    searchInput.addEventListener('input', function () {
+        const query = this.value.trim();
+        toggleSearchIcons(query.length > 0);
+        clearTimeout(searchTimer);
+
+        if (query.length < 2) {
+            resultsDropdown?.classList.add('hidden');
+            if (resultsList) resultsList.innerHTML = '';
+            return;
+        }
+
+        if (resultsDropdown && resultsList) {
+            resultsDropdown.classList.remove('hidden');
+            resultsList.innerHTML = '<div class="p-3 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i> Searching...</div>';
+        }
+
+        searchTimer = setTimeout(() => {
+            fetch(`/accounts/api/global-search/?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!resultsList) return;
+                    if (data.results && data.results.length > 0) {
+                        resultsList.innerHTML = data.results.map(item => `
+                            <a href="${item.url}" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700/60 transition group">
+                                <div class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs flex-shrink-0">
+                                    <i class="${item.icon}"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between">
+                                        <p class="font-semibold text-gray-800 dark:text-gray-200 truncate group-hover:text-blue-600">${item.title}</p>
+                                        <span class="text-[10px] uppercase font-bold text-gray-400 bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">${item.type}</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-400 truncate">${item.subtitle || ''}</p>
+                                </div>
+                            </a>
+                        `).join('');
+                    } else {
+                        resultsList.innerHTML = `<div class="p-4 text-center text-gray-400">No results found for "${query}"</div>`;
+                    }
+                })
+                .catch(err => {
+                    console.error("Search Error:", err);
+                    if (resultsList) resultsList.innerHTML = '<div class="p-3 text-center text-rose-500">Failed to load results.</div>';
+                });
+        }, 300);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && resultsDropdown && !resultsDropdown.contains(e.target)) {
+            resultsDropdown.classList.add('hidden');
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+    });
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * 4. NOTIFICATION ENGINE (POLLING & ACTIONS)
+ * --------------------------------------------------------------------------
+ */
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function initNotificationSystem() {
+    const bellBtn = document.getElementById('notificationBellBtn');
+    const dropdown = document.getElementById('notificationDropdown');
+    const list = document.getElementById('notificationList');
+    const badge = document.getElementById('notifBadge');
+    const headerCount = document.getElementById('notifHeaderCount');
+    const markAllBtn = document.getElementById('markAllReadBtn');
+
+    if (!bellBtn) return;
+
+    // Toggle Dropdown
+    bellBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown?.classList.toggle('hidden');
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (dropdown && !dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    // Fetch and render notifications
+    function loadNotifications() {
+        fetch("/accounts/api/notifications/")
+            .then(res => res.json())
+            .then(data => {
+                // Update badge and counter
+                if (badge && headerCount) {
+                    if (data.unread_count > 0) {
+                        badge.innerText = data.unread_count > 9 ? '9+' : data.unread_count;
+                        badge.classList.remove('hidden');
+                        headerCount.innerText = `${data.unread_count} new`;
+                    } else {
+                        badge.classList.add('hidden');
+                        headerCount.innerText = '0 new';
+                    }
+                }
+
+                if (!list) return;
+
+                if (data.notifications && data.notifications.length > 0) {
+                    list.innerHTML = data.notifications.map(n => `
+                        <a href="${n.link || '/tasks/kanban/'}" 
+                           onclick="handleNotificationClick(event, ${n.id}, '${n.link || '/tasks/kanban/'}')"
+                           class="notif-item p-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition cursor-pointer ${!n.is_read ? 'bg-blue-50/40 dark:bg-slate-700/20' : ''}">
+                            <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+                                <i class="fas fa-columns"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="notif-title text-xs text-gray-800 dark:text-gray-200 truncate ${!n.is_read ? 'font-bold' : 'font-semibold'}">${n.title}</p>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">${n.message}</p>
+                                <span class="text-[10px] text-gray-400 mt-1 block">${n.time_ago}</span>
+                            </div>
+                        </a>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div class="p-5 text-center text-xs text-gray-400">No notifications yet</div>';
+                }
+            })
+            .catch(err => console.error("Notification load error:", err));
+    }
+
+    // Single item click & redirect
+    window.handleNotificationClick = function (event, id, targetUrl) {
+        if (event) event.preventDefault();
+
+        fetch(`/accounts/api/notifications/${id}/read/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .catch(err => console.error("Notification status error:", err))
+        .finally(() => {
+            if (targetUrl && targetUrl !== '#' && targetUrl.trim() !== '') {
+                window.location.href = targetUrl;
+            }
+        });
+    };
+
+    // Mark All As Read
+    if (markAllBtn) {
+        markAllBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            fetch("/accounts/api/notifications/mark-all-read/", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Network response was not ok');
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    // Instant UI reset
+                    if (badge) badge.classList.add('hidden');
+                    if (headerCount) headerCount.innerText = '0 new';
+
+                    // Remove highlight background and bold font
+                    if (list) {
+                        list.querySelectorAll('.notif-item').forEach(el => {
+                            el.classList.remove('bg-blue-50/40', 'dark:bg-slate-700/20');
+                        });
+                        list.querySelectorAll('.notif-title').forEach(el => {
+                            el.classList.remove('font-bold');
+                            el.classList.add('font-semibold');
+                        });
+                    }
+
+                    // Reload fresh data from backend
+                    loadNotifications();
+                }
+            })
+            .catch(err => console.error("Mark all read error:", err)); 
+        });
+    }
+
+    // Initial load and polling
+    loadNotifications();
+    setInterval(loadNotifications, 30000);
+}
+/**
+ * --------------------------------------------------------------------------
+ * 5. MASTER DOM INITIALIZER
+ * --------------------------------------------------------------------------
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Initialize Theme UI
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') document.documentElement.classList.add('dark');
+    updateThemeToggleUI(savedTheme);
+
+    // 2. Initialize Core Features
+    initGlobalSearch();
+    initNotificationSystem();
+});
 </script>
 
 {% block scripts %}

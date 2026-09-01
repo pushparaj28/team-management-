@@ -57,7 +57,7 @@
                         <li class="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
                             <div class="flex items-center gap-3">
                                 <div class="h-10 w-10 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold">
-                                    {{ emp.user.first_name|make_list|first|upper|default:"U" }}
+                                {{ emp.user.first_name|make_list|first|upper|default:"U" }}
                                 </div>
                                 <div>
                                     <p class="text-sm font-bold text-gray-900 capitalize">{{ emp.user.first_name }} {{ emp.user.last_name }}</p>

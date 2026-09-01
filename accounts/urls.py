@@ -4,6 +4,8 @@ from . import views
 app_name = 'accounts'
 
 urlpatterns = [
+    path('api/global-search/', views.global_search_api, name='global_search_api'),
+    
     path('register/', views.register_user, name='register'),
     path('login/', views.login_user, name='login'),
     path('logout/', views.logout_user, name='logout'),
@@ -11,11 +13,10 @@ urlpatterns = [
     path('profile/', views.profile_view, name='profile'),
     path('edit-profile/', views.edit_profile, name='edit_profile'),
 
-    path('roles/', views.role_management, name='role_management'),
-    
-    
     path('my-team/add/<int:profile_id>/', views.add_employee_to_team, name='add_employee_to_team'), 
+
     path('switch-role/<str:role>/', views.switch_role, name='switch_role'),
+
     path('managers/', views.managers_list, name='managers_list'),
     path('make-manager/<int:user_id>/', views.make_manager, name='make_manager'),
     path('toggle-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
@@ -27,8 +28,15 @@ urlpatterns = [
     path('edit-employee/<int:user_id>/', views.edit_employee, name='edit_employee'),
     path('add-user/', views.add_user, name='add_user'),
 
-    # 🟢 Naya URL Manager ke personal team page ke liye
+    path('roles/', views.role_management, name='role_management'),
+
+    # Manager ke personal team page ke liye
     path('my-squad/', views.manager_roster_view, name='manager_roster'),
     path('my-squad/add/', views.add_to_squad, name='add_to_squad'),
     path('my-squad/remove/<int:emp_id>/', views.remove_from_squad, name='remove_from_squad'),
+
+
+    path('api/notifications/', views.get_notifications_api, name='get_notifications_api'),
+    path('api/notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    path('api/notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
 ]
