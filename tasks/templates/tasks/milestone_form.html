@@ -1,17 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="p-6 max-w-lg">
-  <h1 class="text-2xl font-bold mb-4">New milestone</h1>
-  <form method="post" class="space-y-4">
-    {% csrf_token %}
-    {% for field in form %}
-    <div>
-      <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
-      {{ field }}
-      {% if field.errors %}<p class="text-red-600 text-xs">{{ field.errors }}</p>{% endif %}
+<div class="min-h-[70vh] flex items-center justify-center py-8 px-4">
+  <div class="bg-white max-w-lg w-full rounded-2xl shadow-sm border border-gray-100 p-8">
+    <div class="w-12 h-12 rounded-xl bg-[#fdf1e4] flex items-center justify-center mb-4">
+      <i class="fas fa-flag text-[#7a2656]"></i>
     </div>
-    {% endfor %}
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save milestone</button>
-  </form>
+    <h1 class="text-2xl font-bold text-gray-800 mb-1">New milestone</h1>
+    <p class="text-sm text-gray-500 mb-6">Track a project goal with a target date and status.</p>
+
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1.5">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<p class="text-rose-600 text-xs mt-1">{{ field.errors }}</p>{% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit"
+              class="w-full bg-[#7a2656] hover:bg-[#5c1c40] text-white font-bold py-3 rounded-lg transition shadow-sm hover:shadow-md mt-2">
+        <i class="fas fa-check mr-1.5"></i>Save milestone
+      </button>
+    </form>
+  </div>
 </div>
 {% endblock %}

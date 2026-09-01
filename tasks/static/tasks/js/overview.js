@@ -335,9 +335,9 @@
             const kpis = {
                 kpi_total_users: data.total_users,
                 kpi_active_projects: data.active_projects,
-                kpi_in_progress: data.tasks_in_progress,
-                kpi_completed: data.tasks_completed,
-                kpi_overdue: data.overdue_tasks
+                kpi_tasks_in_progress: data.tasks_in_progress,
+                kpi_tasks_completed: data.tasks_completed,
+                kpi_overdue_tasks: data.overdue_tasks
             };
 
             Object.entries(kpis).forEach(([id, value]) => {

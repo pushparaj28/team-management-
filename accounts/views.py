@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib import messages
@@ -103,18 +103,61 @@ def login_user(request):
     form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form})
 
-
 @login_required
-def profile(request):
-    profile, created = UserProfile.objects.get_or_create(
-        user=request.user,
-        defaults={'role': 'admin' if request.user.is_superuser else 'employee'}
-    )
-    # Keep an existing profile in sync if someone was promoted to
-    # superuser after their profile was already created
-    if request.user.is_superuser and profile.role != 'admin':
-        profile.role = 'admin'
-        profile.save(update_fields=['role'])
+def profile_view(request):
+    # Ensure profile exists so it doesn't crash for new users
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # 🟢 1. Profile Edit Logic
+        if action == 'update_profile':
+            user = request.user
+            user.first_name = request.POST.get('first_name', user.first_name)
+            user.last_name = request.POST.get('last_name', user.last_name)
+            user.email = request.POST.get('email', user.email)
+            user.save()
+
+            profile.phone_number = request.POST.get('phone_number', profile.phone_number)
+            profile.dob = request.POST.get('dob') or None
+            profile.gender = request.POST.get('gender', profile.gender)
+            profile.blood_group = request.POST.get('blood_group', profile.blood_group)
+            profile.nationality = request.POST.get('nationality', profile.nationality)
+
+            profile.country = request.POST.get('country', profile.country)
+            profile.city = request.POST.get('city', profile.city)
+            profile.postal_code = request.POST.get('postal_code', profile.postal_code)
+            profile.address_line = request.POST.get('address_line', profile.address_line)
+
+            # Profile Picture Upload Handled Here
+            if 'profile_pic' in request.FILES:
+                profile.profile_pic = request.FILES['profile_pic']
+
+            profile.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('accounts:profile')
+
+        # 🟢 2. Change Password Logic (supports "Forgot current password?" mode)
+        elif action == 'change_password':
+            forgot_mode = request.POST.get('forgot_mode') == '1'
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+
+            if new_password != confirm_password:
+                messages.error(request, 'New passwords do not match!')
+            elif len(new_password) < 8:
+                messages.error(request, 'Password must be at least 8 characters long.')
+            elif not forgot_mode and not request.user.check_password(current_password):
+                messages.error(request, 'Incorrect current password!')
+            else:
+                request.user.set_password(new_password)
+                request.user.save()
+                update_session_auth_hash(request, request.user)  # Keeps user logged in after password change
+                messages.success(request, 'Password changed successfully!')
+
+            return redirect('accounts:profile')
 
     return render(request, 'accounts/profile.html', {'profile': profile})
 
@@ -480,3 +523,94 @@ def remove_from_squad(request, emp_id):
         emp.profile.save()
         messages.success(request, f"{emp.first_name} was removed from your squad.")
     return redirect('accounts:manager_roster')
+
+
+@login_required
+def role_management(request):
+    # Security: Sirf Admins is page ko dekh sakte hain
+    if not hasattr(request.user, 'profile') or request.user.profile.role != 'admin':
+        messages.error(request, "Access Denied! Only admins can manage roles.")
+        return redirect('accounts:profile')
+
+    # Card Stats Calculation (Sabhi users ka data count karne ke liye)
+    all_profiles = UserProfile.objects.select_related('user').all()
+    
+    total_users = all_profiles.count()
+    total_admins = all_profiles.filter(role='admin').count()
+    active_admins = all_profiles.filter(role='admin', user__is_active=True).count()
+    inactive_admins = total_admins - active_admins
+
+    # Form Submission Logic (Add New Admin/User)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add_user':
+            first_name = request.POST.get('first_name')
+            last_name = request.POST.get('last_name')
+            email = request.POST.get('email')
+            phone_number = request.POST.get('phone_number')
+            role = request.POST.get('role')
+            password = request.POST.get('password')
+
+            if User.objects.filter(email=email).exists():
+                messages.error(request, "Email already exists!")
+            else:
+                user = User.objects.create_user(username=email, email=email, password=password, first_name=first_name, last_name=last_name)
+                UserProfile.objects.create(user=user, role=role, phone_number=phone_number)
+                messages.success(request, f"New {role.title()} added successfully!")
+            
+            return redirect('accounts:role_management')
+            
+        elif action == 'delete_user':
+            user_id = request.POST.get('user_id')
+            user_to_delete = get_object_or_404(User, id=user_id)
+            if user_to_delete == request.user:
+                messages.error(request, "You cannot delete yourself!")
+            else:
+                user_to_delete.delete()
+                messages.success(request, "User deleted successfully!")
+            return redirect('accounts:role_management')
+
+        elif action == 'edit_user':
+            user_id = request.POST.get('user_id')
+            first_name = request.POST.get('first_name')
+            last_name = request.POST.get('last_name')
+            username = request.POST.get('username')
+            email = request.POST.get('email')
+            phone_number = request.POST.get('phone_number')
+            new_role = request.POST.get('new_role')
+
+            user_obj = get_object_or_404(User, id=user_id)
+            profile = get_object_or_404(UserProfile, user=user_obj)
+
+            # Check if updated username or email is already taken by another user
+            if User.objects.filter(username=username).exclude(id=user_id).exists():
+                messages.error(request, "Username is already taken.")
+            elif User.objects.filter(email=email).exclude(id=user_id).exists():
+                messages.error(request, "Email is already taken.")
+            else:
+                user_obj.first_name = first_name
+                user_obj.last_name = last_name
+                user_obj.username = username
+                user_obj.email = email
+                user_obj.save()
+
+                profile.phone_number = phone_number
+                profile.role = new_role
+                profile.save()
+
+                messages.success(request, f"User {user_obj.username} updated successfully!")
+
+            return redirect('accounts:role_management')
+
+    # 🟢 SIRF ADMINS KO TABLE ME DIKHANE KE LIYE FILTER
+    admin_profiles = all_profiles.filter(role='admin').order_by('-created_at')
+
+    context = {
+        'profiles': admin_profiles, # Table me sirf admin_profiles jayega
+        'total_users': total_users,
+        'total_admins': total_admins,
+        'active_admins': active_admins,
+        'inactive_admins': inactive_admins,
+    }
+    return render(request, 'accounts/role_management.html', context)

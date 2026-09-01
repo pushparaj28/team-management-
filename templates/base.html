@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CollabPulse{% endblock %}</title>
-    <script>
-        tailwind.config = { darkMode: 'class' }
-    </script>
+    <script>tailwind.config = { darkMode: 'class' } </script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class', } </script>
@@ -163,46 +161,50 @@
             <i class="fas fa-calendar-days text-lg w-8 text-center flex-shrink-0"></i>
             <span class="sidebar-text ml-2">Calendar</span>
         </a>
-           
 
+
+<!-- 🟢 RESOURCES CLICK DROPDOWN SECTION (Compact) -->
+<div class="mb-1">
     
+    <!-- Main Link / Click Trigger -->
+    <button onclick="toggleResourceMenu()" class="w-full flex items-center justify-between px-3 py-2 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/10 cursor-pointer">
+        <div class="flex items-center">
+            <i class="fas fa-folder-open text-lg w-8 text-center flex-shrink-0 transition-colors"></i>
+            <span class="sidebar-text ml-2">Resources</span>
+        </div>
+        <!-- Dropdown Arrow Icon -->
+        <i id="resource-arrow" class="fas fa-chevron-down text-[10px] transition-transform duration-300 sidebar-text pr-2"></i>
+    </button>
 
-
-
-<!-- 🟢 RESOURCES HOVER DROPDOWN SECTION (Without Arrow) -->
-<div class="mb-1 group">
-    
-    <!-- Main Link / Hover Trigger -->
-    <a href="{% url 'resource:list' %}" class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/10 cursor-pointer">
-        <i class="fas fa-folder-open text-lg w-8 text-center flex-shrink-0 group-hover:text-violet-400 transition-colors"></i>
-        <span class="sidebar-text ml-2">Resources</span>
-    </a>
-
-    <!-- RESOURCE SUBMENU (Hover par dikhega) -->
-    <div class="hidden group-hover:block ml-11 pl-2 border-l border-[#1f3a5f] mt-1 space-y-1">
+    <!-- RESOURCE SUBMENU (Compact Space) -->
+    <!-- FIX: ml-11 ko ml-8 kiya, aur space-y-1 hata diya -->
+    <div id="resource-submenu" class="hidden ml-8 pl-2 border-l border-[#1f3a5f] mt-1">
         
-        <a href="{% url 'resource:list' %}" class="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
+        <!-- FIX: py-2 ko py-1.5 aur px-3 ko px-2 kiya taaki extra jagah na le -->
+        <a href="{% url 'resource:list' %}" class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
             <i class="fas fa-th-large w-4 text-center text-violet-400"></i>
             <span class="sidebar-text">All Resources</span>
         </a>
 
-        <a href="{% url 'resource:list' %}?mine=1" class="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+        <a href="{% url 'resource:list' %}?mine=1" class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
             <i class="fas fa-user w-4 text-center"></i>
             <span class="sidebar-text">My Resources</span>
         </a>
 
-        <a href="{% url 'resource:list' %}?bookmarks=1" class="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+        <a href="{% url 'resource:list' %}?bookmarks=1" class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
             <i class="fas fa-bookmark w-4 text-center"></i>
             <span class="sidebar-text">Bookmarks</span>
         </a>
 
-        <a href="{% url 'resource:list' %}?recent=1" class="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+        <a href="{% url 'resource:list' %}?recent=1" class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
             <i class="fas fa-clock w-4 text-center"></i>
             <span class="sidebar-text">Recent</span>
         </a>
 
     </div>
 </div>
+
+    
         <!-- Leaves -->
         {% url 'tasks:leave_list' as leaves_url %}
         <a href="{{ leaves_url }}"
@@ -210,21 +212,40 @@
             <i class="fas fa-calendar-alt text-lg w-8 text-center flex-shrink-0"></i>
             <span class="sidebar-text ml-2">Leaves</span>
         </a>
-
-        <!-- My Profile -->
-        {% url 'accounts:profile' as profile_url %}
-        <a href="{{ profile_url }}"
-            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == profile_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-            <i class="fas fa-user-circle text-lg w-8 text-center flex-shrink-0"></i>
-            <span class="sidebar-text ml-2">My Profile</span>
-        </a>
-
-        <!-- Settings -->
-        <a href="#"
-            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/10">
-            <i class="fas fa-cog text-lg w-8 text-center flex-shrink-0"></i>
+  
+        <!-- 🟢 SETTINGS DROPDOWN SECTION -->
+<div class="mb-1">
+    {% url 'accounts:profile' as profile_url %}
+    
+    <!-- Main Link / Click Trigger -->
+    <button onclick="toggleSettingsMenu()" class="w-full flex items-center justify-between px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == profile_url %}text-white bg-white/5{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %} cursor-pointer">
+        <div class="flex items-center">
+            <i class="fas fa-cog text-lg w-8 text-center flex-shrink-0 transition-colors"></i>
             <span class="sidebar-text ml-2">Settings</span>
+        </div>
+        <!-- Dropdown Arrow Icon -->
+        <i id="settings-arrow" class="fas fa-chevron-down text-[10px] transition-transform duration-300 sidebar-text pr-2 {% if request.path == profile_url %}rotate-180{% endif %}"></i>
+    </button>
+
+    <!-- SETTINGS SUBMENU (Compact Space) -->
+    <!-- Note: Agar current page Profile hai, toh hidden class hatega (menu open rahega) -->
+    <div id="settings-submenu" class="{% if request.path != profile_url %}hidden{% endif %} ml-8 pl-2 border-l border-[#1f3a5f] mt-1">
+        
+        <!-- My Profile Link -->
+        <a href="{{ profile_url }}" class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors {% if request.path == profile_url %}text-blue-400 font-semibold bg-white/5{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-user-circle w-4 text-center"></i>
+            <span class="sidebar-text">My Profile</span>
         </a>
+
+        <!-- Add Admin / Role Management (Future Placeholder) -->
+       <a href="{% url 'accounts:role_management' %}" class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors {% if request.path == role_url %}text-blue-400 font-semibold bg-white/5{% else %}text-gray-400 hover:text-white hover:bg-white/10{% endif %}">
+    <i class="fas fa-user-shield w-4 text-center"></i>
+    <span class="sidebar-text">Role Management</span>
+</a>
+
+    </div>
+</div>
+       
     </nav>
 
     <!-- BOTTOM LOGOUT BUTTON -->
@@ -369,127 +390,154 @@
 
 <script>
     // 1. Mini Sidebar Toggle Logic
-    function toggleSidebar() {
-        const sidebar = document.getElementById('app-sidebar');
-        const texts = document.querySelectorAll('.sidebar-text');
+function toggleSidebar() {
+    const sidebar = document.getElementById('app-sidebar');
+    const texts = document.querySelectorAll('.sidebar-text');
 
-        if (window.innerWidth >= 768) {
-            // Desktop Mode
-            if (sidebar.classList.contains('w-64')) {
-                sidebar.classList.replace('w-64', 'w-20');
-                texts.forEach(t => t.classList.add('hidden'));
-            } else {
-                sidebar.classList.replace('w-20', 'w-64');
-                texts.forEach(t => t.classList.remove('hidden'));
-            }
+    if (window.innerWidth >= 768) {
+        // Desktop Mode
+        if (sidebar.classList.contains('w-64')) {
+            sidebar.classList.replace('w-64', 'w-20');
+            texts.forEach(t => t.classList.add('hidden'));
         } else {
-            // Mobile Mode
-            sidebar.classList.toggle('-ml-64');
-            sidebar.classList.toggle('ml-0');
+            sidebar.classList.replace('w-20', 'w-64');
+            texts.forEach(t => t.classList.remove('hidden'));
         }
+    } else {
+        // Mobile Mode
+        sidebar.classList.toggle('-ml-64');
+        sidebar.classList.toggle('ml-0');
     }
+}
 
-    // 2. Dashboard Dropdown Toggle Logic
-    function toggleDashboardMenu() {
-        const subMenu = document.getElementById('dashboardSubMenu');
+// 🟢 MASTER FUNCTION: Jo menu click nahi hua, use band karne ke liye
+function closeAllExcept(currentMenuId) {
+    const allDropdowns = [
+        { menu: 'dashboardSubMenu', arrow: 'dashboard-arrow' },
+        { menu: 'resource-submenu', arrow: 'resource-arrow' },
+        { menu: 'settings-submenu', arrow: 'settings-arrow' }
+    ];
+
+    allDropdowns.forEach(item => {
+        if (item.menu !== currentMenuId) {
+            let submenu = document.getElementById(item.menu);
+            let arrow = document.getElementById(item.arrow);
+            
+            if (submenu) {
+                submenu.classList.add('hidden');
+                // Dashboard ke liye flex hatana zaroori hai
+                if (item.menu === 'dashboardSubMenu') {
+                    submenu.classList.remove('flex');
+                }
+            }
+            if (arrow && arrow.classList.contains('rotate-180')) {
+                arrow.classList.remove('rotate-180');
+            }
+        }
+    });
+}
+
+// 2. Dashboard Dropdown Toggle Logic
+function toggleDashboardMenu() {
+    closeAllExcept('dashboardSubMenu');
+    const subMenu = document.getElementById('dashboardSubMenu');
+    const arrow = document.getElementById('dashboard-arrow');
+    
+    if (subMenu) {
         subMenu.classList.toggle('hidden');
         subMenu.classList.toggle('flex');
     }
+    if (arrow) arrow.classList.toggle('rotate-180');
+}
 
-    // 🟢 1. Naya function jo click karne par theme badlega
-    function toggleTheme() {
-        const currentTheme = localStorage.getItem('theme') || 'light';
-        if (currentTheme === 'light') {
-            setTheme('dark');
-        } else {
-            setTheme('light');
-        }
+// 🟢 Resources Dropdown Toggle Logic
+function toggleResourceMenu() {
+    closeAllExcept('resource-submenu');
+    const submenu = document.getElementById('resource-submenu');
+    const arrow = document.getElementById('resource-arrow');
+    
+    if (submenu) submenu.classList.toggle('hidden');
+    if (arrow) arrow.classList.toggle('rotate-180');
+}
+
+// 🟢 Settings Dropdown Toggle Logic
+function toggleSettingsMenu() {
+    closeAllExcept('settings-submenu');
+    const submenu = document.getElementById('settings-submenu');
+    const arrow = document.getElementById('settings-arrow');
+    
+    if (submenu) submenu.classList.toggle('hidden');
+    if (arrow) arrow.classList.toggle('rotate-180');
+}
+
+// 🟢 1. Naya function jo click karne par theme badlega
+function toggleTheme() {
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (currentTheme === 'light') {
+        setTheme('dark');
+    } else {
+        setTheme('light');
     }
+}
 
-    // 🟢 2. Purana setTheme function (Thode naye dark colors ke sath)
-    function setTheme(mode) {
-        document.documentElement.classList.toggle('dark', mode === 'dark');
-        localStorage.setItem('theme', mode);
-        applyChartTheme(mode);
-        updateThemeToggleUI(mode);
-    }
+// 🟢 2. Purana setTheme function (Thode naye dark colors ke sath)
+function setTheme(mode) {
+    document.documentElement.classList.toggle('dark', mode === 'dark');
+    localStorage.setItem('theme', mode);
+    applyChartTheme(mode);
+    updateThemeToggleUI(mode);
+}
 
-    // Highlights whichever icon (sun/moon) matches the ACTUAL current
-    // theme, instead of the old version where sun was always styled
-    // "active" no matter which mode was really on.
-    function updateThemeToggleUI(mode) {
-        const lightBtn = document.getElementById('lightThemeBtn');
-        const darkBtn = document.getElementById('darkThemeBtn');
-        if (!lightBtn || !darkBtn) return;
+function updateThemeToggleUI(mode) {
+    const lightBtn = document.getElementById('lightThemeBtn');
+    const darkBtn = document.getElementById('darkThemeBtn');
+    if (!lightBtn || !darkBtn) return;
 
-        const activeClasses = ['bg-white', 'shadow-sm', 'text-amber-500'];
-        const inactiveClasses = ['text-gray-400', 'hover:text-gray-600'];
-        const darkActiveClasses = ['bg-slate-700', 'shadow-sm', 'text-indigo-300'];
+    const activeClasses = ['bg-white', 'shadow-sm', 'text-amber-500'];
+    const inactiveClasses = ['text-gray-400', 'hover:text-gray-600'];
+    const darkActiveClasses = ['bg-slate-700', 'shadow-sm', 'text-indigo-300'];
 
-        lightBtn.className = 'p-1.5 rounded-full w-8 h-8 flex items-center justify-center transition-colors ' +
-            (mode === 'light' ? activeClasses.join(' ') : inactiveClasses.join(' '));
-        darkBtn.className = 'p-1.5 rounded-full w-8 h-8 flex items-center justify-center transition-colors ' +
-            (mode === 'dark' ? darkActiveClasses.join(' ') : inactiveClasses.join(' '));
-    }
+    lightBtn.className = 'p-1.5 rounded-full w-8 h-8 flex items-center justify-center transition-colors ' +
+        (mode === 'light' ? activeClasses.join(' ') : inactiveClasses.join(' '));
+    darkBtn.className = 'p-1.5 rounded-full w-8 h-8 flex items-center justify-center transition-colors ' +
+        (mode === 'dark' ? darkActiveClasses.join(' ') : inactiveClasses.join(' '));
+}
 
-    // Keeps any Chart.js instances on the current page readable in
-    // dark mode — canvas text isn't touched by CSS, so this updates
-    // axis labels, legend text, and gridlines directly via Chart.js's
-    // own API whenever the theme is switched.
-    function applyChartTheme(mode) {
-        if (typeof Chart === 'undefined') return;
-        const textColor = mode === 'dark' ? '#cbd5e1' : '#374151';
-        const gridColor = mode === 'dark' ? '#334155' : '#e5e7eb';
+function applyChartTheme(mode) {
+    if (typeof Chart === 'undefined') return;
+    const textColor = mode === 'dark' ? '#cbd5e1' : '#374151';
+    const gridColor = mode === 'dark' ? '#334155' : '#e5e7eb';
 
-        [window.taskChartInstance, window.projectChartInstance, window.teamChartInstance].forEach(chart => {
-            if (!chart) return;
-            try {
-                if (chart.options.plugins && chart.options.plugins.legend) {
-                    chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
-                    chart.options.plugins.legend.labels.color = textColor;
-                }
-                if (chart.options.scales) {
-                    Object.values(chart.options.scales).forEach(scale => {
-                        scale.ticks = scale.ticks || {};
-                        scale.ticks.color = textColor;
-                        scale.grid = scale.grid || {};
-                        scale.grid.color = gridColor;
-                    });
-                }
-                chart.update();
-            } catch (err) {
-                console.error('Chart theme update failed:', err);
+    [window.taskChartInstance, window.projectChartInstance, window.teamChartInstance].forEach(chart => {
+        if (!chart) return;
+        try {
+            if (chart.options.plugins && chart.options.plugins.legend) {
+                chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
+                chart.options.plugins.legend.labels.color = textColor;
             }
-        });
-    }
-
-    // Auto-apply theme on page load
-    (function () {
-        const saved = localStorage.getItem('theme') || 'light';
-        if (saved === 'dark') {
-            document.documentElement.classList.add('dark');
+            if (chart.options.scales) {
+                Object.values(chart.options.scales).forEach(scale => {
+                    scale.ticks = scale.ticks || {};
+                    scale.ticks.color = textColor;
+                    scale.grid = scale.grid || {};
+                    scale.grid.color = gridColor;
+                });
+            }
+            chart.update();
+        } catch (err) {
+            console.error('Chart theme update failed:', err);
         }
-        document.addEventListener('DOMContentLoaded', () => updateThemeToggleUI(saved));
-    })();
+    });
+}
 
- 
-
-    // 🟢 Resources Dropdown Toggle Logic
-    function toggleResourceMenu() {
-        const menu = document.getElementById('resourceSubMenu');
-        const caret = document.getElementById('resource-caret');
-        
-        // Menu ko hide/show karna
-        menu.classList.toggle('hidden');
-        
-        // Arrow (teer) ko 180 degree ghumana
-        caret.classList.toggle('rotate-180');
-        
-        // Optional: Naye icon ko render karne ke liye (agar zarurat ho)
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
+// Auto-apply theme on page load
+(function () {
+    const saved = localStorage.getItem('theme') || 'light';
+    if (saved === 'dark') {
+        document.documentElement.classList.add('dark');
     }
+    document.addEventListener('DOMContentLoaded', () => updateThemeToggleUI(saved));
+})();
 
 </script>
 
