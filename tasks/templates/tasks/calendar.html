@@ -19,6 +19,7 @@
       </a>
       {% endif %}
       <a href="?year={{ prev_year }}&month={{ prev_month }}" class="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">&larr; Prev</a>
+      <a href="?year={{ today.year }}&month={{ today.month }}" class="px-3 py-2 bg-[#7a2656] hover:bg-[#5c1c40] text-white rounded-lg text-sm font-semibold transition">Today</a>
       <a href="?year={{ next_year }}&month={{ next_month }}" class="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">Next &rarr;</a>
     </div>
   </div>
@@ -30,8 +31,9 @@
   <div class="grid grid-cols-7 gap-2">
     {% for week in month_days %}
       {% for day in week %}
-        <div class="bg-white rounded-xl border border-gray-100 min-h-[110px] p-2.5 transition-shadow hover:shadow-sm
-          {% if day == 0 %}bg-gray-50/50 border-none{% endif %}">
+        <div class="bg-white rounded-xl border border-gray-100 min-h-[110px] p-2.5 transition-shadow hover:shadow-md cursor-pointer
+          {% if day == 0 %}bg-gray-50/50 border-none cursor-default{% endif %}"
+          {% if day != 0 %}onclick='openDayDetail({{ day }}, "{{ month_name }}", {{ events_by_day|get_item:day|safe_json }})'{% endif %}>
           {% if day != 0 %}
             <p class="text-xs font-bold mb-1.5
               {% if day == today.day and month == today.month and year == today.year %}
@@ -55,4 +57,34 @@
     {% endfor %}
   </div>
 </div>
+<div id="dayDetailModal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] overflow-y-auto">
+    <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+      <h3 id="dayDetailTitle" class="font-bold text-gray-800"></h3>
+      <button onclick="closeDayDetail()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="dayDetailBody" class="p-5 space-y-2"></div>
+  </div>
+</div>
+
+<script>
+function openDayDetail(day, monthName, items) {
+  document.getElementById('dayDetailTitle').textContent = `${monthName} ${day}`;
+  const body = document.getElementById('dayDetailBody');
+  if (!items.length) {
+    body.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Nothing scheduled this day.</p>';
+  } else {
+    body.innerHTML = items.map(i => `
+      <div class="flex items-center gap-2 p-2 rounded-lg ${i.cls}">
+        <span class="w-2 h-2 rounded-full ${i.dot} flex-shrink-0"></span>
+        <div class="min-w-0"><p class="text-sm font-medium truncate">${i.label}</p><p class="text-xs opacity-70">${i.sub}</p></div>
+      </div>
+    `).join('');
+  }
+  document.getElementById('dayDetailModal').classList.remove('hidden');
+}
+function closeDayDetail() {
+  document.getElementById('dayDetailModal').classList.add('hidden');
+}
+</script>
 {% endblock %}

@@ -56,9 +56,9 @@ class MilestoneForm(forms.ModelForm):
         model = Milestone
         fields = ['title', 'target_date', 'status']
         widgets = {
-            'target_date': forms.DateInput(attrs={'type': 'date', 'class': 'border rounded px-3 py-2 w-full'}),
-            'title': forms.TextInput(attrs={'class': 'border rounded px-3 py-2 w-full'}),
-            'status': forms.Select(attrs={'class': 'border rounded px-3 py-2 w-full'}),
+            'target_date': forms.DateInput(attrs={'type': 'date', 'class': 'border border-gray-200 rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-[#7a2656]/20 focus:border-[#7a2656] transition'}),
+            'title': forms.TextInput(attrs={'class': 'border border-gray-200 rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-[#7a2656]/20 focus:border-[#7a2656] transition', 'placeholder': 'e.g. Beta launch'}),
+            'status': forms.Select(attrs={'class': 'border border-gray-200 rounded-lg px-3 py-2.5 w-full text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#7a2656]/20 focus:border-[#7a2656] transition'}),
         }
 
 class LeaveRequestForm(forms.ModelForm):

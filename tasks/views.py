@@ -11,6 +11,7 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from .models import LeaveRequest, Event
 from .forms import LeaveRequestForm
+from django.core.paginator import Paginator
 
 from accounts.models import UserProfile
 from .models import Task, Milestone, TaskComment
@@ -313,6 +314,10 @@ def dashboard(request):
     elif _is_manager(user):
         total_employees = UserProfile.objects.filter(manager=user, role='employee').count()
 
+    paginator = Paginator(member_stats, 5)
+    page_number = request.GET.get('page')
+    member_stats_page = paginator.get_page(page_number)
+
     context = {
         'milestones': Milestone.objects.all(),
         'percent_complete': percent_complete,
@@ -320,7 +325,7 @@ def dashboard(request):
         'done_tasks': done,
         'overdue_count': overdue_count,
         'upcoming_tasks': upcoming_tasks,
-        'member_stats': member_stats,
+        'member_stats': member_stats_page,
         'can_manage': user.is_superuser or _is_manager(user),
         'today': today,
         'total_managers': total_managers,
@@ -511,25 +516,37 @@ def quick_create_task(request):
         'assigned_to': task.assigned_to.username,
     })
 
+
 @login_required
 def leave_list(request):
     user = request.user
-    leaves = _visible_leaves(user)
-
     context = {
         'is_admin': user.is_superuser,
         'is_manager': _is_manager(user),
     }
 
     if user.is_superuser:
-        # Admin sees two clearly separated sections — never mixed
-        context['manager_leaves'] = leaves.filter(employee__profile__role='manager').order_by('-created_at')
-        context['employee_leaves'] = leaves.filter(employee__profile__role='employee').order_by('-created_at')
+        manager_leaves_qs = _visible_leaves(user).filter(employee__profile__role='manager').order_by('-created_at')
+        employee_leaves_qs = _visible_leaves(user).filter(employee__profile__role='employee').order_by('-created_at')
+
+        mgr_paginator = Paginator(manager_leaves_qs, 5)
+        emp_paginator = Paginator(employee_leaves_qs, 5)
+        context['manager_leaves'] = mgr_paginator.get_page(request.GET.get('mgr_page'))
+        context['employee_leaves'] = emp_paginator.get_page(request.GET.get('emp_page'))
+
     elif _is_manager(user):
-        context['team_leaves'] = leaves.filter(employee__profile__role='employee').order_by('-created_at')
-        context['own_leave'] = leaves.filter(employee=user).order_by('-created_at')
+        team_leaves_qs = _visible_leaves(user).filter(employee__profile__role='employee').order_by('-created_at')
+        own_leave_qs = _visible_leaves(user).filter(employee=user).order_by('-created_at')
+
+        team_paginator = Paginator(team_leaves_qs, 5)
+        own_paginator = Paginator(own_leave_qs, 5)
+        context['team_leaves'] = team_paginator.get_page(request.GET.get('team_page'))
+        context['own_leave'] = own_paginator.get_page(request.GET.get('own_page'))
+
     else:
-        context['leaves'] = leaves.order_by('-created_at')
+        leaves_qs = _visible_leaves(user).order_by('-created_at')
+        paginator = Paginator(leaves_qs, 5)
+        context['leaves'] = paginator.get_page(request.GET.get('page'))
 
     return render(request, 'tasks/leaves.html', context)
 

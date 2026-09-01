@@ -1,110 +1,184 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="p-6">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Leaves</h1>
+  <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Leaves</h1>
+      <p class="text-sm text-gray-500 mt-1">
+        {% if is_admin %}Company-wide leave records.{% elif is_manager %}Your team's leave requests and your own.{% else %}Your leave history and status.{% endif %}
+      </p>
+    </div>
     {% if not is_admin %}
-    <a href="{% url 'tasks:leave_request_create' %}" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white px-4 py-2 rounded-lg text-sm font-semibold">+ Request leave</a>
+    <a href="{% url 'tasks:leave_request_create' %}" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm hover:shadow-md">
+      + Request leave
+    </a>
     {% endif %}
   </div>
 
   {% if is_admin %}
-    <p class="text-sm font-semibold text-gray-700 mb-2">Manager leave requests <span class="text-gray-400 font-normal">— full history, decided by Admin</span></p>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y mb-6">
+    <h2 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Manager leave requests</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-50 mb-3">
       {% for leave in manager_leaves %}
-      <div class="p-4 flex justify-between items-center">
-        <div>
-          <p class="text-sm font-semibold text-gray-800">{{ leave.employee.username }} <span class="text-xs text-gray-400 font-normal">Manager</span></p>
-          <p class="text-sm text-gray-600">{{ leave.start_date }} → {{ leave.end_date }}</p>
-          <p class="text-xs text-gray-400 mt-1">{{ leave.reason|default:"No reason given" }} · requested {{ leave.created_at|date:"M d, Y" }}</p>
-          {% if leave.reviewed_by %}<p class="text-xs text-gray-400">Reviewed by {{ leave.reviewed_by.username }}</p>{% endif %}
+      <div class="p-4 flex flex-wrap justify-between items-center gap-3 hover:bg-gray-50/60 transition-colors">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-full bg-gradient-to-br from-[#7a2656] to-[#a8447a] text-white text-sm flex items-center justify-center font-semibold flex-shrink-0">
+            {{ leave.employee.username|slice:":1"|upper }}
+          </span>
+          <div>
+            <p class="text-sm font-semibold text-gray-800">{{ leave.employee.username }} <span class="text-xs text-gray-400 font-normal">Manager</span></p>
+            <p class="text-sm text-gray-600">{{ leave.start_date }} → {{ leave.end_date }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ leave.reason|default:"No reason given" }}</p>
+          </div>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-xs px-2 py-1 rounded-full font-medium
+          <span class="text-xs px-2.5 py-1 rounded-full font-semibold
             {% if leave.status == 'Approved' %}bg-emerald-100 text-emerald-700
             {% elif leave.status == 'Rejected' %}bg-rose-100 text-rose-700
             {% else %}bg-amber-100 text-amber-700{% endif %}">{{ leave.status }}</span>
           {% if leave.status == 'Pending' %}
-          <form method="post" action="{% url 'tasks:leave_review' leave.pk %}"><input type="hidden" name="decision" value="Approved">{% csrf_token %}<button class="text-xs bg-emerald-600 text-white px-2 py-1 rounded">Approve</button></form>
-          <form method="post" action="{% url 'tasks:leave_review' leave.pk %}"><input type="hidden" name="decision" value="Rejected">{% csrf_token %}<button class="text-xs bg-rose-600 text-white px-2 py-1 rounded">Reject</button></form>
+          <form method="post" action="{% url 'tasks:leave_review' leave.pk %}"><input type="hidden" name="decision" value="Approved">{% csrf_token %}<button class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold transition">Approve</button></form>
+          <form method="post" action="{% url 'tasks:leave_review' leave.pk %}"><input type="hidden" name="decision" value="Rejected">{% csrf_token %}<button class="text-xs bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg font-semibold transition">Reject</button></form>
           {% endif %}
         </div>
       </div>
-      {% empty %}<p class="p-4 text-gray-400 text-sm">No manager leave requests.</p>{% endfor %}
+      {% empty %}
+      <div class="p-8 text-center"><i class="fas fa-inbox text-2xl text-gray-300 mb-2"></i><p class="text-sm text-gray-400">No manager leave requests.</p></div>
+      {% endfor %}
     </div>
+    {% if manager_leaves.has_other_pages %}
+    <div class="flex justify-end gap-1 mb-8">
+      {% if manager_leaves.has_previous %}<a href="?mgr_page={{ manager_leaves.previous_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">Prev</a>{% endif %}
+      {% for num in manager_leaves.paginator.page_range %}
+        {% if manager_leaves.number == num %}<span class="px-2.5 py-1 bg-[#7a2656] text-white rounded-md text-xs font-bold">{{ num }}</span>
+        {% else %}<a href="?mgr_page={{ num }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">{{ num }}</a>{% endif %}
+      {% endfor %}
+      {% if manager_leaves.has_next %}<a href="?mgr_page={{ manager_leaves.next_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">Next</a>{% endif %}
+    </div>
+    {% endif %}
 
-    <p class="text-sm font-semibold text-gray-700 mb-2">Employee leave requests <span class="text-gray-400 font-normal">— decided by their manager, shown here for the record</span></p>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y">
+    <h2 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Employee leave requests <span class="text-gray-400 font-normal normal-case">— decided by their manager</span></h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-50 mb-3">
       {% for leave in employee_leaves %}
-      <div class="p-4 flex justify-between items-center">
-        <div>
-          <p class="text-sm font-semibold text-gray-800">{{ leave.employee.username }} <span class="text-xs text-gray-400 font-normal">Employee</span></p>
-          <p class="text-sm text-gray-600">{{ leave.start_date }} → {{ leave.end_date }}</p>
-          <p class="text-xs text-gray-400 mt-1">{{ leave.reason|default:"No reason given" }} · requested {{ leave.created_at|date:"M d, Y" }}</p>
-          {% if leave.reviewed_by %}<p class="text-xs text-gray-400">Reviewed by {{ leave.reviewed_by.username }}</p>{% endif %}
+      <div class="p-4 flex flex-wrap justify-between items-center gap-3 hover:bg-gray-50/60 transition-colors">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-white text-sm flex items-center justify-center font-semibold flex-shrink-0">
+            {{ leave.employee.username|slice:":1"|upper }}
+          </span>
+          <div>
+            <p class="text-sm font-semibold text-gray-800">{{ leave.employee.username }} <span class="text-xs text-gray-400 font-normal">Employee</span></p>
+            <p class="text-sm text-gray-600">{{ leave.start_date }} → {{ leave.end_date }}</p>
+            {% if leave.reviewed_by %}<p class="text-xs text-gray-400 mt-0.5">Reviewed by {{ leave.reviewed_by.username }}</p>{% endif %}
+          </div>
         </div>
-        <span class="text-xs px-2 py-1 rounded-full font-medium
-          {% if leave.status == 'Approved' %}bg-emerald-100 text-emerald-700
-          {% else %}bg-rose-100 text-rose-700{% endif %}">{{ leave.status }}</span>
+        <span class="text-xs px-2.5 py-1 rounded-full font-semibold
+          {% if leave.status == 'Approved' %}bg-emerald-100 text-emerald-700{% else %}bg-rose-100 text-rose-700{% endif %}">{{ leave.status }}</span>
       </div>
-      {% empty %}<p class="p-4 text-gray-400 text-sm">No decided employee leave requests yet.</p>{% endfor %}
+      {% empty %}
+      <div class="p-8 text-center"><i class="fas fa-inbox text-2xl text-gray-300 mb-2"></i><p class="text-sm text-gray-400">No decided employee leave requests yet.</p></div>
+      {% endfor %}
     </div>
+    {% if employee_leaves.has_other_pages %}
+    <div class="flex justify-end gap-1">
+      {% if employee_leaves.has_previous %}<a href="?emp_page={{ employee_leaves.previous_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">Prev</a>{% endif %}
+      {% for num in employee_leaves.paginator.page_range %}
+        {% if employee_leaves.number == num %}<span class="px-2.5 py-1 bg-[#7a2656] text-white rounded-md text-xs font-bold">{{ num }}</span>
+        {% else %}<a href="?emp_page={{ num }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">{{ num }}</a>{% endif %}
+      {% endfor %}
+      {% if employee_leaves.has_next %}<a href="?emp_page={{ employee_leaves.next_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">Next</a>{% endif %}
+    </div>
+    {% endif %}
 
   {% elif is_manager %}
-    <p class="text-sm font-semibold text-gray-700 mb-2">My team's requests <span class="text-gray-400 font-normal">— awaiting your decision</span></p>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y mb-6">
+    <h2 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">My team's requests</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-50 mb-3">
       {% for leave in team_leaves %}
-      <div class="p-4 flex justify-between items-center">
+      <div class="p-4 flex flex-wrap justify-between items-center gap-3 hover:bg-gray-50/60 transition-colors">
         <div>
           <p class="text-sm font-semibold text-gray-800">{{ leave.employee.username }}</p>
           <p class="text-sm text-gray-600">{{ leave.start_date }} → {{ leave.end_date }}</p>
-          <p class="text-xs text-gray-400 mt-1">{{ leave.reason|default:"No reason given" }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">{{ leave.reason|default:"No reason given" }}</p>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-xs px-2 py-1 rounded-full font-medium
+          <span class="text-xs px-2.5 py-1 rounded-full font-semibold
             {% if leave.status == 'Approved' %}bg-emerald-100 text-emerald-700
             {% elif leave.status == 'Rejected' %}bg-rose-100 text-rose-700
             {% else %}bg-amber-100 text-amber-700{% endif %}">{{ leave.status }}</span>
           {% if leave.status == 'Pending' %}
-          <form method="post" action="{% url 'tasks:leave_review' leave.pk %}"><input type="hidden" name="decision" value="Approved">{% csrf_token %}<button class="text-xs bg-emerald-600 text-white px-2 py-1 rounded">Approve</button></form>
-          <form method="post" action="{% url 'tasks:leave_review' leave.pk %}"><input type="hidden" name="decision" value="Rejected">{% csrf_token %}<button class="text-xs bg-rose-600 text-white px-2 py-1 rounded">Reject</button></form>
+          <form method="post" action="{% url 'tasks:leave_review' leave.pk %}"><input type="hidden" name="decision" value="Approved">{% csrf_token %}<button class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold transition">Approve</button></form>
+          <form method="post" action="{% url 'tasks:leave_review' leave.pk %}"><input type="hidden" name="decision" value="Rejected">{% csrf_token %}<button class="text-xs bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg font-semibold transition">Reject</button></form>
           {% endif %}
         </div>
       </div>
-      {% empty %}<p class="p-4 text-gray-400 text-sm">No requests from your team.</p>{% endfor %}
+      {% empty %}
+      <div class="p-8 text-center"><i class="fas fa-inbox text-2xl text-gray-300 mb-2"></i><p class="text-sm text-gray-400">No requests from your team.</p></div>
+      {% endfor %}
     </div>
+    {% if team_leaves.has_other_pages %}
+    <div class="flex justify-end gap-1 mb-8">
+      {% if team_leaves.has_previous %}<a href="?team_page={{ team_leaves.previous_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">Prev</a>{% endif %}
+      {% for num in team_leaves.paginator.page_range %}
+        {% if team_leaves.number == num %}<span class="px-2.5 py-1 bg-[#7a2656] text-white rounded-md text-xs font-bold">{{ num }}</span>
+        {% else %}<a href="?team_page={{ num }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">{{ num }}</a>{% endif %}
+      {% endfor %}
+      {% if team_leaves.has_next %}<a href="?team_page={{ team_leaves.next_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">Next</a>{% endif %}
+    </div>
+    {% endif %}
 
-    <p class="text-sm font-semibold text-gray-700 mb-2">My leave <span class="text-gray-400 font-normal">— sent to Admin for approval</span></p>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y">
+    <h2 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">My leave</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-50">
       {% for leave in own_leave %}
       <div class="p-4 flex justify-between items-center">
         <div>
           <p class="text-sm text-gray-600">{{ leave.start_date }} → {{ leave.end_date }}</p>
-          <p class="text-xs text-gray-400 mt-1">{{ leave.reason|default:"No reason given" }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">{{ leave.reason|default:"No reason given" }}</p>
         </div>
-        <span class="text-xs px-2 py-1 rounded-full font-medium
+        <span class="text-xs px-2.5 py-1 rounded-full font-semibold
           {% if leave.status == 'Approved' %}bg-emerald-100 text-emerald-700
           {% elif leave.status == 'Rejected' %}bg-rose-100 text-rose-700
           {% else %}bg-amber-100 text-amber-700{% endif %}">{{ leave.status }}</span>
       </div>
-      {% empty %}<p class="p-4 text-gray-400 text-sm">You haven't requested leave.</p>{% endfor %}
+      {% empty %}
+      <div class="p-8 text-center"><i class="fas fa-inbox text-2xl text-gray-300 mb-2"></i><p class="text-sm text-gray-400">You haven't requested leave.</p></div>
+      {% endfor %}
     </div>
+    {% if own_leave.has_other_pages %}
+    <div class="flex justify-end gap-1 mt-3">
+      {% if own_leave.has_previous %}<a href="?own_page={{ own_leave.previous_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">Prev</a>{% endif %}
+      {% for num in own_leave.paginator.page_range %}
+        {% if own_leave.number == num %}<span class="px-2.5 py-1 bg-[#7a2656] text-white rounded-md text-xs font-bold">{{ num }}</span>
+        {% else %}<a href="?own_page={{ num }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">{{ num }}</a>{% endif %}
+      {% endfor %}
+      {% if own_leave.has_next %}<a href="?own_page={{ own_leave.next_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">Next</a>{% endif %}
+    </div>
+    {% endif %}
 
   {% else %}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-50">
       {% for leave in leaves %}
       <div class="p-4 flex justify-between items-center">
         <div>
           <p class="text-sm text-gray-600">{{ leave.start_date }} → {{ leave.end_date }}</p>
-          <p class="text-xs text-gray-400 mt-1">{{ leave.reason|default:"No reason given" }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">{{ leave.reason|default:"No reason given" }}</p>
         </div>
-        <span class="text-xs px-2 py-1 rounded-full font-medium
+        <span class="text-xs px-2.5 py-1 rounded-full font-semibold
           {% if leave.status == 'Approved' %}bg-emerald-100 text-emerald-700
           {% elif leave.status == 'Rejected' %}bg-rose-100 text-rose-700
           {% else %}bg-amber-100 text-amber-700{% endif %}">{{ leave.status }}</span>
       </div>
-      {% empty %}<p class="p-4 text-gray-400 text-sm">You haven't requested leave yet.</p>{% endfor %}
+      {% empty %}
+      <div class="p-8 text-center"><i class="fas fa-inbox text-2xl text-gray-300 mb-2"></i><p class="text-sm text-gray-400">You haven't requested leave yet.</p></div>
+      {% endfor %}
     </div>
+    {% if leaves.has_other_pages %}
+    <div class="flex justify-end gap-1 mt-3">
+      {% if leaves.has_previous %}<a href="?page={{ leaves.previous_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">Prev</a>{% endif %}
+      {% for num in leaves.paginator.page_range %}
+        {% if leaves.number == num %}<span class="px-2.5 py-1 bg-[#7a2656] text-white rounded-md text-xs font-bold">{{ num }}</span>
+        {% else %}<a href="?page={{ num }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">{{ num }}</a>{% endif %}
+      {% endfor %}
+      {% if leaves.has_next %}<a href="?page={{ leaves.next_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50">Next</a>{% endif %}
+    </div>
+    {% endif %}
   {% endif %}
 </div>
 {% endblock %}
