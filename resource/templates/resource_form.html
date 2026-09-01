@@ -1,589 +1,160 @@
 {% extends "base.html" %}
 
-{% block title %}{{ page_title|default:"Add Resource" }} | CollabPulse{% endblock %}
+{% block title %}{{ page_title }} | CollabPulse{% endblock %}
 
 {% block content %}
-<!-- Lucide Icons CDN -->
-<script src="https://unpkg.com/lucide@latest"></script>
-
 <style>
-    .glass-card {
-        background: rgba(30, 41, 59, 0.7);
-        backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .form-input-style {
-        background-color: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #f8fafc;
-        transition: all 0.2s ease-in-out;
-    }
-
-    .form-input-style:focus,
-    .form-input-style input:focus,
-    .form-input-style textarea:focus,
-    .form-input-style select:focus {
-        outline: none;
-        border-color: #8b5cf6;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
-        background-color: rgba(15, 23, 42, 0.9);
-    }
-
-    /* Target Django's raw inputs if rendered directly */
-    .django-field-wrapper input,
-    .django-field-wrapper textarea,
-    .django-field-wrapper select {
+    /* Styling Django's default form widgets seamlessly */
+    .form-field input:not([type="file"]),
+    .form-field textarea,
+    .form-field select {
         width: 100%;
-        background-color: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #f8fafc;
-        padding: 0.75rem 1rem 0.75rem 2.75rem;
-        border-radius: 0.75rem;
-        font-size: 0.875rem;
+        padding: 0.625rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #cbd5e1; /* slate-300 */
+        background-color: #ffffff;
+        color: #0f172a; /* slate-900 */
+        font-size: 0.95rem;
         transition: all 0.2s ease-in-out;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
-
-    .django-field-wrapper input:focus,
-    .django-field-wrapper textarea:focus,
-    .django-field-wrapper select:focus {
+    
+    .form-field input:focus:not([type="file"]),
+    .form-field textarea:focus,
+    .form-field select:focus {
         outline: none;
-        border-color: #8b5cf6;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
-        background-color: rgba(15, 23, 42, 0.9);
+        border-color: #8b5cf6; /* violet-500 */
+        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
     }
 
     .upload-zone-active {
         border-color: #8b5cf6 !important;
         background-color: rgba(237, 234, 245, 0.12) !important;
     }
-
-    .category-chip.selected {
-        border-color: #8b5cf6;
-        background-color: rgba(139, 92, 246, 0.18);
-        color: #c4b5fd;
-        box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
-    }
-
-    .toast-enter {
-        transform: translateY(100%);
+    
+    /* Hide the default file input styling to create a custom dropzone */
+    .upload-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
         opacity: 0;
-    }
-    .toast-show {
-        transform: translateY(0);
-        opacity: 1;
+        cursor: pointer;
+        z-index: 10;
     }
 </style>
 
-<div class="max-w-4xl mx-auto py-4 px-2 sm:px-4">
-
-    <!-- Header Navigation & Title -->
+<div class="max-w-3xl mx-auto px-4 py-10">
+    <!-- Header Section -->
     <div class="mb-8">
-        <a href="{% url 'resource:list' %}" class="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-violet-400 transition-colors group mb-3">
-            <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform"></i>
+        <a href="{% url 'resource:list' %}" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-violet-600 transition-colors mb-4 group">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-1.5 transition-transform group-hover:-translate-x-1"></i> 
             Back to Resources
         </a>
-        
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-                    <span>{{ page_title|default:"Add New Resource" }}</span>
-                    <span class="text-xs font-normal text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2.5 py-1 rounded-full">CollabPulse Workspace</span>
-                </h1>
-                <p class="text-slate-400 text-sm mt-1">Add documents, technical files, designs, links or media to the team workspace.</p>
-            </div>
-            
-            <button type="button" id="toggleGuideBtn" class="inline-flex items-center gap-2 text-xs font-medium text-slate-300 bg-slate-800/80 hover:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-700/60 transition-all self-start sm:self-auto">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-violet-400"></i>
-                <span>Upload Guidelines</span>
-            </button>
-        </div>
+        <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ page_title }}</h1>
+        <p class="text-slate-500 mt-2 text-base">Add documents, technical files, designs, links or media to the team workspace.</p>
     </div>
 
-    <!-- Collapsible Upload Guidelines -->
-    <div id="guidelinesBox" class="hidden mb-6 p-4 rounded-2xl bg-gradient-to-r from-violet-950/40 via-indigo-950/30 to-slate-900 border border-violet-500/20 text-xs text-slate-300 flex items-start justify-between gap-3 shadow-lg">
-        <div class="flex items-start gap-3">
-            <i data-lucide="info" class="w-5 h-5 text-violet-400 flex-shrink-0 mt-0.5"></i>
-            <div>
-                <strong class="text-slate-200 block mb-1">Quick Tips for Sharing Resources:</strong>
-                <ul class="list-disc list-inside space-y-1 text-slate-400">
-                    <li>Supported Formats: PDF, SQL, PNG, SVG, XLSX, MP4, Figma Links, GitHub Repos.</li>
-                    <li>You can either upload a physical file OR paste an external URL.</li>
-                    <li>Adding relevant tags ensures your team can search and locate assets easily.</li>
-                </ul>
-            </div>
-        </div>
-        <button type="button" id="closeGuideBtn" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-
-    <!-- Main Django Form -->
-    <form method="post" enctype="multipart/form-data" id="resourceForm" class="glass-card rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+    <!-- Form Section -->
+    <form method="post" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         {% csrf_token %}
 
-        <!-- Decorative Glow Effect -->
-        <div class="absolute -top-24 -right-24 w-60 h-60 bg-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <!-- Django Non-field Errors -->
-        {% if form.non_field_errors %}
-            <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm flex items-center gap-3">
-                <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
-                <div>{{ form.non_field_errors }}</div>
-            </div>
-        {% endif %}
-
-        <div class="space-y-6">
-
-            <!-- Resource Name Field -->
-            <div class="form-field">
-                <label for="{{ form.title.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2 flex justify-between items-center">
-                    <span>Resource Name <span class="text-rose-400">*</span></span>
-                    <span class="text-[11px] font-normal text-slate-400" id="titleCounter">0/100</span>
-                </label>
-                <div class="relative django-field-wrapper">
-                    {% if form.title %}
-                        {{ form.title }}
-                    {% else %}
-                        <input type="text" id="id_title" name="title" required maxlength="100" placeholder="e.g. Q3 System Architecture & Database Schema" class="form-input-style w-full px-4 py-3 rounded-xl text-sm placeholder:text-slate-500 pl-11">
-                    {% endif %}
-                    <i data-lucide="file-text" class="w-5 h-5 text-slate-500 absolute left-3.5 top-3.5 pointer-events-none"></i>
+        <div class="p-6 sm:p-8">
+            {% if form.non_field_errors %}
+                <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+                    {{ form.non_field_errors }}
                 </div>
-                {% for error in form.title.errors %}
-                    <small class="text-xs text-rose-400 mt-1.5 flex items-center gap-1">
-                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> {{ error }}
-                    </small>
-                {% endfor %}
-            </div>
+            {% endif %}
 
-            <!-- Description Field -->
-            <div class="form-field">
-                <label for="{{ form.description.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                    Description
-                </label>
-                <div class="relative django-field-wrapper">
-                    {% if form.description %}
-                        {{ form.description }}
-                    {% else %}
-                        <textarea id="id_description" name="description" rows="3" placeholder="Provide context, usage details, or instructions for the team..." class="form-input-style w-full px-4 py-3 rounded-xl text-sm placeholder:text-slate-500 pl-11 resize-y min-h-[100px]"></textarea>
-                    {% endif %}
-                    <i data-lucide="align-left" class="w-5 h-5 text-slate-500 absolute left-3.5 top-3.5 pointer-events-none"></i>
-                </div>
-                {% for error in form.description.errors %}
-                    <small class="text-xs text-rose-400 mt-1.5 flex items-center gap-1">
-                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> {{ error }}
-                    </small>
-                {% endfor %}
-            </div>
-
-            <!-- Category Field (Interactive UI Chips integrated with Django Form field) -->
-            <div class="form-field">
-                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                    Category <span class="text-rose-400">*</span>
-                </label>
-
-                <!-- Hidden Django Field Sync -->
-                <div class="hidden">
-                    {% if form.category %}
-                        {{ form.category }}
-                    {% else %}
-                        <input type="hidden" name="category" id="id_category" value="docs">
-                    {% endif %}
-                </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-5">
                 
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="categoryGrid">
-                    <button type="button" data-val="docs" class="category-chip selected p-3.5 rounded-xl border border-slate-700/80 bg-slate-900/50 hover:bg-slate-800 transition-all text-left flex flex-col justify-between items-start gap-2 group">
-                        <i data-lucide="file-code-2" class="w-5 h-5 text-violet-400 group-hover:scale-110 transition-transform"></i>
-                        <div>
-                            <div class="text-xs font-semibold text-slate-200">Documentation</div>
-                            <div class="text-[10px] text-slate-400">Guides, APIs, Spec</div>
-                        </div>
-                    </button>
-                    <button type="button" data-val="design" class="category-chip p-3.5 rounded-xl border border-slate-700/80 bg-slate-900/50 hover:bg-slate-800 transition-all text-left flex flex-col justify-between items-start gap-2 group">
-                        <i data-lucide="figma" class="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform"></i>
-                        <div>
-                            <div class="text-xs font-semibold text-slate-200">Design & Assets</div>
-                            <div class="text-[10px] text-slate-400">Figma, PNG, SVG</div>
-                        </div>
-                    </button>
-                    <button type="button" data-val="data" class="category-chip p-3.5 rounded-xl border border-slate-700/80 bg-slate-900/50 hover:bg-slate-800 transition-all text-left flex flex-col justify-between items-start gap-2 group">
-                        <i data-lucide="database" class="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform"></i>
-                        <div>
-                            <div class="text-xs font-semibold text-slate-200">Data & SQL</div>
-                            <div class="text-[10px] text-slate-400">Queries, CSV, Schemas</div>
-                        </div>
-                    </button>
-                    <button type="button" data-val="media" class="category-chip p-3.5 rounded-xl border border-slate-700/80 bg-slate-900/50 hover:bg-slate-800 transition-all text-left flex flex-col justify-between items-start gap-2 group">
-                        <i data-lucide="video" class="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform"></i>
-                        <div>
-                            <div class="text-xs font-semibold text-slate-200">Media & Video</div>
-                            <div class="text-[10px] text-slate-400">Demos, Recordings</div>
-                        </div>
-                    </button>
+                <!-- Resource Name -->
+                <div class="form-field sm:col-span-2">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Resource Name</label>
+                    {{ form.title }}
+                    {% for error in form.title.errors %}
+                        <p class="text-red-500 text-sm mt-1.5 font-medium flex items-center">
+                            <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> {{ error }}
+                        </p>
+                    {% endfor %}
                 </div>
-                {% for error in form.category.errors %}
-                    <small class="text-xs text-rose-400 mt-1.5 flex items-center gap-1">
-                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> {{ error }}
-                    </small>
-                {% endfor %}
-            </div>
 
-            <!-- External URL Field -->
-            <div class="form-field">
-                <label for="{{ form.external_url.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                    External URL <span class="text-slate-400 font-normal lowercase">(optional if file is uploaded)</span>
-                </label>
-                <div class="flex gap-2">
-                    <div class="relative flex-1 django-field-wrapper">
-                        {% if form.external_url %}
-                            {{ form.external_url }}
-                        {% else %}
-                            <input type="url" id="id_external_url" name="external_url" placeholder="https://github.com/org/repo or Figma link..." class="form-input-style w-full px-4 py-3 rounded-xl text-sm placeholder:text-slate-500 pl-11">
-                        {% endif %}
-                        <i data-lucide="link-2" class="w-5 h-5 text-slate-500 absolute left-3.5 top-3.5 pointer-events-none"></i>
-                    </div>
-                    <button type="button" id="pasteUrlBtn" class="px-3.5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 flex items-center gap-1.5 transition-colors">
-                        <i data-lucide="clipboard" class="w-4 h-4"></i>
-                        <span class="hidden sm:inline">Paste</span>
-                    </button>
+                <!-- Description -->
+                <div class="form-field sm:col-span-2">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
+                    {{ form.description }}
+                    {% for error in form.description.errors %}
+                        <p class="text-red-500 text-sm mt-1.5 font-medium flex items-center">
+                            <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> {{ error }}
+                        </p>
+                    {% endfor %}
                 </div>
-                
-                <!-- Live Detected URL Badge -->
-                <div id="urlPreviewBadge" class="hidden mt-2 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs text-violet-300">
-                    <span class="flex items-center gap-2 truncate">
-                        <i data-lucide="globe" class="w-4 h-4 text-violet-400 flex-shrink-0"></i>
-                        <span id="urlPreviewText">https://...</span>
-                    </span>
-                    <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">Valid Link</span>
-                </div>
-                {% for error in form.external_url.errors %}
-                    <small class="text-xs text-rose-400 mt-1.5 flex items-center gap-1">
-                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> {{ error }}
-                    </small>
-                {% endfor %}
-            </div>
 
-            <!-- File Upload Field -->
-            <div class="form-field">
-                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                    Upload File <span class="text-slate-400 font-normal lowercase">(optional if URL is provided)</span>
-                </label>
-                
-                <div id="dropZone" class="relative group border-2 border-dashed border-slate-700 hover:border-violet-500/70 rounded-2xl p-6 sm:p-8 text-center transition-all bg-slate-900/40 hover:bg-slate-900/80 cursor-pointer">
-                    <!-- Django File Input -->
-                    <div class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 overflow-hidden">
-                        {% if form.file %}
-                            {{ form.file }}
-                        {% else %}
-                            <input type="file" id="id_file" name="file" class="w-full h-full cursor-pointer">
-                        {% endif %}
-                    </div>
+                <!-- Category -->
+                <div class="form-field">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Category</label>
+                    {{ form.category }}
+                    {% for error in form.category.errors %}
+                        <p class="text-red-500 text-sm mt-1.5 font-medium flex items-center">
+                            <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> {{ error }}
+                        </p>
+                    {% endfor %}
+                </div>
+
+                <!-- External URL -->
+                <div class="form-field">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
+                        External URL
+                        <span class="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Optional</span>
+                    </label>
+                    {{ form.external_url }}
+                    {% for error in form.external_url.errors %}
+                        <p class="text-red-500 text-sm mt-1.5 font-medium flex items-center">
+                            <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> {{ error }}
+                        </p>
+                    {% endfor %}
+                </div>
+
+                <!-- Upload File Dropzone -->
+                <div class="form-field sm:col-span-2 mt-2">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center justify-between">
+                        Upload File
+                        <span class="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Optional if URL provided</span>
+                    </label>
                     
-                    <!-- Default Dropzone Visual -->
-                    <div id="uploadDefaultState" class="space-y-3 pointer-events-none">
-                        <div class="w-14 h-14 mx-auto rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400 group-hover:scale-110 group-hover:bg-violet-500/20 transition-all">
-                            <i data-lucide="cloud-upload" class="w-7 h-7"></i>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-slate-200 text-sm">Choose a file or drag & drop here</p>
-                            <p class="text-xs text-slate-400 mt-1">PDF, SQL, PNG, SVG, XLSX, MP4 and more</p>
+                    <div class="upload-zone relative group w-full border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-violet-50 hover:border-violet-400 transition-all duration-200 flex flex-col items-center justify-center py-10 px-4 cursor-pointer">
+                        <!-- Django File Input (Hidden via CSS but spans the whole box) -->
+                        {{ form.file }}
+                        
+                        <!-- UI Overlay -->
+                        <div class="pointer-events-none text-center flex flex-col items-center">
+                            <div class="w-14 h-14 mb-3 rounded-full bg-violet-100 text-violet-500 flex items-center justify-center group-hover:scale-110 group-hover:bg-violet-200 transition-all duration-300">
+                                <i data-lucide="cloud-upload" class="w-7 h-7"></i>
+                            </div>
+                            <h3 class="text-slate-700 font-semibold text-base mb-1 group-hover:text-violet-700 transition-colors">Click to upload or drag and drop</h3>
+                            <p class="text-sm text-slate-500">PDF, SQL, PNG, XLSX, MP4 and more</p>
                         </div>
                     </div>
-
-                    <!-- Selected File Visual -->
-                    <div id="uploadSelectedState" class="hidden flex items-center justify-between p-3 bg-slate-800/90 rounded-xl border border-violet-500/30 text-left">
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <div class="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-400 flex-shrink-0">
-                                <i data-lucide="file" class="w-5 h-5"></i>
-                            </div>
-                            <div class="truncate">
-                                <div id="fileNameDisplay" class="text-xs font-semibold text-slate-200 truncate">filename.pdf</div>
-                                <div id="fileSizeDisplay" class="text-[10px] text-slate-400">File Selected</div>
-                            </div>
-                        </div>
-                        <button type="button" id="removeFileBtn" class="z-20 p-1.5 hover:bg-slate-700 text-slate-400 hover:text-rose-400 rounded-lg transition-colors">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </div>
+                    {% for error in form.file.errors %}
+                        <p class="text-red-500 text-sm mt-1.5 font-medium flex items-center">
+                            <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i> {{ error }}
+                        </p>
+                    {% endfor %}
                 </div>
-                {% for error in form.file.errors %}
-                    <small class="text-xs text-rose-400 mt-1.5 flex items-center gap-1">
-                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> {{ error }}
-                    </small>
-                {% endfor %}
-            </div>
 
-            <!-- Resource Tags System -->
-            <div class="form-field">
-                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                    Resource Tags <span class="text-slate-400 font-normal lowercase">(Press Enter to add tags)</span>
-                </label>
-                <div class="flex flex-wrap gap-2 p-2.5 rounded-xl form-input-style min-h-[46px] items-center" id="tagsContainer">
-                    <span class="bg-violet-500/15 border border-violet-500/30 text-violet-300 text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-                        #v1-release
-                        <button type="button" onclick="this.parentElement.remove()" class="hover:text-white">&times;</button>
-                    </span>
-                    <input type="text" id="tagInput" placeholder="Add tag..." class="bg-transparent text-xs text-slate-200 focus:outline-none flex-1 min-w-[100px]">
-                </div>
             </div>
-
         </div>
 
-        <!-- Form Actions Bar -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-slate-800">
-            <button type="button" id="livePreviewBtn" class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-xs font-semibold text-slate-300 flex items-center justify-center gap-2 transition-all">
-                <i data-lucide="eye" class="w-4 h-4 text-violet-400"></i>
-                Preview Resource Card
+        <!-- Form Actions -->
+        <div class="px-6 py-5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3 rounded-b-2xl">
+            <a href="{% url 'resource:list' %}" class="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all">
+                Cancel
+            </a>
+            <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-violet-600 rounded-lg hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-all flex items-center shadow-sm">
+                <i data-lucide="check" class="w-4 h-4 mr-2"></i>
+                {{ submit_text }}
             </button>
-
-            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-                <a href="{% url 'resource:list' %}" class="w-full sm:w-auto text-center px-5 py-2.5 rounded-xl border border-slate-800 hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white transition-colors">
-                    Cancel
-                </a>
-                <button type="submit" id="submitBtn" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-violet-600/30 flex items-center justify-center gap-2 transition-all active:scale-95">
-                    <span id="submitBtnText">{{ submit_text|default:"Save & Share Resource" }}</span>
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </button>
-            </div>
         </div>
     </form>
 </div>
-
-<!-- Modal: Live Resource Preview Modal -->
-<div id="previewModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-700 shadow-2xl relative">
-        <button type="button" id="closePreviewModal" class="absolute top-4 right-4 text-slate-400 hover:text-white">
-            <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-        
-        <div class="flex items-center gap-2 text-xs font-semibold text-violet-400 mb-3">
-            <i data-lucide="sparkles" class="w-4 h-4"></i> Live Workspace Preview
-        </div>
-
-        <div class="bg-slate-900 rounded-xl p-4 border border-slate-800 space-y-3">
-            <div class="flex items-center justify-between">
-                <span id="modalCategoryBadge" class="text-[10px] font-semibold text-violet-400 bg-violet-500/10 px-2.5 py-1 rounded-md border border-violet-500/20">DOCUMENTATION</span>
-                <span class="text-[10px] text-slate-500">Just now</span>
-            </div>
-            <h3 id="modalTitle" class="text-base font-semibold text-slate-100">Untitled Resource</h3>
-            <p id="modalDesc" class="text-xs text-slate-400">No description provided yet.</p>
-            <div id="modalAttachment" class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
-                <span class="truncate flex items-center gap-2">
-                    <i data-lucide="paperclip" class="w-4 h-4 text-violet-400"></i>
-                    <span id="modalAttachmentText">No attachment</span>
-                </span>
-                <span class="text-[10px] text-violet-400">Ready</span>
-            </div>
-        </div>
-
-        <div class="mt-5 text-right">
-            <button type="button" id="closePreviewModalBtn" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-semibold">
-                Close Preview
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Dynamic Toast Notification -->
-<div id="toast" class="fixed bottom-5 right-5 z-50 transition-all duration-300 toast-enter">
-    <div id="toastInner" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500 text-slate-950 font-semibold text-xs shadow-2xl">
-        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-        <span id="toastMessage">Action completed successfully!</span>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Initialize Lucide Icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-
-        // DOM References
-        const titleInput = document.querySelector('input[name="title"]') || document.getElementById('id_title');
-        const descInput = document.querySelector('textarea[name="description"]') || document.getElementById('id_description');
-        const categoryInput = document.querySelector('input[name="category"]') || document.querySelector('select[name="category"]') || document.getElementById('id_category');
-        const externalUrlInput = document.querySelector('input[name="external_url"]') || document.getElementById('id_external_url');
-        const fileInput = document.querySelector('input[type="file"]') || document.getElementById('id_file');
-        
-        const titleCounter = document.getElementById('titleCounter');
-        const categoryGrid = document.getElementById('categoryGrid');
-        const urlPreviewBadge = document.getElementById('urlPreviewBadge');
-        const urlPreviewText = document.getElementById('urlPreviewText');
-        const pasteUrlBtn = document.getElementById('pasteUrlBtn');
-        const dropZone = document.getElementById('dropZone');
-        const uploadDefaultState = document.getElementById('uploadDefaultState');
-        const uploadSelectedState = document.getElementById('uploadSelectedState');
-        const fileNameDisplay = document.getElementById('fileNameDisplay');
-        const fileSizeDisplay = document.getElementById('fileSizeDisplay');
-        const removeFileBtn = document.getElementById('removeFileBtn');
-        const tagInput = document.getElementById('tagInput');
-        const tagsContainer = document.getElementById('tagsContainer');
-        const livePreviewBtn = document.getElementById('livePreviewBtn');
-        const previewModal = document.getElementById('previewModal');
-        const toggleGuideBtn = document.getElementById('toggleGuideBtn');
-        const guidelinesBox = document.getElementById('guidelinesBox');
-        const closeGuideBtn = document.getElementById('closeGuideBtn');
-        const resourceForm = document.getElementById('resourceForm');
-        const submitBtn = document.getElementById('submitBtn');
-
-        // 1. Character Counter for Resource Title
-        if (titleInput && titleCounter) {
-            titleInput.addEventListener('input', (e) => {
-                titleCounter.textContent = `${e.target.value.length}/100`;
-            });
-        }
-
-        // 2. Upload Guidelines Toggle
-        if (toggleGuideBtn && guidelinesBox) {
-            toggleGuideBtn.addEventListener('click', () => guidelinesBox.classList.toggle('hidden'));
-        }
-        if (closeGuideBtn && guidelinesBox) {
-            closeGuideBtn.addEventListener('click', () => guidelinesBox.classList.add('hidden'));
-        }
-
-        // 3. Category Selector Chips Handler
-        if (categoryGrid && categoryInput) {
-            categoryGrid.querySelectorAll('.category-chip').forEach(chip => {
-                chip.addEventListener('click', () => {
-                    categoryGrid.querySelectorAll('.category-chip').forEach(c => c.classList.remove('selected'));
-                    chip.classList.add('selected');
-                    categoryInput.value = chip.getAttribute('data-val');
-                });
-            });
-        }
-
-        // 4. URL Paste & Live Badge
-        if (externalUrlInput && urlPreviewBadge) {
-            externalUrlInput.addEventListener('input', (e) => {
-                const val = e.target.value.trim();
-                if (val.length > 5) {
-                    urlPreviewText.textContent = val;
-                    urlPreviewBadge.classList.remove('hidden');
-                } else {
-                    urlPreviewBadge.classList.add('hidden');
-                }
-            });
-        }
-
-        if (pasteUrlBtn && externalUrlInput) {
-            pasteUrlBtn.addEventListener('click', async () => {
-                try {
-                    const text = await navigator.clipboard.readText();
-                    if (text) {
-                        externalUrlInput.value = text;
-                        externalUrlInput.dispatchEvent(new Event('input'));
-                        showToast('URL Pasted from clipboard!');
-                    }
-                } catch (err) {
-                    showToast('Please paste using Ctrl+V / Cmd+V');
-                }
-            });
-        }
-
-        // 5. File Drag & Drop Handlers
-        if (dropZone && fileInput) {
-            ['dragenter', 'dragover'].forEach(evt => {
-                dropZone.addEventListener(evt, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropZone.classList.add('upload-zone-active');
-                });
-            });
-
-            ['dragleave', 'drop'].forEach(evt => {
-                dropZone.addEventListener(evt, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropZone.classList.remove('upload-zone-active');
-                });
-            });
-
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length) {
-                    handleFileSelection(e.target.files[0]);
-                }
-            });
-
-            if (removeFileBtn) {
-                removeFileBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    fileInput.value = '';
-                    uploadDefaultState.classList.remove('hidden');
-                    uploadSelectedState.classList.add('hidden');
-                });
-            }
-        }
-
-        function handleFileSelection(file) {
-            if (fileNameDisplay && fileSizeDisplay) {
-                fileNameDisplay.textContent = file.name;
-                fileSizeDisplay.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB • Ready to upload`;
-                uploadDefaultState.classList.add('hidden');
-                uploadSelectedState.classList.remove('hidden');
-            }
-        }
-
-        // 6. Interactive Tag Handler
-        if (tagInput && tagsContainer) {
-            tagInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    const tagVal = tagInput.value.trim().replace(/^#/, '');
-                    if (tagVal) {
-                        const newTag = document.createElement('span');
-                        newTag.className = 'bg-violet-500/15 border border-violet-500/30 text-violet-300 text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5';
-                        newTag.innerHTML = `#${tagVal} <button type="button" class="remove-tag hover:text-white">&times;</button>`;
-                        tagsContainer.insertBefore(newTag, tagInput);
-                        tagInput.value = '';
-                        
-                        newTag.querySelector('.remove-tag').addEventListener('click', () => newTag.remove());
-                    }
-                }
-            });
-        }
-
-        // 7. Preview Modal Handler
-        if (livePreviewBtn && previewModal) {
-            livePreviewBtn.addEventListener('click', () => {
-                const title = titleInput ? (titleInput.value.trim() || 'Untitled Resource') : 'Untitled Resource';
-                const desc = descInput ? (descInput.value.trim() || 'No description provided yet.') : 'No description provided yet.';
-                const cat = categoryInput ? (categoryInput.value || 'DOCS').toUpperCase() : 'DOCS';
-
-                let attachment = 'No attachment or URL provided';
-                if (fileInput && fileInput.files.length) {
-                    attachment = `File: ${fileInput.files[0].name}`;
-                } else if (externalUrlInput && externalUrlInput.value.trim()) {
-                    attachment = `Link: ${externalUrlInput.value.trim()}`;
-                }
-
-                document.getElementById('modalTitle').textContent = title;
-                document.getElementById('modalDesc').textContent = desc;
-                document.getElementById('modalCategoryBadge').textContent = cat;
-                document.getElementById('modalAttachmentText').textContent = attachment;
-
-                previewModal.classList.remove('hidden');
-            });
-
-            document.querySelectorAll('#closePreviewModal, #closePreviewModalBtn').forEach(btn => {
-                btn.addEventListener('click', () => previewModal.classList.add('hidden'));
-            });
-        }
-
-        // Toast Helper Function
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            if (!toast || !toastMessage) return;
-
-            toastMessage.textContent = msg;
-            toast.classList.remove('toast-enter');
-            toast.classList.add('toast-show');
-
-            setTimeout(() => {
-                toast.classList.remove('toast-show');
-                toast.classList.add('toast-enter');
-            }, 3000);
-        }
-    });
-</script>
 {% endblock %}

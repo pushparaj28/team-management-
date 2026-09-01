@@ -3,12 +3,11 @@
 
 {% block title %}Resources | CollabPulse{% endblock %}
 
-
-
 {% block content %}
-
+<div class="container mx-auto px-4 py-6 max-w-7xl relative">
+    
     <!-- HEADER SECTION -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/80">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 mb-6">
         <div>
             <div class="flex items-center gap-2">
                 <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Resources</h1>
@@ -23,34 +22,52 @@
 
         <!-- ACTION BUTTONS & SEARCH -->
         <div class="flex flex-wrap items-center gap-3">
-            <!-- Search Box Form -->
-            <form method="GET" action="{% url 'resource:list' %}" class="relative flex-1 sm:w-64">
-                {% if selected_category and selected_category != 'all' %}
-                    <input type="hidden" name="category" value="{{ selected_category }}">
-                {% endif %}
-                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input 
-                    type="text" 
-                    name="q" 
-                    value="{{ search_query|default:'' }}"
-                    placeholder="Search resources..." 
-                    class="w-full pl-9 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-xl shadow-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                />
-                {% if search_query %}
-                    <a href="{% url 'resource:list' %}" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </a>
-                {% endif %}
+            <!-- Combined Search & Category Form -->
+            <form method="GET" action="{% url 'resource:list' %}" class="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-1 sm:w-auto">
+                <!-- Category Select Dropdown -->
+                <div class="relative min-w-[150px]">
+                    <select 
+                        name="category" 
+                        onchange="this.form.submit()" 
+                        class="w-full pl-3 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-xl shadow-xs text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer transition-all appearance-none"
+                    >
+                        <option value="all">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.key }}" {% if selected_category == cat.key %}selected{% endif %}>
+                                {{ cat.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <i data-lucide="chevron-down" class="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                </div>
+
+                <!-- Search Input for Resource Name -->
+                <div class="relative flex-1 sm:w-64 min-w-[180px]">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input 
+                        type="text" 
+                        name="q" 
+                        value="{{ search_query|default:'' }}"
+                        placeholder="Search resource name..." 
+                        class="w-full pl-9 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-xl shadow-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                    />
+                    {% if search_query %}
+                        <a href="{% url 'resource:list' %}{% if selected_category and selected_category != 'all' %}?category={{ selected_category }}{% endif %}" 
+                           class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                           title="Clear search query">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- Search Submit Button -->
+                <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors shrink-0">
+                    Search
+                </button>
             </form>
 
-            <!-- Filter Toggle Button -->
-            <button id="filterBtn" onclick="toggleFilterDrawer()" class="inline-flex items-center justify-center gap-2 px-3.5 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-xs transition-colors">
-                <i data-lucide="sliders-horizontal" class="w-4 h-4 text-slate-500"></i>
-                <span>Filter</span>
-            </button>
-
             <!-- Add Resource Primary Button -->
-            <a href="{% url 'resource:create' %}" class="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all shadow-indigo-200 active:scale-[0.98]">
+            <a href="{% url 'resource:create' %}" class="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all shadow-indigo-200 active:scale-[0.98] shrink-0">
                 <i data-lucide="plus" class="w-4 h-4"></i>
                 <span>Add Resource</span>
             </a>
@@ -58,8 +75,8 @@
     </div>
 
     <!-- CATEGORY TABS -->
-    <div class="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar border-b border-slate-100">
-        <a href="{% url 'resource:list' %}"
+    <div class="flex items-center gap-2 overflow-x-auto py-1 mb-6 no-scrollbar border-b border-slate-100">
+        <a href="{% url 'resource:list' %}{% if search_query %}?q={{ search_query|urlencode }}{% endif %}"
            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl whitespace-nowrap transition-all duration-150 {% if not selected_category or selected_category == 'all' %}bg-indigo-600 text-white shadow-sm shadow-indigo-100{% else %}bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/60{% endif %}">
             <i data-lucide="layout-grid" class="w-4 h-4"></i>
             <span>All Resources</span>
@@ -98,7 +115,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
         <!-- MAIN TABLE SECTION -->
-        <section class="lg:col-span-8 xl:col-span-9 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <section class="lg:col-span-8 xl:col-span-9 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden relative z-10">
             
             <!-- Table Header Banner -->
             <div class="px-6 py-4 bg-slate-50/70 border-b border-slate-200/80 flex items-center justify-between">
@@ -116,7 +133,7 @@
             </div>
 
             <!-- Table Content -->
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto min-h-[300px]">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="border-b border-slate-200/80 bg-slate-50/40 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
@@ -134,7 +151,6 @@
                             <!-- Resource Title & Icon -->
                             <td class="py-4 px-6">
                                 <div class="flex items-center gap-3 min-w-[220px]">
-                                    <!-- Icon Container -->
                                     <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs 
                                         {% if resource.icon_type == 'pdf' %}bg-rose-50 text-rose-600 border border-rose-100
                                         {% elif resource.icon_type == 'technical' %}bg-sky-50 text-sky-600 border border-sky-100
@@ -203,52 +219,52 @@
 
                             <!-- Actions Column -->
                             <td class="py-4 px-6 text-right whitespace-nowrap">
-                                <div class="flex items-center justify-end gap-1">
+                                <div class="flex items-center justify-end gap-1.5">
                                     
-                                    <!-- View Icon -->
-                                    <a href="{{ resource.get_absolute_url }}" title="View Resource" 
-                                       class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-all">
-                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    <!-- View Action -->
+                                    <a href="{{ resource.get_absolute_url }}" title="View Details" 
+                                       class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">
+                                        <i data-lucide="eye" class="w-4 h-4">View</i>
                                     </a>
 
-                                    <!-- Download Icon -->
-                                    {% if resource.file or resource.external_url %}
-                                    <a href="{% url 'resource:download' resource.pk %}" title="Download or Open"
-                                       class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition-all">
-                                        <i data-lucide="download" class="w-4 h-4"></i>
-                                    </a>
+                                    {% if request.user == resource.uploaded_by or request.user.is_staff %}
+                                        <!-- Edit Action -->
+                                        <a href="{% url 'resource:edit' resource.pk %}" title="Edit Resource" 
+                                           class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all">
+                                            <i data-lucide="edit-3" class="w-4 h-4">Edit</i>
+                                        </a>
+
+                                        <!-- Delete Action (Uses form for safe POST request via AJAX) -->
+                                        <form action="{% url 'resource:delete' resource.pk %}" method="POST" class="inline-block" onsubmit="deleteResource(event, this);">
+                                            {% csrf_token %}
+                                            <button type="submit" title="Delete Resource" 
+                                                    class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+                                                <i data-lucide="trash-2" class="w-4 h-4">Delete</i>
+                                            </button>
+                                        </form>
                                     {% endif %}
 
-                                    <!-- Bookmark Button -->
-                                    {% if request.user.is_authenticated %}
-                                    <button 
-                                        title="Bookmark"
-                                        onclick="toggleBookmark(this, '{% url 'resource:bookmark' resource.pk %}')"
-                                        class="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-slate-100 rounded-lg transition-all {% if resource.id in bookmarked_ids %}text-amber-500 fill-amber-500{% endif %}">
-                                        <i data-lucide="bookmark" class="w-4 h-4"></i>
-                                    </button>
-                                    {% else %}
-                                    <button title="Login to bookmark" class="p-1.5 text-slate-300 cursor-not-allowed" disabled>
-                                        <i data-lucide="bookmark" class="w-4 h-4"></i>
-                                    </button>
-                                    {% endif %}
-
-                                    <!-- Context Menu Toggle -->
-                                    <div class="relative">
+                                    <!-- Context Menu (Optional Download & Bookmark) -->
+                                    <div class="relative inline-block text-left ml-1">
                                         <button onclick="toggleMenu('menu-{{ resource.pk }}')" title="More Options"
                                                 class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all">
                                             <i data-lucide="more-vertical" class="w-4 h-4"></i>
                                         </button>
 
                                         <!-- Dropdown Menu -->
-                                        <div id="menu-{{ resource.pk }}" class="hidden absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-20 text-left">
-                                            <a href="{{ resource.get_absolute_url }}" class="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
-                                                <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-400"></i> View Details
+                                        <div id="menu-{{ resource.pk }}" class="action-menu hidden absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50 origin-top-right">
+                                            
+                                            {% if resource.file or resource.external_url %}
+                                            <a href="{% url 'resource:download' resource.pk %}" class="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50">
+                                                <i data-lucide="download" class="w-3.5 h-3.5 text-slate-400">ok</i> Download / Open Link
                                             </a>
-                                            {% if request.user == resource.uploaded_by or request.user.is_staff %}
-                                            <a href="{% url 'resource:edit' resource.pk %}" class="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
-                                                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-400"></i> Edit Resource
-                                            </a>
+                                            {% endif %}
+                                            
+                                            {% if request.user.is_authenticated %}
+                                            <button onclick="toggleBookmark(this, '{% url 'resource:bookmark' resource.pk %}')" class="w-full flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 text-left">
+                                                <i data-lucide="bookmark" class="w-3.5 h-3.5 {% if resource.id in bookmarked_ids %}text-amber-500 fill-amber-500{% else %}text-slate-400{% endif %}"></i> 
+                                                {% if resource.id in bookmarked_ids %}Remove Bookmark{% else %}Bookmark Item{% endif %}
+                                            </button>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -260,19 +276,32 @@
 
                         <!-- EMPTY STATE -->
                         <tr>
-                            <td colspan="5" class="py-16 text-center">
-                                <div class="max-w-xs mx-auto space-y-3">
+                            <td colspan="5" class="py-20 text-center">
+                                <div class="max-w-sm mx-auto space-y-3">
                                     <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mx-auto border border-indigo-100">
-                                        <i data-lucide="folder-open" class="w-8 h-8"></i>
+                                        <i data-lucide="folder-search" class="w-8 h-8"></i>
                                     </div>
                                     <h3 class="text-base font-semibold text-slate-800">No resources found</h3>
                                     <p class="text-xs text-slate-500">
-                                        We couldn't find any resources matching your filter criteria or search query.
+                                        {% if search_query %}
+                                            No matches found for “<span class="font-medium text-slate-700">{{ search_query }}</span>”
+                                            {% if selected_category and selected_category != 'all' %} in category “{{ selected_category }}”{% endif %}.
+                                        {% else %}
+                                            We couldn't find any resources matching your criteria.
+                                        {% endif %}
                                     </p>
-                                    <a href="{% url 'resource:create' %}" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all">
-                                        <i data-lucide="plus" class="w-4 h-4"></i>
-                                        Add First Resource
-                                    </a>
+                                    <div class="flex items-center justify-center gap-2 pt-2">
+                                        {% if search_query or selected_category and selected_category != 'all' %}
+                                            <a href="{% url 'resource:list' %}" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                                                Clear Filters
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'resource:create' %}" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all">
+                                            <i data-lucide="plus" class="w-4 h-4"></i>
+                                            Add First Resource
+                                        </a>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -325,12 +354,10 @@
                 {% endif %}
             </div>
             {% endif %}
-
         </section>
 
         <!-- RIGHT SIDEBAR -->
-        <aside class="lg:col-span-4 xl:col-span-3 space-y-6">
-
+        <aside class="lg:col-span-4 xl:col-span-3 space-y-6 relative z-0">
             <!-- CATEGORIES OVERVIEW CARD -->
             <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
                 <div class="flex items-center justify-between mb-4">
@@ -393,36 +420,107 @@
                     {% endfor %}
                 </div>
             </div>
-
-            <!-- RECENTLY ADDED CARD -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="clock" class="w-4 h-4 text-indigo-500"></i>
-                        <h3 class="font-semibold text-slate-900 text-sm">Recently Added</h3>
-                    </div>
-                    <a href="?recent=1" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">View All</a>
-                </div>
-
-                <div class="space-y-3">
-                    {% for resource in recent %}
-                    <a href="{{ resource.get_absolute_url }}" class="block p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50/60 transition-all">
-                        <p class="text-xs font-semibold text-slate-800 truncate">{{ resource.title }}</p>
-                        <div class="flex items-center justify-between mt-1.5 text-[11px] text-slate-400">
-                            <span class="capitalize">{{ resource.category }}</span>
-                            <span>{{ resource.created_at|timesince }} ago</span>
-                        </div>
-                    </a>
-                    {% empty %}
-                    <p class="text-xs text-slate-400">No recently added resources.</p>
-                    {% endfor %}
-                </div>
-            </div>
-
         </aside>
-
     </div>
 </div>
 
+<script>
+    // Initialize Lucide Icons if script is loaded
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 
+    // Toggle Action Menus (Context Menu on table rows)
+    function toggleMenu(menuId) {
+        // Close all other open menus
+        document.querySelectorAll('.action-menu').forEach(menu => {
+            if (menu.id !== menuId) {
+                menu.classList.add('hidden');
+            }
+        });
+        
+        // Toggle the requested menu
+        const targetMenu = document.getElementById(menuId);
+        if (targetMenu) {
+            targetMenu.classList.toggle('hidden');
+        }
+    }
+
+    // Close action menus when clicking outside
+    document.addEventListener('click', function(event) {
+        const isClickInside = event.target.closest('td.text-right');
+        if (!isClickInside) {
+            document.querySelectorAll('.action-menu').forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+    });
+
+    // Handle AJAX Delete to prevent raw JSON {"ok": true} page
+    async function deleteResource(event, form) {
+        event.preventDefault(); // Prevent standard form submission
+        
+        if (!confirm('Are you sure you want to permanently delete this resource?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' // Let backend know it's an AJAX request
+                }
+            });
+            
+            const text = await response.text();
+            let data = {};
+            
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                // If response wasn't JSON, reload page just in case
+                window.location.reload();
+                return;
+            }
+
+            if (data.ok || response.ok) {
+                // Smoothly remove the row from the table
+                const row = form.closest('tr');
+                if (row) {
+                    row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    row.style.opacity = '0';
+                    row.style.transform = 'scale(0.95)';
+                    
+                    setTimeout(() => {
+                        row.remove();
+                        // Reload if it was the last item
+                        if (document.querySelectorAll('tbody tr').length === 0) {
+                            window.location.reload();
+                        }
+                    }, 300);
+                } else {
+                    window.location.reload();
+                }
+            } else {
+                alert(data.error || 'Failed to delete the resource.');
+            }
+        } catch (error) {
+            console.error('Error deleting resource:', error);
+            alert('An unexpected error occurred while deleting.');
+        }
+    }
+
+    // Mock toggle bookmark function
+    function toggleBookmark(btn, url) {
+        const icon = btn.querySelector('i');
+        if (icon.classList.contains('text-amber-500')) {
+            icon.classList.remove('text-amber-500', 'fill-amber-500');
+            icon.classList.add('text-slate-400');
+        } else {
+            icon.classList.remove('text-slate-400');
+            icon.classList.add('text-amber-500', 'fill-amber-500');
+        }
+    }
+</script>
 {% endblock %}
