@@ -29,9 +29,22 @@
         class. This keeps light mode completely untouched.
         ============================================================ */
 
-        .dark body { background-color: #0f172a; }
+        /* Lighter than the sidebar's #0a1929 so the two panels stay visually
+        distinct in dark mode instead of blending together */
+        .dark body { background-color: #141e33; }
         .dark main, .dark .bg-gray-50, .dark .bg-gray-50\/50, .dark .bg-gray-50\/60 {
-            background-color: #0f172a !important;
+            background-color: #141e33 !important;
+        }
+
+        /* Sidebar gets a touch more depth + a visible glow along its right
+        edge so it reads as a separate panel, not the same slab as the
+        page background, in both themes */
+        #app-sidebar {
+            box-shadow: 4px 0 20px rgba(50, 98, 230, 0.25);
+        }
+        .dark #app-sidebar {
+            border-right-color: #eff0f1 !important;
+            box-shadow: 4px 0 24px rgba(246, 238, 238, 0.55);
         }
 
         .dark .bg-white { background-color: #1e293b !important; }

@@ -47,8 +47,11 @@
       <div class="space-y-3 task-list min-h-[100px] rounded-lg transition-colors" ondragover="allowDrop(event)" ondrop="dropTask(event)">
         {% for task in tasks %}
         <a href="{% url 'tasks:task_detail' task.pk %}"
-           class="block bg-white rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 p-3 cursor-move task-card border-l-4 transition-all duration-150
-             {% if task.due_date and task.due_date < today and task.status != 'Done' %}border-rose-500{% else %}border-transparent{% endif %}"
+          class="block bg-white rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 p-3 cursor-move task-card border-l-4 transition-all duration-150
+            {% if task.due_date and task.due_date < today and task.status != 'Done' %}border-rose-500
+            {% elif task.priority == 'High' %}border-rose-300
+            {% elif task.priority == 'Medium' %}border-amber-300
+            {% else %}border-emerald-300{% endif %}"
            draggable="true" ondragstart="dragTask(event)"
            data-task-id="{{ task.id }}" data-priority="{{ task.priority }}" data-title="{{ task.title|lower }}">
           <p class="font-semibold text-gray-800 text-sm leading-snug">{{ task.title }}</p>

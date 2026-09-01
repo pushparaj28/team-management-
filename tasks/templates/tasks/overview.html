@@ -49,6 +49,8 @@
         {% for m in milestone_choices %}<option value="{{ m.id }}" {% if selected_milestone == m.id|stringformat:"s" %}selected{% endif %}>{{ m.title }}</option>{% endfor %}
       </select>
       <button type="button" onclick="applyOverviewFilters()" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-xs font-semibold px-4 py-2 rounded-lg transition">Apply</button>
+      <button type="button" onclick="clearOverviewFilters()" class="border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-semibold px-4 py-2 rounded-lg transition">
+        <i class="fas fa-rotate-left mr-1"></i>Clear</button>
     </form>
   </div>
 
