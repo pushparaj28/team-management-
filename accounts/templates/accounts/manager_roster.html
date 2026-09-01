@@ -8,8 +8,7 @@
         <div>
             <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white">My_Team</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                You are currently managing <span class="font-bold text-blue-600 dark:text-blue-400">{{ squad_count
-                    }}</span> employees.
+                You are currently managing <span class="font-bold text-blue-600 dark:text-blue-400">{{ squad_count}}</span> employees.
             </p>
         </div>
         <!-- SEARCH & FILTER SECTION -->
@@ -95,8 +94,7 @@
                                     {{ emp.first_name|make_list|first|default:emp.username|make_list|first|upper }}
                                 </div>
                                 <div>
-                                    <p class="text-sm font-bold text-gray-900 dark:text-white emp-name">{{
-                                        emp.first_name }} {{ emp.last_name }}</p>
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white emp-name">{{emp.first_name }} {{ emp.last_name }}</p>
                                     <p class="text-xs text-gray-500 emp-email">{{ emp.email }}</p>
                                 </div>
                             </div>

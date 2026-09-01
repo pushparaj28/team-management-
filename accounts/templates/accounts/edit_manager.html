@@ -58,11 +58,11 @@
                     <select name="role"
                         class="w-full sm:w-1/2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] transition-all cursor-pointer bg-white">
 
-                        <option value="manager" {% if profile.role=='manager' %}selected{% endif %}>Manager (Team Lead
+                        <option value="manager" {% if profile.role == 'manager' %}selected{% endif %}>Manager (Team Lead
                             Access)</option>
-                        <option value="employee" {% if profile.role=='employee' %}selected{% endif %}>Employee (Standard
+                        <option value="employee" {% if profile.role == 'employee' %}selected{% endif %}>Employee (Standard
                             Access)</option>
-                        <option value="admin" {% if profile.role=='admin' %}selected{% endif %}>Admin (Full System
+                        <option value="admin" {% if profile.role == 'admin' %}selected{% endif %}>Admin (Full System
                             Access)</option>
                     </select>
                     <p class="text-[10px] text-gray-400 mt-2">Agar aap ise 'Employee' ya 'Admin' banayenge, toh ye automatically yahan se hatkar unki specific list me chala jayega.</p>

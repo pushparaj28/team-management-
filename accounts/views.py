@@ -16,6 +16,9 @@ from django.core.paginator import Paginator
 from tasks.models import Task
 from django.utils import timezone
 from django.urls import reverse, NoReverseMatch
+from django.views.decorators.http import require_POST
+from .models import Notification
+from django.views.decorators.csrf import csrf_exempt
 
 # Optional app models import
 try:
@@ -685,3 +688,47 @@ def role_management(request):
         'inactive_admins': inactive_admins,
     }
     return render(request, 'accounts/role_management.html', context)
+
+@login_required
+def get_notifications_api(request):
+    """Fetch unread count & top 6 latest notifications"""
+    notifications = Notification.objects.filter(user=request.user)[:6]
+    unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+
+    results = []
+    for n in notifications:
+        results.append({
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'type': n.notification_type,
+            'link': n.link or '#',
+            'is_read': n.is_read,
+            'time_ago': n.created_at.strftime('%d %b, %H:%M')
+        })
+
+    return JsonResponse({
+        'unread_count': unread_count,
+        'notifications': results
+    })
+
+@login_required
+@require_POST
+def mark_notification_read(request, notification_id):
+    """Mark single notification as read"""
+    try:
+        notification = Notification.objects.get(id=notification_id, user=request.user)
+        notification.is_read = True
+        notification.save()
+        return JsonResponse({'status': 'success'})
+    except Notification.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Not found'}, status=404)
+
+@login_required
+@csrf_exempt
+def mark_all_notifications_read(request):
+    """Marks all notifications as read for the logged-in user"""
+    if request.method == 'POST':
+        Notification.objects.filter(user=request.user).update(is_read=True)
+        return JsonResponse({'status': 'success', 'message': 'All marked as read'})
+    return JsonResponse({'status': 'error'}, status=400)

@@ -34,4 +34,9 @@ urlpatterns = [
     path('my-squad/', views.manager_roster_view, name='manager_roster'),
     path('my-squad/add/', views.add_to_squad, name='add_to_squad'),
     path('my-squad/remove/<int:emp_id>/', views.remove_from_squad, name='remove_from_squad'),
+
+
+    path('api/notifications/', views.get_notifications_api, name='get_notifications_api'),
+    path('api/notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    path('api/notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
 ]

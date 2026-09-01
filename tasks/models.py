@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.db.models.signals import post_save
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from accounts.models import Notification
 
 class Milestone(models.Model):
     STATUS_CHOICES = [
@@ -87,3 +90,31 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+
+
+@receiver(post_save, sender=Task)
+def notify_employee_on_task_event(sender, instance, created, **kwargs):
+    # 🟢 1. Check karein ki task kis employee ko assign kiya gaya hai
+    employee = getattr(instance, 'assigned_to', None)
+    if not employee:
+        return
+
+    # Task assign karne wala manager (agar model me field hai, nahi toh None)
+    manager = getattr(instance, 'created_by', None)
+
+    if created:
+        title = "New Task Assigned"
+        msg = f"A new task '{instance.title}' has been assigned to you."
+    else:
+        title = "Task Updated"
+        msg = f"Your task '{instance.title}' was modified."
+
+    # 🟢 2. Target employee ke liye notification create karein
+    Notification.objects.create(
+        user=employee,                      # 👈 Notification assigned employee ke account me jayegi
+        sender=manager,                     # 👈 Assign karne wala manager
+        title=title,
+        message=msg,
+        notification_type='task',
+        link='/tasks/kanban/'            # Click karne par employee seedha task page par jayega
+    )
