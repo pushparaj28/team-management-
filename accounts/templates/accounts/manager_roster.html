@@ -6,14 +6,14 @@
     <!-- PAGE HEADER -->
     <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-8">
         <div>
-            <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white">My_Team</h1>
+            <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white">My Squad</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                You are currently managing <span class="font-bold text-blue-600 dark:text-blue-400">{{ squad_count}}</span> employees.
+                You are currently managing <span class="font-bold text-blue-600 dark:text-blue-400">{{ squad_count }}</span> employees.
             </p>
         </div>
+
         <!-- SEARCH & FILTER SECTION -->
         <div class="flex flex-wrap items-center gap-3">
-
             <!-- Search Bar -->
             <div class="relative">
                 <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
@@ -26,26 +26,24 @@
                 <select id="deptFilter" onchange="filterSquadTable()"
                     class="appearance-none pl-4 pr-10 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
                     <option value="all">All Departments</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept|lower }}">{{ dept }}</option>
+                    {% empty %}
                     <option value="it / development">IT / Development</option>
-                    <option value="ui/ux design">UI/UX Design</option>
+                    <option value="sales">Sales</option>
                     <option value="marketing">Marketing</option>
                     <option value="human resources">Human Resources</option>
-                    <option value="sales">Sales</option>
+                    {% endfor %}
                 </select>
                 <i data-lucide="chevron-down"
                     class="absolute right-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none"></i>
             </div>
 
-
+            <!-- Clear Filter Button -->
             <button id="clearBtn" onclick="clearFilters()"
                 class="hidden flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-sm font-medium text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-slate-700 transition-colors">
                 <i data-lucide="x-circle" class="w-4 h-4"></i> Clear
             </button>
-
-            <!-- Export Button
-            <button class="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                <i data-lucide="download" class="w-4 h-4"></i> Export
-            </button> -->
 
             <!-- ADD MEMBER BUTTON -->
             <button onclick="openAddModal()"
@@ -53,16 +51,13 @@
                 <i data-lucide="user-plus" class="w-4 h-4"></i> Add Member
             </button>
         </div>
-
     </div>
 
     <!-- SQUAD DATA TABLE -->
-    <div
-        class="bg-white dark:bg-[#0b1120] rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+    <div class="bg-white dark:bg-[#0b1120] rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse whitespace-nowrap" id="squadTable">
-                <thead
-                    class="bg-gray-50/80 dark:bg-slate-800/50 text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-700">
+                <thead class="bg-gray-50/80 dark:bg-slate-800/50 text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-slate-700">
                     <tr>
                         <th class="px-6 py-4 font-semibold">Username</th>
                         <th class="px-6 py-4 font-semibold">Employee Details</th>
@@ -73,95 +68,83 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50 dark:divide-slate-800/80">
-
                     {% for emp in my_squad %}
-                    <!-- Added class 'squad-row' for JS targeting -->
                     <tr class="squad-row hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors group">
-
+                        <!-- Username -->
                         <td class="px-6 py-4">
-                            <span
-                                class="inline-flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1 rounded-md border border-blue-100 dark:border-blue-800/50">
+                            <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1 rounded-md border border-blue-100 dark:border-blue-800/50">
                                 @{{ emp.username }}
                             </span>
                         </td>
 
-
-
+                        <!-- Employee Details -->
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-blue-100 dark:bg-slate-700 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-slate-700 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400">
                                     {{ emp.first_name|make_list|first|default:emp.username|make_list|first|upper }}
                                 </div>
                                 <div>
-                                    <p class="text-sm font-bold text-gray-900 dark:text-white emp-name">{{emp.first_name }} {{ emp.last_name }}</p>
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white emp-name">{{ emp.first_name }} {{ emp.last_name }}</p>
                                     <p class="text-xs text-gray-500 emp-email">{{ emp.email }}</p>
                                 </div>
                             </div>
                         </td>
 
+                        <!-- Department -->
                         <td class="px-6 py-4">
-                            <span
-                                class="emp-dept px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 rounded-md">
+                            <span class="emp-dept px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300 rounded-md">
                                 {{ emp.profile.department|default:"General Team" }}
                             </span>
                         </td>
 
+                        <!-- Workload Status -->
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
                                 <div class="relative w-9 h-9 flex items-center justify-center">
                                     <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                        <path class="text-gray-100 dark:text-slate-700/80" stroke-width="3"
-                                            stroke="currentColor" fill="none"
+                                        <path class="text-gray-100 dark:text-slate-700/80" stroke-width="3" stroke="currentColor" fill="none"
                                             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                        <path class="text-orange-500" stroke-dasharray="60, 100" stroke-width="3"
-                                            stroke-linecap="round" stroke="currentColor" fill="none"
+                                        <path class="text-orange-500" stroke-dasharray="60, 100" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none"
                                             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                     </svg>
-                                    <span
-                                        class="absolute text-[9px] font-extrabold text-gray-800 dark:text-gray-100">60%</span>
+                                    <span class="absolute text-[9px] font-extrabold text-gray-800 dark:text-gray-100">60%</span>
                                 </div>
                                 <span class="text-xs font-bold text-orange-600 dark:text-orange-400">Optimal</span>
                             </div>
                         </td>
 
-                        <!-- ACTIVE / INACTIVE STATUS -->
+                        <!-- Activity Status -->
                         <td class="px-6 py-4">
                             {% if emp.is_active %}
-                            <span
-                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
                                 <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Active
                             </span>
                             {% else %}
-                            <span
-                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
                                 <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Inactive
                             </span>
                             {% endif %}
                         </td>
 
-                        <!-- MANAGE ACTION: DIRECT REMOVE BUTTON -->
+                        <!-- Remove Action -->
                         <td class="px-6 py-4 text-center">
                             <a href="{% url 'accounts:remove_from_squad' emp.id %}"
                                 onclick="return confirm('Are you sure you want to remove {{ emp.first_name }} from your squad?');"
                                 title="Remove from Squad"
-                                class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-500 border border-red-100 dark:border-red-800/30 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-red-200">
-                                <i class="fas fa-trash text-[15px]"></i>
+                                class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-500 border border-red-100 dark:border-red-800/30 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white shadow-sm transition-all focus:outline-none">
+                                <i class="fas fa-trash text-[14px]"></i>
                             </a>
                         </td>
                     </tr>
-
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-16 text-center">
+                        <td colspan="6" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center justify-center">
-                                <div
-                                    class="w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                                <div class="w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
                                     <i data-lucide="users" class="w-8 h-8 text-blue-500"></i>
                                 </div>
                                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">Your Squad is Empty</h3>
-                                <p class="text-sm text-gray-500 mt-1 mb-4 max-w-sm">You haven't added any team members
-                                    yet.</p>
+                                <p class="text-sm text-gray-500 mt-1 mb-4 max-w-sm">You haven't added any team members yet.</p>
                                 <button onclick="openAddModal()"
                                     class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
                                     Add First Member
@@ -173,49 +156,114 @@
                 </tbody>
             </table>
 
-            <!-- No Results Message (Hidden by default) -->
+            <!-- No Results Container -->
             <div id="noResultsMsg" class="hidden px-6 py-12 text-center">
                 <p class="text-gray-500 dark:text-gray-400">No employees match your search criteria.</p>
             </div>
-
         </div>
     </div>
 </div>
 
-<!-- ADD MEMBER MODAL (Hidden by default) -->
-<div id="add-member-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+<!-- 🟢 MODERN ADD MEMBER MODAL (FILTERABLE & SEARCHABLE) -->
+<div id="add-member-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <!-- Backdrop -->
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer" onclick="closeAddModal()"></div>
-    <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 mx-4">
-        <div class="flex justify-between items-center mb-5">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Add Team Member</h3>
-            <button onclick="closeAddModal()"
-                class="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
+    
+    <!-- Modal Card Container -->
+    <div class="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[85vh] z-10 animate-in fade-in duration-200">
+        
+        <!-- Header -->
+        <div class="p-5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+            <div>
+                <h3 class="text-base font-bold text-gray-900 dark:text-white">Add Team Member</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Assign available employees to your squad</p>
+            </div>
+            <button onclick="closeAddModal()" class="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center justify-center transition">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
         </div>
 
-        <form method="POST" action="{% url 'accounts:add_to_squad' %}">
-            {% csrf_token %}
-            <div class="mb-5">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Employee</label>
-                <select name="employee_id" required
-                    class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
-                    <option value="" disabled selected>-- Choose from available employees --</option>
-                    {% for av_emp in available_employees %}
-                    <option value="{{ av_emp.id }}">{{ av_emp.first_name }} {{ av_emp.last_name }} ({{ av_emp.email }})
-                    </option>
-                    {% empty %}
-                    <option value="" disabled>No unassigned employees available</option>
-                    {% endfor %}
-                </select>
+        <!-- Search & Department Filters Toolbar -->
+        <div class="p-4 border-b border-gray-100 dark:border-slate-700 space-y-3 bg-gray-50/60 dark:bg-slate-900/40">
+            <!-- Search Box -->
+            <div class="relative">
+                <i data-lucide="search" class="absolute left-3.5 top-2.5 w-4 h-4 text-gray-400"></i>
+                <input type="text" id="modalEmpSearch" onkeyup="filterAvailableEmployees()" placeholder="Search employee by name, username, or email..."
+                    class="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-xs text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition">
             </div>
 
-            <div class="flex justify-end gap-3">
-                <button type="button" onclick="closeAddModal()"
-                    class="px-4 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700">Cancel</button>
-                <button type="submit"
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Add
-                    to Squad</button>
+            <!-- Filter Pills (Scrollable) -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar" id="modalDeptPills">
+                <button type="button" onclick="setModalDeptFilter('all', this)"
+                    class="modal-dept-btn px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white transition whitespace-nowrap shadow-sm">
+                    All
+                </button>
+                {% for dept in departments %}
+                <button type="button" onclick="setModalDeptFilter('{{ dept|lower }}', this)"
+                    class="modal-dept-btn px-3 py-1 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600 transition whitespace-nowrap">
+                    {{ dept }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Selection Form -->
+        <form method="POST" action="{% url 'accounts:add_to_squad' %}" class="flex-1 flex flex-col min-h-0">
+            {% csrf_token %}
+            <input type="hidden" name="employee_id" id="selectedEmpInput" required>
+
+            <!-- Scrollable Employee Cards List -->
+            <div id="availableEmpList" class="p-4 space-y-2 overflow-y-auto flex-1">
+                {% for av_emp in available_employees %}
+                <div class="modal-emp-card group p-3 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50/30 dark:hover:bg-slate-700/40 cursor-pointer transition flex items-center justify-between"
+                     data-name="{{ av_emp.get_full_name|lower }} {{ av_emp.username|lower }}"
+                     data-email="{{ av_emp.email|lower }}"
+                     data-dept="{{ av_emp.profile.department|default:'unassigned'|lower }}"
+                     onclick="chooseEmployeeCard(this, '{{ av_emp.id }}')">
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-slate-700 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center justify-center">
+                            {{ av_emp.first_name|make_list|first|default:av_emp.username|make_list|first|upper }}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <p class="text-xs font-bold text-gray-800 dark:text-white">{{ av_emp.get_full_name|default:av_emp.username }}</p>
+                                <span class="text-[10px] text-gray-400">@{{ av_emp.username }}</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ av_emp.email }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Department Badge & Radio Dot -->
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600">
+                            {{ av_emp.profile.department|default:"General" }}
+                        </span>
+                        <div class="radio-circle w-4 h-4 rounded-full border border-gray-300 dark:border-slate-500 flex items-center justify-center group-hover:border-blue-500">
+                            <div class="selection-dot hidden w-2 h-2 rounded-full bg-blue-600"></div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-8 text-center text-xs text-gray-400">
+                    <p>No unassigned employees available at this moment.</p>
+                </div>
+                {% endfor %}
+
+                <div id="modalNoResults" class="hidden p-8 text-center text-xs text-gray-400">
+                    No available employees match your filters.
+                </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="p-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeAddModal()" class="px-4 py-2 border border-gray-200 dark:border-slate-600 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition">
+                    Cancel
+                </button>
+                <button type="submit" id="modalSubmitBtn" disabled
+                    class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm">
+                    Add to Squad
+                </button>
             </div>
         </form>
     </div>
@@ -226,17 +274,15 @@
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
 
-    //  SEARCH & FILTER JAVASCRIPT
+    // ================= SQUAD TABLE FILTER LOGIC =================
     function filterSquadTable() {
-        let searchInput = document.getElementById("searchInput").value.toLowerCase();
-        let deptFilter = document.getElementById("deptFilter").value.toLowerCase();
-        let clearBtn = document.getElementById("clearBtn");
-
-        let rows = document.querySelectorAll(".squad-row");
-        let noResultsMsg = document.getElementById("noResultsMsg");
+        const searchInput = document.getElementById("searchInput").value.toLowerCase().trim();
+        const deptFilter = document.getElementById("deptFilter").value.toLowerCase().trim();
+        const clearBtn = document.getElementById("clearBtn");
+        const rows = document.querySelectorAll(".squad-row");
+        const noResultsMsg = document.getElementById("noResultsMsg");
         let visibleCount = 0;
 
-        // Show/Hide Smart Clear Button
         if (clearBtn) {
             if (searchInput !== "" || deptFilter !== "all") {
                 clearBtn.classList.remove("hidden");
@@ -246,12 +292,12 @@
         }
 
         rows.forEach(row => {
-            let name = row.querySelector(".emp-name").textContent.toLowerCase();
-            let email = row.querySelector(".emp-email").textContent.toLowerCase();
-            let dept = row.querySelector(".emp-dept").textContent.toLowerCase().trim();
+            const name = row.querySelector(".emp-name")?.textContent.toLowerCase() || "";
+            const email = row.querySelector(".emp-email")?.textContent.toLowerCase() || "";
+            const dept = row.querySelector(".emp-dept")?.textContent.toLowerCase().trim() || "";
 
-            let matchesSearch = name.includes(searchInput) || email.includes(searchInput);
-            let matchesDept = (deptFilter === "all") || (dept === deptFilter);
+            const matchesSearch = name.includes(searchInput) || email.includes(searchInput);
+            const matchesDept = (deptFilter === "all") || (dept === deptFilter);
 
             if (matchesSearch && matchesDept) {
                 row.style.display = "";
@@ -261,31 +307,27 @@
             }
         });
 
-        // Toggle "No Results" message
         if (noResultsMsg) {
-            if (visibleCount === 0 && rows.length > 0) {
-                noResultsMsg.classList.remove("hidden");
-            } else {
-                noResultsMsg.classList.add("hidden");
-            }
+            noResultsMsg.classList.toggle("hidden", visibleCount !== 0 || rows.length === 0);
         }
     }
 
-    // CLEAR ALL FILTERS FUNCTION
     function clearFilters() {
         document.getElementById("searchInput").value = "";
         document.getElementById("deptFilter").value = "all";
-
-        // Input reset karne ke baad wapas filter function chala do
         filterSquadTable();
     }
 
-    // Add Member Modal Logic
+
+    // ================= ADVANCED MODAL CONTROLLER =================
+    let currentModalDept = 'all';
+
     function openAddModal() {
         const modal = document.getElementById('add-member-modal');
         if (modal) {
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
     }
 
@@ -295,6 +337,60 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
+    }
+
+    function setModalDeptFilter(dept, element) {
+        currentModalDept = dept;
+        document.querySelectorAll('.modal-dept-btn').forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white', 'shadow-sm', 'font-semibold');
+            btn.classList.add('bg-white', 'dark:bg-slate-700', 'text-gray-600', 'dark:text-gray-300', 'font-medium');
+        });
+        element.classList.add('bg-blue-600', 'text-white', 'shadow-sm', 'font-semibold');
+        element.classList.remove('bg-white', 'dark:bg-slate-700', 'text-gray-600', 'dark:text-gray-300', 'font-medium');
+        filterAvailableEmployees();
+    }
+
+    function filterAvailableEmployees() {
+        const query = document.getElementById('modalEmpSearch')?.value.toLowerCase().trim() || '';
+        const cards = document.querySelectorAll('.modal-emp-card');
+        const noResults = document.getElementById('modalNoResults');
+        let matches = 0;
+
+        cards.forEach(card => {
+            const name = card.dataset.name || '';
+            const email = card.dataset.email || '';
+            const dept = card.dataset.dept || '';
+
+            const matchSearch = name.includes(query) || email.includes(query);
+            const matchDept = (currentModalDept === 'all') || (dept === currentModalDept);
+
+            if (matchSearch && matchDept) {
+                card.classList.remove('hidden');
+                matches++;
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+
+        if (noResults) {
+            noResults.classList.toggle('hidden', matches > 0);
+        }
+    }
+
+    function chooseEmployeeCard(cardElement, empId) {
+        // Reset all card selections
+        document.querySelectorAll('.modal-emp-card').forEach(c => {
+            c.classList.remove('border-blue-600', 'bg-blue-50/50', 'dark:bg-slate-700/60');
+            c.querySelector('.selection-dot')?.classList.add('hidden');
+        });
+
+        // Set active card
+        cardElement.classList.add('border-blue-600', 'bg-blue-50/50', 'dark:bg-slate-700/60');
+        cardElement.querySelector('.selection-dot')?.classList.remove('hidden');
+
+        // Bind form value and enable submit button
+        document.getElementById('selectedEmpInput').value = empId;
+        document.getElementById('modalSubmitBtn').removeAttribute('disabled');
     }
 </script>
 {% endblock %}

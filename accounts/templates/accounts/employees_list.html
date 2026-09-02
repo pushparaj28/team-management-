@@ -4,18 +4,18 @@
 {% block title %}Employees - Team Management{% endblock %}
 
 {% block content %}
-<!-- 1. PAGE HEADER & ADD BUTTON  -->
+<!-- 1. PAGE HEADER & ADD BUTTON -->
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
     <div>
         <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Employees</h1>
         <p class="text-xs text-gray-500 mt-1">Manage your team members and their roles.</p>
     </div>
     <a href="{% url 'accounts:add_user' %}" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors shadow-md flex items-center gap-2">
-    <i class="fas fa-plus"></i> Add Employee
-</a>
+        <i class="fas fa-plus"></i> Add Employee
+    </a>
 </div>
 
-<!-- 2. TOP METRIC CARDS (upgraded) -->
+<!-- 2. TOP METRIC CARDS -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
     <!-- Card 1: Total -->
     <div class="relative bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5">
@@ -50,14 +50,14 @@
             <i class="fas fa-user-times"></i>
         </div>
     </div>
-    <!-- Card 4: On Leave / New (Placeholder) -->
+    <!-- Card 4: On Leave -->
     <div class="relative bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5">
-        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-orange-600"></div>
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-amber-600"></div>
         <div>
-            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">On Leave</p>
-            <h3 class="text-2xl font-bold text-gray-800 mt-1">0</h3>
+            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">ON LEAVE</p>
+            <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ on_leave_count|default:0 }}</h3>
         </div>
-        <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-lg ring-1 ring-orange-100">
+        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-lg ring-1 ring-amber-100">
             <i class="fas fa-plane-departure"></i>
         </div>
     </div>
@@ -119,23 +119,29 @@
                     <td class="px-6 py-4 border-r border-gray-100">
                         <p class="text-xs font-bold text-gray-700">{{ employee.designation|default:"Staff" }}</p>
                         <span class="inline-block mt-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100 text-[10px] font-medium">
-                            {{ employee.department.name|default:"Not Assigned" }}
+                            {{ employee.department|default:employee.user.profile.department|default:"Not Assigned" }}
                         </span>
                     </td>
-
-                    <!-- Status Column -->
+                    
+                    <!-- 🟢 DYNAMIC STATUS: Check Leave First, then Active/Inactive -->
                     <td class="px-6 py-4 text-center border-r border-gray-100">
-                        <a href="{% url 'accounts:toggle_user_status' employee.user.id %}" class="inline-block transition-transform hover:scale-105">
-                            {% if employee.user.is_active %}
-                                <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer hover:bg-emerald-100">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
-                                </span>
-                            {% else %}
-                                <span class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-600 ring-1 ring-rose-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer hover:bg-rose-100">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
-                                </span>
-                            {% endif %}
-                        </a>
+                        {% if employee.user.id in on_leave_user_ids %}
+                            <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 ring-1 ring-amber-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> On Leave
+                            </span>
+                        {% else %}
+                            <a href="{% url 'accounts:toggle_user_status' employee.user.id %}" class="inline-block transition-transform hover:scale-105">
+                                {% if employee.user.is_active %}
+                                    <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer hover:bg-emerald-100">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-600 ring-1 ring-rose-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer hover:bg-rose-100">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
+                                    </span>
+                                {% endif %}
+                            </a>
+                        {% endif %}
                     </td>
 
                     <td class="px-6 py-4 text-center">
