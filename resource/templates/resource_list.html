@@ -41,23 +41,30 @@
                     <i data-lucide="chevron-down" class="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
                 </div>
 
-                <!-- Search Input for Resource Name -->
+                <!-- Search Input for Resource Name with Clear Icon -->
                 <div class="relative flex-1 sm:w-64 min-w-[180px]">
                     <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                     <input 
                         type="text" 
+                        id="searchInput"
                         name="q" 
                         value="{{ search_query|default:'' }}"
                         placeholder="Search resource name..." 
-                        class="w-full pl-9 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-xl shadow-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                        oninput="toggleClearBtn()"
+                        class="w-full pl-9 pr-9 py-2 text-sm bg-white border border-slate-200 rounded-xl shadow-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                     />
-                    {% if search_query %}
-                        <a href="{% url 'resource:list' %}{% if selected_category and selected_category != 'all' %}?category={{ selected_category }}{% endif %}" 
-                           class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                           title="Clear search query">
-                            <i data-lucide="x" class="w-4 h-4"></i>
-                        </a>
-                    {% endif %}
+                    <!-- Clear Search Icon Button -->
+                    <button 
+                        type="button" 
+                        id="clearSearchBtn"
+                        onclick="clearSearchInput(event)"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-all cursor-pointer {% if not search_query %}hidden{% endif %}"
+                        title="Clear search query"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Search Submit Button -->
@@ -234,7 +241,7 @@
                                             <i data-lucide="edit-3" class="w-4 h-4">Edit</i>
                                         </a>
 
-                                        <!-- Delete Action (Uses form for safe POST request via AJAX) -->
+                                        <!-- Delete Action -->
                                         <form action="{% url 'resource:delete' resource.pk %}" method="POST" class="inline-block" onsubmit="deleteResource(event, this);">
                                             {% csrf_token %}
                                             <button type="submit" title="Delete Resource" 
@@ -244,7 +251,7 @@
                                         </form>
                                     {% endif %}
 
-                                    <!-- Context Menu (Optional Download & Bookmark) -->
+                                    <!-- Context Menu -->
                                     <div class="relative inline-block text-left ml-1">
                                         <button onclick="toggleMenu('menu-{{ resource.pk }}')" title="More Options"
                                                 class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all">
@@ -430,6 +437,43 @@
         lucide.createIcons();
     }
 
+    // Toggle clear icon visibility when typing
+    function toggleClearBtn() {
+        const input = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearSearchBtn');
+        if (input && clearBtn) {
+            if (input.value.trim().length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+        }
+    }
+
+    // Sync clear button state automatically on initial page load
+    document.addEventListener('DOMContentLoaded', toggleClearBtn);
+
+    // Handle clear search action
+    function clearSearchInput(event) {
+        event.preventDefault();
+        const input = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearSearchBtn');
+        
+        if (input) {
+            input.value = '';
+            if (clearBtn) clearBtn.classList.add('hidden');
+            input.focus();
+        }
+
+        // Inspect URL parameters natively to handle clearing active search query
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('q') && urlParams.get('q') !== '') {
+            urlParams.delete('q');
+            const queryString = urlParams.toString();
+            window.location.href = window.location.pathname + (queryString ? '?' + queryString : '');
+        }
+    }
+
     // Toggle Action Menus (Context Menu on table rows)
     function toggleMenu(menuId) {
         // Close all other open menus
@@ -456,7 +500,7 @@
         }
     });
 
-    // Handle AJAX Delete to prevent raw JSON {"ok": true} page
+    // Handle AJAX Delete
     async function deleteResource(event, form) {
         event.preventDefault(); // Prevent standard form submission
         
@@ -469,7 +513,7 @@
                 method: 'POST',
                 body: new FormData(form),
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest' // Let backend know it's an AJAX request
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             });
             
@@ -479,13 +523,11 @@
             try {
                 data = JSON.parse(text);
             } catch (e) {
-                // If response wasn't JSON, reload page just in case
                 window.location.reload();
                 return;
             }
 
             if (data.ok || response.ok) {
-                // Smoothly remove the row from the table
                 const row = form.closest('tr');
                 if (row) {
                     row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -494,7 +536,6 @@
                     
                     setTimeout(() => {
                         row.remove();
-                        // Reload if it was the last item
                         if (document.querySelectorAll('tbody tr').length === 0) {
                             window.location.reload();
                         }

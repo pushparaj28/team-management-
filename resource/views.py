@@ -497,7 +497,6 @@ def resource_comments(request, pk):
         }
     )
 
-
 @login_required
 @require_POST
 def add_comment(request, pk):
@@ -530,51 +529,45 @@ def add_comment(request, pk):
 
             username = (
                 request.user.get_full_name()
-                or
-                request.user.username
+                or request.user.username
             )
 
             return JsonResponse({
 
-                'ok':
-                    True,
+                'ok': True,
 
                 'comment': {
 
-                    'id':
-                        comment.id,
+                    'id': comment.id,
 
-                    'user':
-                        username,
+                    'user': username,
 
-                    'text':
-                        comment.text,
+                    # IMPORTANT: text नहीं, content
+                    'content': comment.content,
 
-                    'created_at':
-                        comment.created_at.strftime(
-                            '%b %d, %Y %I:%M %p'
-                        ),
+                    'created_at': comment.created_at.strftime(
+                        '%b %d, %Y %I:%M %p'
+                    ),
 
-                    'initial':
-                        username[0].upper(),
+                    'initial': username[0].upper(),
+
                 }
+
             })
 
+        # IMPORTANT: resources नहीं, resource
         return redirect(
-            'resources:detail',
+            'resource:detail',
             pk=resource.pk
         )
 
     return JsonResponse({
 
-        'ok':
-            False,
+        'ok': False,
 
-        'errors':
-            form.errors,
+        'errors': form.errors,
 
     }, status=400)
-
 
 @login_required
 @require_POST

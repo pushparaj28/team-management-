@@ -29,7 +29,7 @@
 
     .upload-zone-active {
         border-color: #8b5cf6 !important;
-        background-color: rgba(237, 234, 245, 0.12) !important;
+        background-color: rgba(237, 234, 245, 0.25) !important;
     }
     
     /* Hide the default file input styling to create a custom dropzone */
@@ -122,17 +122,17 @@
                         <span class="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Optional if URL provided</span>
                     </label>
                     
-                    <div class="upload-zone relative group w-full border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-violet-50 hover:border-violet-400 transition-all duration-200 flex flex-col items-center justify-center py-10 px-4 cursor-pointer">
+                    <div id="dropzone" class="upload-zone relative group w-full border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-violet-50 hover:border-violet-400 transition-all duration-200 flex flex-col items-center justify-center py-10 px-4 cursor-pointer">
                         <!-- Django File Input (Hidden via CSS but spans the whole box) -->
                         {{ form.file }}
                         
                         <!-- UI Overlay -->
-                        <div class="pointer-events-none text-center flex flex-col items-center">
-                            <div class="w-14 h-14 mb-3 rounded-full bg-violet-100 text-violet-500 flex items-center justify-center group-hover:scale-110 group-hover:bg-violet-200 transition-all duration-300">
+                        <div class="pointer-events-none text-center flex flex-col items-center max-w-md px-2">
+                            <div id="upload-icon-container" class="w-14 h-14 mb-3 rounded-full bg-violet-100 text-violet-500 flex items-center justify-center group-hover:scale-110 group-hover:bg-violet-200 transition-all duration-300">
                                 <i data-lucide="cloud-upload" class="w-7 h-7"></i>
                             </div>
-                            <h3 class="text-slate-700 font-semibold text-base mb-1 group-hover:text-violet-700 transition-colors">Click to upload or drag and drop</h3>
-                            <p class="text-sm text-slate-500">PDF, SQL, PNG, XLSX, MP4 and more</p>
+                            <h3 id="upload-title" class="text-slate-700 font-semibold text-base mb-1 group-hover:text-violet-700 transition-colors break-all">Click to upload or drag and drop</h3>
+                            <p id="upload-subtitle" class="text-sm text-slate-500">PDF, SQL, PNG, XLSX and more</p>
                         </div>
                     </div>
                     {% for error in form.file.errors %}
@@ -157,4 +157,58 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.querySelector('.upload-zone input[type="file"]');
+        const dropzone = document.getElementById('dropzone');
+        const uploadTitle = document.getElementById('upload-title');
+        const uploadSubtitle = document.getElementById('upload-subtitle');
+        const iconContainer = document.getElementById('upload-icon-container');
+
+        if (fileInput && dropzone) {
+            // Drag and drop feedback
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('upload-zone-active');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('upload-zone-active');
+                }, false);
+            });
+
+            // Handle file selection
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    const file = this.files[0];
+                    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    const sizeText = fileSizeMB < 1 ? Math.round(file.size / 1024) + ' KB' : fileSizeMB + ' MB';
+
+                    // Update UI elements with selected file details
+                    uploadTitle.textContent = file.name;
+                    uploadTitle.className = 'text-violet-700 font-bold text-base mb-1 break-all';
+                    
+                    uploadSubtitle.innerHTML = `<span class="inline-flex items-center text-emerald-600 font-medium mr-1"><i data-lucide="check-circle-2" class="w-4 h-4 mr-1 inline"></i> Selected (${sizeText})</span> — Click to change`;
+                    
+                    iconContainer.className = 'w-14 h-14 mb-3 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center transition-all duration-300';
+                    iconContainer.innerHTML = '<i data-lucide="file-check" class="w-7 h-7"></i>';
+                    
+                    dropzone.classList.add('border-violet-500', 'bg-violet-50/40');
+
+                    // Re-render Lucide icons if available
+                    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                        window.lucide.createIcons();
+                    }
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
