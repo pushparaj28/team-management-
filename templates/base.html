@@ -5,7 +5,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CollabPulse{% endblock %}</title>
-    <script>tailwind.config = { darkMode: 'class' } </script>
+
+    <!-- Apply saved theme BEFORE anything renders, so there is no
+         light-mode flash on page load. This must be the very first
+         script in <head> — it runs synchronously before the browser
+         paints anything, unlike the old version which only added the
+         dark class from a script near the bottom of <body>, after
+         the whole page had already rendered in light mode. -->
+    <script>
+        (function () {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class', } </script>
