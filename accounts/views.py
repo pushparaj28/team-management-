@@ -19,6 +19,10 @@ from django.urls import reverse, NoReverseMatch
 from django.views.decorators.http import require_POST
 from .models import Notification
 from django.views.decorators.csrf import csrf_exempt
+from datetime import date
+from django.utils import timezone
+from tasks.models import LeaveRequest
+
 
 # Optional app models import
 try:
@@ -444,6 +448,22 @@ def manager_detail(request, user_id):
     return render(request, 'accounts/manager_detail.html', context)
 
 def employees_list(request):
+
+    today = date.today()
+
+    active_leaves = LeaveRequest.objects.filter(
+        status__iexact='approved',
+        start_date__lte=today,
+        end_date__gte=today
+    )
+
+    try:
+        on_leave_user_ids = list(active_leaves.values_list('user_id', flat=True))
+    except Exception:
+        on_leave_user_ids = list(active_leaves.values_list('employee_id', flat=True))
+
+    on_leave_count = len(set(on_leave_user_ids))
+
     # 1. Sirf 'employee' role wale users nikalenge
     employees = UserProfile.objects.filter(role='employee').select_related('user').order_by('-id')
 
@@ -472,6 +492,8 @@ def employees_list(request):
         'total_employees': total_employees,
         'active_employees': active_employees,
         'inactive_employees': inactive_employees,
+        'on_leave_count': on_leave_count,        
+        'on_leave_user_ids': on_leave_user_ids,
     }
     
     return render(request, 'accounts/employees_list.html', context)
@@ -487,17 +509,26 @@ def edit_employee(request, user_id):
 
     if request.method == 'POST':
         # 1. User table update
-        employee_obj.first_name = request.POST.get('first_name')
-        employee_obj.last_name = request.POST.get('last_name')
-        employee_obj.email = request.POST.get('email')
+        employee_obj.first_name = request.POST.get('first_name', '').strip()
+        employee_obj.last_name = request.POST.get('last_name', '').strip()
+        employee_obj.email = request.POST.get('email', '').strip()
         employee_obj.save()
 
-        # 2. Profile table update (Phone, Role)
-        profile.phone = request.POST.get('phone', '') 
-        profile.role = request.POST.get('role')
+        # 2. Profile table update (Phone, Role, Department)
+        profile.phone = request.POST.get('phone', '').strip()
+        
+        new_role = request.POST.get('role')
+        if new_role:
+            profile.role = new_role
+
+        # 🟢 Department update handling
+        new_dept = request.POST.get('department')
+        if new_dept:
+            profile.department = new_dept.strip()
+
         profile.save()
 
-        messages.success(request, f"{employee_obj.first_name}:Your details have been updated successfully!")
+        messages.success(request, f"{employee_obj.first_name}: Your details have been updated successfully!")
         
         # Agar role change karke 'Manager' kar diya, toh managers list me bhejo
         if profile.role == 'manager':
@@ -563,16 +594,29 @@ def manager_roster_view(request):
         messages.error(request, "Access Denied: Only managers have a squad.")
         return redirect('tasks:dashboard')
 
-    # Current Manager ke employees
+    # Current Manager ke assigned employees
     my_squad = User.objects.filter(profile__manager=request.user).select_related('profile')
     
-    # NEW: Wo employees jinka abhi koi manager nahi hai (Add karne ke liye)
-    available_employees = User.objects.filter(profile__role__iexact='employee', profile__manager__isnull=True)
+    # Wo employees jo kisi bhi manager ke under assigned nahi hain
+    available_employees = User.objects.filter(
+        profile__role__iexact='employee',
+        profile__manager__isnull=True
+    ).select_related('profile')
+
+    # Available employees ke distinct departments list (Filter pills ke liye)
+    departments = (
+        available_employees.exclude(profile__department__isnull=True)
+        .exclude(profile__department__exact='')
+        .values_list('profile__department', flat=True)
+        .distinct()
+        .order_by('profile__department')
+    )
 
     context = {
         'my_squad': my_squad,
         'squad_count': my_squad.count(),
         'available_employees': available_employees,
+        'departments': list(departments),
         'page_title': 'My Squad',
     }
     return render(request, 'accounts/manager_roster.html', context)
