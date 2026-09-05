@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
 {% load task_extras %}
+
 {% block content %}
 <div class="p-6">
+  <!-- Top Header Bar -->
   <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
     <div>
       <h1 class="text-2xl font-bold text-gray-800">Tasks</h1>
@@ -31,7 +33,7 @@
     </span>
   </div>
 
-  <!-- KPI cards -->
+  <!-- KPI Cards: Row 1 -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
       <div class="flex items-start justify-between">
@@ -98,6 +100,7 @@
     </div>
   </div>
 
+  <!-- KPI Cards: Row 2 -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
     {% if is_admin %}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
@@ -119,7 +122,7 @@
     </div>
   </div>
 
-  <!-- Filters -->
+  <!-- Filter Form -->
   <form method="get" id="taskFilterForm" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4 space-y-3">
     <input type="text" name="search" value="{{ filters.search }}" placeholder="Search by title, ID or keyword..."
            class="border border-gray-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
@@ -158,7 +161,7 @@
     </div>
   </form>
 
-  <!-- Task table -->
+  <!-- Task Table -->
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
@@ -185,38 +188,71 @@
               <span class="font-semibold text-gray-800">{{ task.title }}</span>
               {% if can_manage %}<a href="{% url 'tasks:task_edit' task.id %}" class="text-gray-300 hover:text-indigo-500 ml-1"><i class="fas fa-pen text-xs"></i></a>{% endif %}
             </td>
+
+            <!-- ASSIGNED TO COLUMN: Profile Pic Image Check -->
             <td class="px-4 py-3">
               <div class="flex items-center gap-2">
-                <span class="w-6 h-6 rounded-full text-white text-[10px] flex items-center justify-center font-semibold flex-shrink-0" style="background-color:{{ task.assigned_to.username|avatar_color }}">
-                  {{ task.assigned_to.username|slice:":1"|upper|default:"?" }}
-                </span>
-                {{ task.assigned_to.username|default:"Unassigned" }}
+                {% if task.assigned_to and task.assigned_to.profile.profile_pic %}
+                  <img src="{{ task.assigned_to.profile.profile_pic.url }}" alt="{{ task.assigned_to.username }}" class="w-6 h-6 rounded-full object-cover shadow-xs ring-1 ring-gray-200">
+                {% else %}
+                  <span class="w-6 h-6 rounded-full text-white text-[10px] flex items-center justify-center font-semibold flex-shrink-0" style="background-color:{{ task.assigned_to.username|avatar_color }}">
+                    {{ task.assigned_to.first_name|default:task.assigned_to.username|slice:":1"|upper|default:"?" }}
+                  </span>
+                {% endif %}
+                <span class="font-medium text-gray-800">{{ task.assigned_to.first_name|default:task.assigned_to.username|default:"Unassigned" }}</span>
               </div>
             </td>
-            <td class="px-4 py-3 text-xs text-gray-500">{{ task.assigned_to.profile.get_department_display|default:"—" }}</td>
-            <td class="px-4 py-3 text-xs text-gray-500">{{ task.created_by.username|default:"—" }}</td>
+
+            <!-- DEPARTMENT COLUMN -->
+            <td class="px-4 py-3 text-xs text-gray-500">
+              {{ task.assigned_to.profile.department|default:"—" }}
+            </td>
+
+            <!-- CREATED BY COLUMN: Fallback to Manager if Null -->
+            <td class="px-4 py-3 text-xs text-gray-600">
+              {% with creator=task.created_by|default:task.assigned_to.profile.manager %}
+                {% if creator %}
+                  <div class="flex items-center gap-1.5">
+                    {% if creator.profile.profile_pic %}
+                      <img src="{{ creator.profile.profile_pic.url }}" class="w-5 h-5 rounded-full object-cover shadow-xs ring-1 ring-gray-200">
+                    {% else %}
+                      <span class="w-5 h-5 rounded-full bg-slate-700 text-white text-[9px] font-bold flex items-center justify-center">
+                        {{ creator.first_name|default:creator.username|slice:":1"|upper }}
+                      </span>
+                    {% endif %}
+                    <span>{{ creator.first_name|default:creator.username }}</span>
+                  </div>
+                {% else %}
+                  <span class="text-gray-400">—</span>
+                {% endif %}
+              {% endwith %}
+            </td>
+
             <td class="px-4 py-3">
-              <span class="text-xs font-semibold px-2 py-1 rounded-full
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full
                 {% if task.status == 'Done' %}bg-emerald-100 text-emerald-700
                 {% elif task.status == 'In Progress' %}bg-blue-100 text-blue-700
                 {% elif task.status == 'Review' %}bg-amber-100 text-amber-700
                 {% else %}bg-gray-100 text-gray-600{% endif %}">{{ task.status }}</span>
             </td>
+
             <td class="px-4 py-3">
-              <span class="text-xs font-semibold px-2 py-1 rounded-full
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full
                 {% if task.priority == 'High' %}bg-rose-100 text-rose-700
                 {% elif task.priority == 'Medium' %}bg-amber-100 text-amber-700
                 {% else %}bg-emerald-100 text-emerald-700{% endif %}">{{ task.priority }}</span>
             </td>
-            <td class="px-4 py-3 text-xs">{{ task.due_date|default:"—" }}</td>
+
+            <td class="px-4 py-3 text-xs text-gray-500">{{ task.due_date|date:"Y-m-d"|default:"—" }}</td>
+
             <td class="px-4 py-3 text-center">
               <div class="flex items-center justify-center gap-2">
-                <button onclick="openTaskDrawer({{ task.id }})" class="w-7 h-7 flex items-center justify-center rounded-md bg-gray-50 hover:bg-gray-100 text-gray-500" title="View"><i class="fas fa-eye text-xs"></i></button>
+                <button onclick="openTaskDrawer({{ task.id }})" class="w-7 h-7 flex items-center justify-center rounded-md bg-gray-50 hover:bg-gray-100 text-gray-500 transition" title="View"><i class="fas fa-eye text-xs"></i></button>
                 {% if can_manage %}
-                <a href="{% url 'tasks:task_edit' task.id %}" class="w-7 h-7 flex items-center justify-center rounded-md bg-blue-50 hover:bg-blue-100 text-blue-600" title="Edit"><i class="fas fa-pen text-xs"></i></a>
+                <a href="{% url 'tasks:task_edit' task.id %}" class="w-7 h-7 flex items-center justify-center rounded-md bg-blue-50 hover:bg-blue-100 text-blue-600 transition" title="Edit"><i class="fas fa-pen text-xs"></i></a>
                 <form method="post" action="{% url 'tasks:task_delete' task.id %}" onsubmit="return confirm('Delete this task?');" class="inline">
                   {% csrf_token %}
-                  <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-md bg-rose-50 hover:bg-rose-100 text-rose-600" title="Delete"><i class="fas fa-trash text-xs"></i></button>
+                  <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-md bg-rose-50 hover:bg-rose-100 text-rose-600 transition" title="Delete"><i class="fas fa-trash text-xs"></i></button>
                 </form>
                 {% endif %}
               </div>
@@ -229,6 +265,7 @@
       </table>
     </div>
 
+    <!-- Pagination -->
     {% if page_obj.has_other_pages %}
     <div class="p-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 bg-gray-50/50">
       <p class="text-xs text-gray-500">Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} tasks</p>
@@ -245,13 +282,15 @@
   </div>
 </div>
 
-<!-- Right-side detail drawer -->
-<div id="taskDrawerOverlay" class="hidden fixed inset-0 bg-black/30 z-40" onclick="closeTaskDrawer()"></div>
-<div id="taskDrawer" class="hidden fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 overflow-y-auto">
+<!-- ================= Task Details Right Drawer ================= -->
+<div id="taskDrawerOverlay" class="hidden fixed inset-0 bg-black/30 z-40 transition-opacity" onclick="closeTaskDrawer()"></div>
+<div id="taskDrawer" class="hidden fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 overflow-y-auto transform transition-transform duration-300">
   <div class="p-5 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
-    <h3 class="font-bold text-gray-800">Task Details</h3>
-    <button onclick="closeTaskDrawer()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+    <h3 class="font-bold text-gray-800 text-base">Task Details</h3>
+    <button onclick="closeTaskDrawer()" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg transition"><i class="fas fa-times"></i></button>
   </div>
+  
+  <!-- Content Target -->
   <div id="taskDrawerBody" class="p-5"></div>
 </div>
 

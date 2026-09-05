@@ -520,13 +520,19 @@ def quick_create_task(request):
 # ---------------------------------------------------------------
 # Task list page (the new redesigned Tasks workspace)
 # ---------------------------------------------------------------
-
 @login_required
 def task_list_view(request):
     user = request.user
     team_users = _visible_team_users(user)
 
-    tasks_qs = Task.objects.select_related('assigned_to', 'created_by', 'milestone').filter(
+    # 🟢 'profile' use karein, 'userprofile' nahi
+    tasks_qs = Task.objects.select_related(
+        'assigned_to', 
+        'assigned_to__profile',
+        'created_by', 
+        'created_by__profile',
+        'milestone'
+    ).filter(
         assigned_to__in=team_users
     )
 
@@ -562,7 +568,7 @@ def task_list_view(request):
 
     tasks_qs = tasks_qs.order_by('-created_at')
 
-    # --- KPIs (always computed from the FULL role-scoped set, not the filtered one) ---
+    # --- KPIs ---
     base_qs = Task.objects.filter(assigned_to__in=team_users)
     today = timezone.localdate()
     last_month_start = today.replace(day=1) - timezone.timedelta(days=1)
@@ -594,6 +600,9 @@ def task_list_view(request):
     paginator = Paginator(tasks_qs, 10)
     page_obj = paginator.get_page(request.GET.get('page'))
 
+    # 🟢 'profile__role' use karein
+    all_team_employees = User.objects.filter(profile__role='employee').select_related('profile')
+
     context = {
         'page_obj': page_obj,
         'kpis': kpis,
@@ -605,6 +614,7 @@ def task_list_view(request):
         'assignee_choices': team_users,
         'manager_choices': UserProfile.objects.filter(role='manager') if user.is_superuser else [],
         'milestone_choices': Milestone.objects.all(),
+        'all_team_employees': all_team_employees,
         'filters': {
             'search': search, 'status': status_f, 'priority': priority_f, 'assignee': assignee_f,
             'manager': manager_f, 'department': department_f, 'milestone': milestone_f,
@@ -613,58 +623,114 @@ def task_list_view(request):
     }
     return render(request, 'tasks/task_list.html', context)
 
-
 @login_required
 def task_detail_api(request, pk):
-    """JSON payload for the right-side detail drawer — never a full page nav."""
-    task = get_object_or_404(Task.objects.select_related('assigned_to', 'created_by', 'milestone'), pk=pk)
+    """JSON payload for the right-side detail drawer with correct 'profile' relations."""
+    task = get_object_or_404(
+        Task.objects.select_related(
+            'assigned_to', 
+            'assigned_to__profile',
+            'created_by', 
+            'created_by__profile', 
+            'milestone'
+        ), 
+        pk=pk
+    )
 
-    # Same visibility rule as everywhere else — backend-enforced.
     if task.assigned_to_id not in _visible_team_users(request.user).values_list('id', flat=True):
         return JsonResponse({'error': 'Not found'}, status=404)
 
-    manager = None
-    department = None
-    colleagues = []
-    if task.assigned_to and hasattr(task.assigned_to, 'profile'):
-        profile = task.assigned_to.profile
-        department = profile.get_department_display()
-        if profile.manager:
-            manager = {'id': profile.manager.id, 'username': profile.manager.username}
-            colleagues = list(
-                UserProfile.objects.filter(manager=profile.manager, role='employee')
-                .exclude(user=task.assigned_to)
-                .select_related('user')
-                .values('user__id', 'user__username')[:10]
-            )
+    def get_avatar(user_obj):
+        if not user_obj:
+            return None
+        profile = getattr(user_obj, 'profile', None)
+        if profile and getattr(profile, 'profile_pic', None):
+            try:
+                return profile.profile_pic.url
+            except Exception:
+                return None
+        return None
 
+    # 1. Assignee details
+    assigned_to_name = 'Unassigned'
+    assigned_to_pic = None
+    department = None
+    assignee_profile = getattr(task.assigned_to, 'profile', None) if task.assigned_to else None
+
+    if task.assigned_to:
+        assigned_to_name = task.assigned_to.first_name or task.assigned_to.username
+        assigned_to_pic = get_avatar(task.assigned_to)
+        if assignee_profile:
+            department = assignee_profile.get_department_display() if hasattr(assignee_profile, 'get_department_display') else assignee_profile.department
+
+    # 2. Manager & Creator Identification
+    direct_manager = assignee_profile.manager if assignee_profile else None
+    creator_user = task.created_by or direct_manager
+
+    created_by_name = (creator_user.first_name or creator_user.username) if creator_user else 'Unknown'
+    created_by_pic = get_avatar(creator_user)
+
+    # 3. Manager Display string (so frontend gets 'ram' directly)
+    manager_display_name = (direct_manager.first_name or direct_manager.username) if direct_manager else '—'
+
+    # 4. Colleagues under same manager
+    colleagues = []
+    if direct_manager:
+        colleague_qs = UserProfile.objects.filter(
+            manager=direct_manager, 
+            role='employee'
+        ).exclude(user=task.assigned_to).select_related('user')
+
+        for prof in colleague_qs:
+            c_pic = None
+            if prof.profile_pic:
+                try:
+                    c_pic = prof.profile_pic.url
+                except Exception:
+                    pass
+            colleagues.append({
+                'id': prof.user.id,
+                'username': prof.user.username,
+                'name': prof.user.first_name or prof.user.username,
+                'avatar': c_pic,
+                'department': prof.department or 'Employee',
+            })
+
+    # 5. Team members with avatar
     team_members = [
-        {'id': tm.user.id, 'username': tm.user.username, 'membership_id': tm.id}
-        for tm in task.team_members.select_related('user').all()
+        {
+            'id': tm.user.id,
+            'username': tm.user.username,
+            'name': tm.user.first_name or tm.user.username,
+            'membership_id': tm.id,
+            'avatar': get_avatar(tm.user)
+        }
+        for tm in task.team_members.select_related('user', 'user__profile').all()
     ]
 
     return JsonResponse({
         'id': task.id,
         'title': task.title,
-        'description': task.description,
+        'description': task.description or '',
         'status': task.status,
         'priority': task.priority,
         'due_date': task.due_date.isoformat() if task.due_date else None,
         'milestone': task.milestone.title if task.milestone else None,
-        'created_by': task.created_by.username if task.created_by else 'Unknown',
-        'assigned_to': task.assigned_to.username if task.assigned_to else 'Unassigned',
-        'department': department,
-        'manager': manager,
+        'created_by': created_by_name,
+        'created_by_pic': created_by_pic,
+        'assigned_to': assigned_to_name,
+        'assigned_to_pic': assigned_to_pic,
+        'department': department or '—',
+        'manager': manager_display_name,
         'colleagues': colleagues,
-        'attachment_url': task.attachment.url if task.attachment else None,
-        'attachment_name': task.attachment.name.split('/')[-1] if task.attachment else None,
-        'reference_url': task.reference_url,
-        'created_at': task.created_at.strftime('%b %d, %Y %I:%M %p'),
-        'updated_at': task.updated_at.strftime('%b %d, %Y %I:%M %p'),
+        'attachment_url': task.attachment.url if getattr(task, 'attachment', None) else None,
+        'attachment_name': task.attachment.name.split('/')[-1] if getattr(task, 'attachment', None) else None,
+        'reference_url': getattr(task, 'reference_url', None),
+        'created_at': task.created_at.strftime('%b %d, %Y %I:%M %p') if task.created_at else '',
+        'updated_at': task.updated_at.strftime('%b %d, %Y %I:%M %p') if getattr(task, 'updated_at', None) else '',
         'team_members': team_members,
         'can_manage': _can_manage_task(request.user, task),
     })
-
 
 @login_required
 @require_POST
