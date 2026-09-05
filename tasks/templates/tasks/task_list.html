@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% load static %}
+{% load task_extras %}
+{% block content %}
+<div class="p-6">
+  <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Tasks</h1>
+      <p class="text-sm text-gray-500 mt-1">Manage, track, and collaborate on tasks across your teams.</p>
+    </div>
+    <div class="flex gap-2">
+      <button type="button" class="border border-gray-200 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2">
+        <i class="fas fa-download"></i>Export
+      </button>
+      {% if can_manage %}
+      <a href="{% url 'tasks:task_create' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm hover:shadow-md flex items-center gap-2">
+        <i class="fas fa-plus"></i>Add Task
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex items-center gap-1 border-b border-gray-200 mb-5">
+    <a href="{% url 'tasks:task_list' %}" class="px-4 py-2.5 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600">All Tasks</a>
+    <a href="{% url 'tasks:task_list' %}?assignee={{ request.user.id }}" class="px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700">My Tasks</a>
+    {% if can_manage %}<a href="{% url 'tasks:task_list' %}" class="px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700">Team Tasks</a>{% endif %}
+    <span class="px-4 py-2.5 text-sm font-medium text-gray-300 cursor-not-allowed flex items-center gap-1.5">
+      Sprint <i class="fas fa-plus text-xs"></i>
+      <span class="text-[9px] font-bold bg-indigo-50 text-indigo-400 px-1.5 py-0.5 rounded-full">Soon</span>
+    </span>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div class="flex items-start justify-between">
+        <div class="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+          <i class="fas fa-layer-group text-indigo-500"></i>
+        </div>
+        {% if kpis.trend_total != 0 %}
+        <span class="text-xs font-semibold {% if kpis.trend_total > 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+          <i class="fas fa-arrow-{% if kpis.trend_total > 0 %}up{% else %}down{% endif %}"></i> {{ kpis.trend_total|abs_val }}%
+        </span>
+        {% endif %}
+      </div>
+      <p class="text-xs text-gray-500 mt-3">Total Tasks</p>
+      <p class="text-2xl font-bold text-gray-800">{{ kpis.total }}</p>
+      <p class="text-[10px] text-gray-400">vs last month</p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div class="flex items-start justify-between">
+        <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+          <i class="fas fa-clock text-amber-500"></i>
+        </div>
+        {% if kpis.trend_pending != 0 %}
+        <span class="text-xs font-semibold {% if kpis.trend_pending > 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+          <i class="fas fa-arrow-{% if kpis.trend_pending > 0 %}up{% else %}down{% endif %}"></i> {{ kpis.trend_pending|abs_val }}%
+        </span>
+        {% endif %}
+      </div>
+      <p class="text-xs text-gray-500 mt-3">Pending Tasks</p>
+      <p class="text-2xl font-bold text-gray-800">{{ kpis.pending }}</p>
+      <p class="text-[10px] text-gray-400">vs last month</p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div class="flex items-start justify-between">
+        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+          <i class="fas fa-arrows-rotate text-blue-500"></i>
+        </div>
+        {% if kpis.trend_in_progress != 0 %}
+        <span class="text-xs font-semibold {% if kpis.trend_in_progress > 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+          <i class="fas fa-arrow-{% if kpis.trend_in_progress > 0 %}up{% else %}down{% endif %}"></i> {{ kpis.trend_in_progress|abs_val }}%
+        </span>
+        {% endif %}
+      </div>
+      <p class="text-xs text-gray-500 mt-3">In Progress</p>
+      <p class="text-2xl font-bold text-gray-800">{{ kpis.in_progress }}</p>
+      <p class="text-[10px] text-gray-400">vs last month</p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div class="flex items-start justify-between">
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+          <i class="fas fa-circle-check text-emerald-500"></i>
+        </div>
+        {% if kpis.trend_completed != 0 %}
+        <span class="text-xs font-semibold {% if kpis.trend_completed > 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+          <i class="fas fa-arrow-{% if kpis.trend_completed > 0 %}up{% else %}down{% endif %}"></i> {{ kpis.trend_completed|abs_val }}%
+        </span>
+        {% endif %}
+      </div>
+      <p class="text-xs text-gray-500 mt-3">Completed</p>
+      <p class="text-2xl font-bold text-gray-800">{{ kpis.completed }}</p>
+      <p class="text-[10px] text-gray-400">vs last month</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    {% if is_admin %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0"><i class="fas fa-user-tie text-violet-500"></i></div>
+      <div><p class="text-xs text-gray-500">Managers with Tasks</p><p class="text-2xl font-bold text-gray-800">{{ kpis.managers_with_tasks }}</p></div>
+    </div>
+    {% endif %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center flex-shrink-0"><i class="fas fa-users text-cyan-500"></i></div>
+      <div><p class="text-xs text-gray-500">Employees with Tasks</p><p class="text-2xl font-bold text-gray-800">{{ kpis.employees_with_tasks }}</p></div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center flex-shrink-0"><i class="fas fa-triangle-exclamation text-rose-500"></i></div>
+      <div><p class="text-xs text-gray-500">Overdue Tasks</p><p class="text-2xl font-bold {% if kpis.overdue > 0 %}text-rose-600{% else %}text-gray-800{% endif %}">{{ kpis.overdue }}</p></div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-sky-50 flex items-center justify-center flex-shrink-0"><i class="fas fa-calendar-days text-sky-500"></i></div>
+      <div><p class="text-xs text-gray-500">Due This Week</p><p class="text-2xl font-bold text-gray-800">{{ kpis.due_this_week }}</p></div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" id="taskFilterForm" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4 space-y-3">
+    <input type="text" name="search" value="{{ filters.search }}" placeholder="Search by title, ID or keyword..."
+           class="border border-gray-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+    <div class="flex flex-wrap gap-2">
+      <select name="status" class="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white">
+        <option value="">All Status</option>
+        {% for c, l in status_choices %}<option value="{{ c }}" {% if filters.status == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+      <select name="priority" class="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white">
+        <option value="">All Priority</option>
+        {% for c, l in priority_choices %}<option value="{{ c }}" {% if filters.priority == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+      <select name="assignee" class="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white">
+        <option value="">All Assignees</option>
+        {% for u in assignee_choices %}<option value="{{ u.id }}" {% if filters.assignee == u.id|stringformat:"s" %}selected{% endif %}>{{ u.username }}</option>{% endfor %}
+      </select>
+      {% if is_admin %}
+      <select name="manager" class="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white">
+        <option value="">All Managers</option>
+        {% for m in manager_choices %}<option value="{{ m.user.id }}" {% if filters.manager == m.user.id|stringformat:"s" %}selected{% endif %}>{{ m.user.username }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      <select name="department" class="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white">
+        <option value="">All Departments</option>
+        {% for c, l in department_choices %}<option value="{{ c }}" {% if filters.department == c %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+      <select name="milestone" class="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white">
+        <option value="">All Milestones</option>
+        {% for m in milestone_choices %}<option value="{{ m.id }}" {% if filters.milestone == m.id|stringformat:"s" %}selected{% endif %}>{{ m.title }}</option>{% endfor %}
+      </select>
+      <input type="date" name="start" value="{{ filters.start }}" class="border border-gray-200 rounded-lg px-2 py-2 text-xs">
+      <span class="self-center text-xs text-gray-400">to</span>
+      <input type="date" name="end" value="{{ filters.end }}" class="border border-gray-200 rounded-lg px-2 py-2 text-xs">
+      <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">Apply Filters</button>
+      <a href="{% url 'tasks:task_list' %}" class="border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-semibold px-4 py-2 rounded-lg transition">Clear</a>
+    </div>
+  </form>
+
+  <!-- Task table -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
+            <th class="px-4 py-3 w-8"><input type="checkbox"></th>
+            <th class="px-4 py-3">Task ID</th>
+            <th class="px-4 py-3">Title</th>
+            <th class="px-4 py-3">Assigned To</th>
+            <th class="px-4 py-3">Department</th>
+            <th class="px-4 py-3">Created By</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3">Priority</th>
+            <th class="px-4 py-3">Due Date</th>
+            <th class="px-4 py-3 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
+          {% for task in page_obj %}
+          <tr class="hover:bg-gray-50/70 transition-colors">
+            <td class="px-4 py-3"><input type="checkbox"></td>
+            <td class="px-4 py-3 font-semibold text-gray-500">T-{{ task.id|stringformat:"03d" }}</td>
+            <td class="px-4 py-3">
+              <span class="font-semibold text-gray-800">{{ task.title }}</span>
+              {% if can_manage %}<a href="{% url 'tasks:task_edit' task.id %}" class="text-gray-300 hover:text-indigo-500 ml-1"><i class="fas fa-pen text-xs"></i></a>{% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full text-white text-[10px] flex items-center justify-center font-semibold flex-shrink-0" style="background-color:{{ task.assigned_to.username|avatar_color }}">
+                  {{ task.assigned_to.username|slice:":1"|upper|default:"?" }}
+                </span>
+                {{ task.assigned_to.username|default:"Unassigned" }}
+              </div>
+            </td>
+            <td class="px-4 py-3 text-xs text-gray-500">{{ task.assigned_to.profile.get_department_display|default:"—" }}</td>
+            <td class="px-4 py-3 text-xs text-gray-500">{{ task.created_by.username|default:"—" }}</td>
+            <td class="px-4 py-3">
+              <span class="text-xs font-semibold px-2 py-1 rounded-full
+                {% if task.status == 'Done' %}bg-emerald-100 text-emerald-700
+                {% elif task.status == 'In Progress' %}bg-blue-100 text-blue-700
+                {% elif task.status == 'Review' %}bg-amber-100 text-amber-700
+                {% else %}bg-gray-100 text-gray-600{% endif %}">{{ task.status }}</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="text-xs font-semibold px-2 py-1 rounded-full
+                {% if task.priority == 'High' %}bg-rose-100 text-rose-700
+                {% elif task.priority == 'Medium' %}bg-amber-100 text-amber-700
+                {% else %}bg-emerald-100 text-emerald-700{% endif %}">{{ task.priority }}</span>
+            </td>
+            <td class="px-4 py-3 text-xs">{{ task.due_date|default:"—" }}</td>
+            <td class="px-4 py-3 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <button onclick="openTaskDrawer({{ task.id }})" class="w-7 h-7 flex items-center justify-center rounded-md bg-gray-50 hover:bg-gray-100 text-gray-500" title="View"><i class="fas fa-eye text-xs"></i></button>
+                {% if can_manage %}
+                <a href="{% url 'tasks:task_edit' task.id %}" class="w-7 h-7 flex items-center justify-center rounded-md bg-blue-50 hover:bg-blue-100 text-blue-600" title="Edit"><i class="fas fa-pen text-xs"></i></a>
+                <form method="post" action="{% url 'tasks:task_delete' task.id %}" onsubmit="return confirm('Delete this task?');" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-md bg-rose-50 hover:bg-rose-100 text-rose-600" title="Delete"><i class="fas fa-trash text-xs"></i></button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="10" class="px-4 py-12 text-center text-gray-400"><i class="fas fa-inbox text-2xl mb-2 block"></i>No tasks match these filters.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="p-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 bg-gray-50/50">
+      <p class="text-xs text-gray-500">Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} tasks</p>
+      <div class="flex gap-1">
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100"><i class="fas fa-chevron-left"></i></a>{% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}<span class="px-2.5 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold">{{ num }}</span>
+          {% else %}<a href="?page={{ num }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100">{{ num }}</a>{% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100"><i class="fas fa-chevron-right"></i></a>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Right-side detail drawer -->
+<div id="taskDrawerOverlay" class="hidden fixed inset-0 bg-black/30 z-40" onclick="closeTaskDrawer()"></div>
+<div id="taskDrawer" class="hidden fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 overflow-y-auto">
+  <div class="p-5 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+    <h3 class="font-bold text-gray-800">Task Details</h3>
+    <button onclick="closeTaskDrawer()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+  </div>
+  <div id="taskDrawerBody" class="p-5"></div>
+</div>
+
+<div id="toast-region" class="fixed bottom-5 right-5 z-[60] space-y-2"></div>
+
+<script src="{% static 'tasks/js/task_list.js' %}"></script>
+{% endblock %}
