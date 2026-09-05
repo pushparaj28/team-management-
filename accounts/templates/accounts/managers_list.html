@@ -81,7 +81,7 @@
 
             <form method="GET" class="relative flex-1 md:w-64">
                 <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
-                <input type="text" name="search" value="{{ search_query }}" placeholder="Search by name or email..."
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Search by username or email..."
                     class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] bg-white transition-all">
                 {% if search_query %}
                     <a href="{% url 'accounts:managers_list' %}" class="absolute right-3 top-2.5 text-gray-400 hover:text-red-500 text-xs">
@@ -98,7 +98,7 @@
             <thead>
                 <tr class="bg-gradient-to-r from-[#7a2656]/10 via-indigo-50 to-indigo-50 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-b-2 border-[#7a2656]/20">
                     <th class="px-6 py-3">ID</th>
-                    <th class="px-6 py-3">Name</th>
+                    <th class="px-6 py-3">Username</th>
                     <th class="px-6 py-3">Email</th>
                     <th class="px-6 py-3">Department</th>
                     <th class="px-6 py-3 text-center">Status</th>
@@ -109,16 +109,21 @@
                 {% for manager in page_obj %}
                 <tr class="manager-dir-row hover:bg-[#7a2656]/5 transition-colors group"
                     data-dept="{{ manager.department|default:'Not Assigned'|lower }}">
-                    <td class="px-6 py-4 font-semibold text-gray-500 border-r border-gray-100">#{{ manager.user.id }}</td>
+                    
+                    <!-- Formatted Manager ID (e.g. MANG001, MANG008) -->
+                    <td class="px-6 py-4 font-semibold text-gray-600 border-r border-gray-100 font-mono text-xs">
+                        MANG{{ manager.user.id|stringformat:"03d" }}
+                    </td>
 
+                    <!-- Username Section -->
                     <td class="px-6 py-4 border-r border-gray-100">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#7a2656] to-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-                                {% firstof manager.user.first_name|make_list|first|upper manager.user.username|make_list|first|upper %}
+                            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#7a2656] to-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-sm uppercase">
+                                {{ manager.user.username|make_list|first }}
                             </div>
                             <div>
-                                <p class="font-bold text-gray-800">{% firstof manager.user.first_name manager.user.username %} {{ manager.user.last_name }}</p>
-                                <p class="text-[10px] text-gray-400">Joined: {{ manager.user.date_joined|date:"M Y" }}</p>
+                                <p class="font-bold text-gray-800 leading-tight">@{{ manager.user.username }}</p>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Joined: {{ manager.user.date_joined|date:"M Y" }}</p>
                             </div>
                         </div>
                     </td>
@@ -200,7 +205,7 @@
     {% endif %}
 </div>
 
-<!-- 5. ADD/PROMOTE MANAGER MODAL (WITH LIVE SEARCH & DEPARTMENT FILTER PILLS) -->
+<!-- 5. ADD/PROMOTE MANAGER MODAL -->
 <div id="addManagerModal" class="fixed inset-0 z-50 hidden bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden transform transition-all flex flex-col max-h-[85vh]">
         
@@ -217,10 +222,9 @@
 
         <!-- Modal Search & Department Filter Toolbar -->
         <div class="p-4 border-b border-gray-100 bg-gray-50/40 space-y-2.5">
-            <!-- Search Bar -->
             <div class="relative">
                 <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i>
-                <input type="text" id="candidateSearch" onkeyup="applyModalFilters()" placeholder="Search candidates by name or email..."
+                <input type="text" id="candidateSearch" onkeyup="applyModalFilters()" placeholder="Search candidates by username or email..."
                     class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] bg-white transition">
             </div>
 
@@ -258,18 +262,17 @@
             {% if available_employees %}
                 {% for emp in available_employees %}
                 <div class="candidate-row pt-2.5 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border border-gray-100 rounded-xl hover:bg-purple-50/30 transition-all"
-                     data-name="{% firstof emp.user.first_name emp.user.username %}"
+                     data-name="{{ emp.user.username|lower }}"
                      data-email="{{ emp.user.email|lower }}"
                      data-dept="{{ emp.department|default:'general'|lower }}">
                     
-                    <!-- Left: Avatar, Name, Role & Current Department -->
+                    <!-- Left: Avatar, Username, Role & Current Department -->
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded-xl bg-purple-50 text-[#7a2656] flex items-center justify-center font-bold text-xs shadow-sm ring-1 ring-purple-100 flex-shrink-0">
-                            {% firstof emp.user.first_name|make_list|first|upper emp.user.username|make_list|first|upper %}
+                        <div class="w-10 h-10 rounded-xl bg-purple-50 text-[#7a2656] flex items-center justify-center font-bold text-xs shadow-sm ring-1 ring-purple-100 flex-shrink-0 uppercase">
+                            {{ emp.user.username|make_list|first }}
                         </div>
                         <div class="min-w-0">
-                            <p class="text-xs font-bold text-gray-800 truncate"> {% firstof emp.user.first_name emp.user.username %} {{ emp.user.last_name }}
-                            </p>
+                            <p class="text-xs font-bold text-gray-800 truncate">@{{ emp.user.username }}</p>
                             <p class="text-[11px] text-gray-400 truncate">{{ emp.user.email }}</p>
 
                             <!-- Role & Department Badges -->
@@ -297,7 +300,7 @@
                         </select>
 
                         <button type="submit" 
-                            onclick="return confirm('Promote {% firstof emp.user.first_name emp.user.username %} to Manager?');"
+                            onclick="return confirm('Promote @{{ emp.user.username }} to Manager?');"
                             class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors whitespace-nowrap">
                             Make Manager
                         </button>

@@ -24,3 +24,15 @@ def safe_json(value):
         cls, dot = item_style(item.get('type'))
         enriched.append({'label': item.get('label', ''), 'sub': item.get('sub', ''), 'cls': cls, 'dot': dot})
     return mark_safe(json.dumps(enriched).replace("'", "\\'"))
+
+@register.filter
+def abs_val(value):
+    return abs(value)
+
+_AVATAR_PALETTE = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#0ea5e9', '#ef4444', '#14b8a6']
+
+@register.filter
+def avatar_color(username):
+    if not username:
+        return '#9ca3af'
+    return _AVATAR_PALETTE[sum(ord(c) for c in username) % len(_AVATAR_PALETTE)]

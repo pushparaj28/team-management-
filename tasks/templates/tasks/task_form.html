@@ -1,26 +1,97 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="min-h-[70vh] flex items-center justify-center py-8 px-4">
-  <div class="bg-white max-w-lg w-full rounded-2xl shadow-sm border border-gray-100 p-8">
-    <h1 class="text-2xl font-bold text-gray-800 mb-1">{% if task %}Edit task{% else %}New task{% endif %}</h1>
-    <p class="text-sm text-gray-500 mb-6">Managers and admins can attach a document or reference link.</p>
+{% load static %}
 
+{% block title %}{% if task %}Edit Task #{{ task.id }}{% else %}New Task{% endif %} - CollabPulse{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center py-10 px-4 sm:px-6">
+  <div class="bg-white dark:bg-slate-800 max-w-xl w-full rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 sm:p-8">
+    
+    <!-- Header Section -->
+    <div class="flex items-center justify-between pb-5 border-b border-gray-100 dark:border-slate-700 mb-6">
+      <div>
+        <h1 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+          {% if task %}Edit Task{% else %}Create New Task{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Assign tasks, set priorities, and attach relevant project documents.
+        </p>
+      </div>
+      <a href="{% url 'tasks:task_list' %}" 
+         class="w-8 h-8 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-400 hover:text-gray-700 dark:hover:text-white flex items-center justify-center transition" 
+         title="Back to tasks">
+        <i class="fas fa-arrow-left text-xs"></i>
+      </a>
+    </div>
+
+    <!-- Form -->
     <form method="post" enctype="multipart/form-data" class="space-y-4">
       {% csrf_token %}
+
+      <!-- Non-field / Top errors -->
+      {% if form.non_field_errors %}
+      <div class="p-3 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300 space-y-1">
+        {% for error in form.non_field_errors %}
+          <p><i class="fas fa-circle-exclamation mr-1"></i> {{ error }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Loop all form fields -->
       {% for field in form %}
       <div>
-        <label class="block text-sm font-semibold text-gray-600 mb-1">{{ field.label }}</label>
-        {{ field }}
+        <label for="{{ field.id_for_label }}" class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
+          {{ field.label }}
+          {% if field.field.required %}<span class="text-rose-500">*</span>{% endif %}
+        </label>
+
+        <!-- Form Widget Container with Tailwind form styling -->
+        <div class="relative [&_input]:w-full [&_input]:px-3.5 [&_input]:py-2.5 [&_input]:bg-gray-50 dark:[&_input]:bg-slate-700/60 [&_input]:border [&_input]:border-gray-200 dark:[&_input]:border-slate-600 [&_input]:rounded-xl [&_input]:text-xs [&_input]:text-gray-800 dark:[&_input]:text-gray-100 [&_input]:outline-none focus-within:[&_input]:border-[#7a2656] [&_select]:w-full [&_select]:px-3.5 [&_select]:py-2.5 [&_select]:bg-gray-50 dark:[&_select]:bg-slate-700/60 [&_select]:border [&_select]:border-gray-200 dark:[&_select]:border-slate-600 [&_select]:rounded-xl [&_select]:text-xs [&_select]:text-gray-800 dark:[&_select]:text-gray-100 [&_select]:outline-none focus-within:[&_select]:border-[#7a2656] [&_textarea]:w-full [&_textarea]:px-3.5 [&_textarea]:py-2.5 [&_textarea]:bg-gray-50 dark:[&_textarea]:bg-slate-700/60 [&_textarea]:border [&_textarea]:border-gray-200 dark:[&_textarea]:border-slate-600 [&_textarea]:rounded-xl [&_textarea]:text-xs [&_textarea]:text-gray-800 dark:[&_textarea]:text-gray-100 [&_textarea]:outline-none focus-within:[&_textarea]:border-[#7a2656]">
+          {{ field }}
+        </div>
+
+        <!-- Attachment Current File Note -->
         {% if field.name == 'attachment' and task.attachment %}
-          <p class="text-xs text-gray-400 mt-1">Current file: {{ task.attachment.name|slice:"17:" }}</p>
+          <div class="mt-1.5 flex items-center gap-1.5 text-[11px] text-gray-500">
+            <i class="fas fa-paperclip text-gray-400"></i>
+            <span>Current file:</span>
+            <a href="{{ task.attachment.url }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 font-semibold underline truncate max-w-xs">
+              {{ task.attachment.name }}
+            </a>
+          </div>
         {% endif %}
-        {% if field.errors %}<p class="text-rose-600 text-xs mt-1">{{ field.errors }}</p>{% endif %}
+
+        <!-- Help Text -->
+        {% if field.help_text %}
+          <p class="text-[11px] text-gray-400 mt-1">{{ field.help_text }}</p>
+        {% endif %}
+
+        <!-- Field Level Errors -->
+        {% if field.errors %}
+          <div class="mt-1 space-y-0.5">
+            {% for error in field.errors %}
+              <p class="text-rose-600 dark:text-rose-400 text-[11px] font-medium flex items-center gap-1">
+                <i class="fas fa-triangle-exclamation text-[10px]"></i> {{ error }}
+              </p>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
       {% endfor %}
-      <button type="submit"
-              class="w-full bg-[#7a2656] hover:bg-[#5c1c40] text-white font-bold py-3 rounded-lg transition shadow-md mt-2">
-        Save task
-      </button>
+
+      <!-- Buttons -->
+      <div class="pt-4 flex items-center gap-3">
+        <a href="{% url 'tasks:task_list' %}" 
+           class="w-1/3 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 text-center font-bold text-xs hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+          Cancel
+        </a>
+        <button type="submit"
+                class="w-2/3 bg-[#7a2656] hover:bg-[#5c1c40] text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-sm hover:shadow flex items-center justify-center gap-2">
+          <i class="fas fa-check text-[10px]"></i>
+          <span>{% if task %}Update Task{% else %}Save Task{% endif %}</span>
+        </button>
+      </div>
+
     </form>
   </div>
 </div>

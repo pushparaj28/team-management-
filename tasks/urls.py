@@ -21,4 +21,8 @@ urlpatterns = [
     path('leaves/<int:pk>/review/', views.leave_review, name='leave_review'),
     path('calendar/', views.calendar_view, name='calendar'),
     path('calendar/event/new/', views.event_create, name='event_create'),
+    path('list/', views.task_list_view, name='task_list'),
+    path('api/task/<int:pk>/detail/', views.task_detail_api, name='task_detail_api'),
+    path('api/task/<int:pk>/team/add/', views.task_team_add, name='task_team_add'),
+    path('api/task/<int:pk>/team/<int:membership_id>/remove/', views.task_team_remove, name='task_team_remove'),
 ]

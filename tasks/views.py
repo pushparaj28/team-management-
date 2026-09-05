@@ -14,6 +14,7 @@ from .forms import LeaveRequestForm
 from django.core.paginator import Paginator
 
 from accounts.models import UserProfile
+from .models import TaskTeamMember
 from .models import Task, Milestone, TaskComment
 from .forms import TaskForm, MilestoneForm, EventForm
 
@@ -516,6 +517,254 @@ def quick_create_task(request):
         'assigned_to': task.assigned_to.username,
     })
 
+# ---------------------------------------------------------------
+# Task list page (the new redesigned Tasks workspace)
+# ---------------------------------------------------------------
+@login_required
+def task_list_view(request):
+    user = request.user
+    team_users = _visible_team_users(user)
+
+    # 🟢 'profile' use karein, 'userprofile' nahi
+    tasks_qs = Task.objects.select_related(
+        'assigned_to', 
+        'assigned_to__profile',
+        'created_by', 
+        'created_by__profile',
+        'milestone'
+    ).filter(
+        assigned_to__in=team_users
+    )
+
+    # --- Filters ---
+    search = request.GET.get('search', '').strip()
+    status_f = request.GET.get('status', '')
+    priority_f = request.GET.get('priority', '')
+    assignee_f = request.GET.get('assignee', '')
+    manager_f = request.GET.get('manager', '')
+    department_f = request.GET.get('department', '')
+    milestone_f = request.GET.get('milestone', '')
+    start_f = request.GET.get('start', '')
+    end_f = request.GET.get('end', '')
+
+    if search:
+        tasks_qs = tasks_qs.filter(Q(title__icontains=search) | Q(id__icontains=search))
+    if status_f:
+        tasks_qs = tasks_qs.filter(status=status_f)
+    if priority_f:
+        tasks_qs = tasks_qs.filter(priority=priority_f)
+    if assignee_f:
+        tasks_qs = tasks_qs.filter(assigned_to_id=assignee_f)
+    if manager_f:
+        tasks_qs = tasks_qs.filter(assigned_to__profile__manager_id=manager_f)
+    if department_f:
+        tasks_qs = tasks_qs.filter(assigned_to__profile__department=department_f)
+    if milestone_f:
+        tasks_qs = tasks_qs.filter(milestone_id=milestone_f)
+    if start_f:
+        tasks_qs = tasks_qs.filter(due_date__gte=start_f)
+    if end_f:
+        tasks_qs = tasks_qs.filter(due_date__lte=end_f)
+
+    tasks_qs = tasks_qs.order_by('-created_at')
+
+    # --- KPIs ---
+    base_qs = Task.objects.filter(assigned_to__in=team_users)
+    today = timezone.localdate()
+    last_month_start = today.replace(day=1) - timezone.timedelta(days=1)
+    last_month_start = last_month_start.replace(day=1)
+    this_month_start = today.replace(day=1)
+
+    def trend(current_qs, filter_kwargs=None):
+        prev_count = base_qs.filter(created_at__date__gte=last_month_start, created_at__date__lt=this_month_start, **(filter_kwargs or {})).count()
+        curr_count = base_qs.filter(created_at__date__gte=this_month_start, **(filter_kwargs or {})).count()
+        if prev_count == 0:
+            return 0
+        return round(((curr_count - prev_count) / prev_count) * 100)
+
+    kpis = {
+        'total': base_qs.count(),
+        'pending': base_qs.filter(status='Backlog').count(),
+        'in_progress': base_qs.filter(status='In Progress').count(),
+        'completed': base_qs.filter(status='Done').count(),
+        'overdue': base_qs.filter(due_date__lt=today).exclude(status='Done').count(),
+        'due_this_week': base_qs.filter(due_date__gte=today, due_date__lte=today + timezone.timedelta(days=7)).exclude(status='Done').count(),
+        'managers_with_tasks': UserProfile.objects.filter(role='manager', user__tasks__in=base_qs).distinct().count() if user.is_superuser else None,
+        'employees_with_tasks': UserProfile.objects.filter(role='employee', user__in=base_qs.values_list('assigned_to', flat=True)).distinct().count(),
+        'trend_total': trend(base_qs),
+        'trend_pending': trend(base_qs, {'status': 'Backlog'}),
+        'trend_in_progress': trend(base_qs, {'status': 'In Progress'}),
+        'trend_completed': trend(base_qs, {'status': 'Done'}),
+    }
+
+    paginator = Paginator(tasks_qs, 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    # 🟢 'profile__role' use karein
+    all_team_employees = User.objects.filter(profile__role='employee').select_related('profile')
+
+    context = {
+        'page_obj': page_obj,
+        'kpis': kpis,
+        'can_manage': user.is_superuser or _is_manager(user),
+        'is_admin': user.is_superuser,
+        'status_choices': Task.STATUS_CHOICES,
+        'priority_choices': Task.PRIORITY_CHOICES,
+        'department_choices': UserProfile.DEPARTMENT_CHOICES,
+        'assignee_choices': team_users,
+        'manager_choices': UserProfile.objects.filter(role='manager') if user.is_superuser else [],
+        'milestone_choices': Milestone.objects.all(),
+        'all_team_employees': all_team_employees,
+        'filters': {
+            'search': search, 'status': status_f, 'priority': priority_f, 'assignee': assignee_f,
+            'manager': manager_f, 'department': department_f, 'milestone': milestone_f,
+            'start': start_f, 'end': end_f,
+        },
+    }
+    return render(request, 'tasks/task_list.html', context)
+
+@login_required
+def task_detail_api(request, pk):
+    """JSON payload for the right-side detail drawer with correct 'profile' relations."""
+    task = get_object_or_404(
+        Task.objects.select_related(
+            'assigned_to', 
+            'assigned_to__profile',
+            'created_by', 
+            'created_by__profile', 
+            'milestone'
+        ), 
+        pk=pk
+    )
+
+    if task.assigned_to_id not in _visible_team_users(request.user).values_list('id', flat=True):
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+    def get_avatar(user_obj):
+        if not user_obj:
+            return None
+        profile = getattr(user_obj, 'profile', None)
+        if profile and getattr(profile, 'profile_pic', None):
+            try:
+                return profile.profile_pic.url
+            except Exception:
+                return None
+        return None
+
+    # 1. Assignee details
+    assigned_to_name = 'Unassigned'
+    assigned_to_pic = None
+    department = None
+    assignee_profile = getattr(task.assigned_to, 'profile', None) if task.assigned_to else None
+
+    if task.assigned_to:
+        assigned_to_name = task.assigned_to.first_name or task.assigned_to.username
+        assigned_to_pic = get_avatar(task.assigned_to)
+        if assignee_profile:
+            department = assignee_profile.get_department_display() if hasattr(assignee_profile, 'get_department_display') else assignee_profile.department
+
+    # 2. Manager & Creator Identification
+    direct_manager = assignee_profile.manager if assignee_profile else None
+    creator_user = task.created_by or direct_manager
+
+    created_by_name = (creator_user.first_name or creator_user.username) if creator_user else 'Unknown'
+    created_by_pic = get_avatar(creator_user)
+
+    # 3. Manager Display string (so frontend gets 'ram' directly)
+    manager_display_name = (direct_manager.first_name or direct_manager.username) if direct_manager else '—'
+
+    # 4. Colleagues under same manager
+    colleagues = []
+    if direct_manager:
+        colleague_qs = UserProfile.objects.filter(
+            manager=direct_manager, 
+            role='employee'
+        ).exclude(user=task.assigned_to).select_related('user')
+
+        for prof in colleague_qs:
+            c_pic = None
+            if prof.profile_pic:
+                try:
+                    c_pic = prof.profile_pic.url
+                except Exception:
+                    pass
+            colleagues.append({
+                'id': prof.user.id,
+                'username': prof.user.username,
+                'name': prof.user.first_name or prof.user.username,
+                'avatar': c_pic,
+                'department': prof.department or 'Employee',
+            })
+
+    # 5. Team members with avatar
+    team_members = [
+        {
+            'id': tm.user.id,
+            'username': tm.user.username,
+            'name': tm.user.first_name or tm.user.username,
+            'membership_id': tm.id,
+            'avatar': get_avatar(tm.user)
+        }
+        for tm in task.team_members.select_related('user', 'user__profile').all()
+    ]
+
+    return JsonResponse({
+        'id': task.id,
+        'title': task.title,
+        'description': task.description or '',
+        'status': task.status,
+        'priority': task.priority,
+        'due_date': task.due_date.isoformat() if task.due_date else None,
+        'milestone': task.milestone.title if task.milestone else None,
+        'created_by': created_by_name,
+        'created_by_pic': created_by_pic,
+        'assigned_to': assigned_to_name,
+        'assigned_to_pic': assigned_to_pic,
+        'department': department or '—',
+        'manager': manager_display_name,
+        'colleagues': colleagues,
+        'attachment_url': task.attachment.url if getattr(task, 'attachment', None) else None,
+        'attachment_name': task.attachment.name.split('/')[-1] if getattr(task, 'attachment', None) else None,
+        'reference_url': getattr(task, 'reference_url', None),
+        'created_at': task.created_at.strftime('%b %d, %Y %I:%M %p') if task.created_at else '',
+        'updated_at': task.updated_at.strftime('%b %d, %Y %I:%M %p') if getattr(task, 'updated_at', None) else '',
+        'team_members': team_members,
+        'can_manage': _can_manage_task(request.user, task),
+    })
+
+@login_required
+@require_POST
+def task_team_add(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+    if not _can_manage_task(request.user, task):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    data = json.loads(request.body)
+    user_id = data.get('user_id')
+    candidate = get_object_or_404(User, pk=user_id)
+
+    # Validate the replacement belongs to the same manager's team,
+    # where the primary assignee has one.
+    if task.assigned_to and hasattr(task.assigned_to, 'profile') and task.assigned_to.profile.manager:
+        allowed_ids = UserProfile.objects.filter(
+            manager=task.assigned_to.profile.manager
+        ).values_list('user_id', flat=True)
+        if candidate.id not in allowed_ids and not request.user.is_superuser:
+            return JsonResponse({'error': 'This person is not on the same team'}, status=400)
+
+    TaskTeamMember.objects.get_or_create(task=task, user=candidate)
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def task_team_remove(request, pk, membership_id):
+    task = get_object_or_404(Task, pk=pk)
+    if not _can_manage_task(request.user, task):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    TaskTeamMember.objects.filter(pk=membership_id, task=task).delete()
+    return JsonResponse({'success': True})
 
 @login_required
 def leave_list(request):
@@ -665,3 +914,4 @@ def event_create(request):
     else:
         form = EventForm()
     return render(request, 'tasks/event_form.html', {'form': form})
+

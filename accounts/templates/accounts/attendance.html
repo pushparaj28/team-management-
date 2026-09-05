@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-6 bg-[#F8FAFC] dark:bg-slate-900 min-h-screen">
+
+    <!-- Top Action Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Attendance</h1>
+            <p class="text-xs text-gray-500">{{ today|date:"l, d F Y" }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button class="px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-slate-800 dark:text-gray-300 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 shadow-sm flex items-center gap-2">
+                <i class="fas fa-file-export"></i> Attendance Report
+            </button>
+            <button onclick="openClockInModal()" class="px-4 py-2 text-sm font-medium text-white bg-[#0F766E] hover:bg-[#115E59] rounded-xl shadow-sm flex items-center gap-2 transition-all">
+                <i class="fas fa-fingerprint"></i> Mark Attendance
+            </button>
+        </div>
+    </div>
+
+    <!-- 🟢 3 MASTER STAT CARDS -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        
+        <!-- Present Summary -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500">Present Summary</h3>
+                </div>
+                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">{{ present_count }} Present</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center pt-2 border-t border-gray-50 dark:border-slate-700">
+                <div>
+                    <span class="text-[11px] text-gray-400">On time</span>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">{{ on_time_count }}</p>
+                </div>
+                <div>
+                    <span class="text-[11px] text-amber-500">Late</span>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">{{ late_count }}</p>
+                </div>
+                <div>
+                    <span class="text-[11px] text-blue-500">Early</span>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">{{ early_count }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Not Present Summary -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-rose-500"></div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500">Not Present Summary</h3>
+                </div>
+                <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full">{{ absent_count }} Absent</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center pt-2 border-t border-gray-50 dark:border-slate-700">
+                <div>
+                    <span class="text-[11px] text-rose-500">Absent</span>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">{{ absent_count }}</p>
+                </div>
+                <div>
+                    <span class="text-[11px] text-gray-400">No clock-in</span>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">{{ absent_count }}</p>
+                </div>
+                <div>
+                    <span class="text-[11px] text-gray-400">Invalid</span>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Away Summary -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500">Away Summary</h3>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-center pt-2 border-t border-gray-50 dark:border-slate-700">
+                <div>
+                    <span class="text-[11px] text-gray-400">Day Off / Leave</span>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">0</p>
+                </div>
+                <div>
+                    <span class="text-[11px] text-gray-400">Time Off</span>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">0</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 🟢 DATA TABLE -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-gray-50/50 dark:bg-slate-700/50 text-gray-400 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-700">
+                    <tr>
+                        <th class="py-4 px-6">Employee Name</th>
+                        <th class="py-4 px-6">Clock-in & Out</th>
+                        <th class="py-4 px-4">Overtime</th>
+                        <th class="py-4 px-6">Live Location</th>
+                        <th class="py-4 px-6">Note</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-slate-700 text-gray-700 dark:text-gray-300 font-normal">
+                    {% for rec in records %}
+                    <tr class="hover:bg-gray-50/70 dark:hover:bg-slate-700/30 transition-colors">
+                        <td class="py-4 px-6 flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-xs">
+                                {{ rec.user.first_name|first|default:rec.user.username|first|upper }}
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ rec.user.first_name }} {{ rec.user.last_name }}</p>
+                                <span class="text-xs text-gray-400">{{ rec.user.email }}</span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 whitespace-nowrap">
+                            <span class="font-semibold {% if rec.status == 'late' %}text-amber-500{% else %}text-emerald-600{% endif %}">
+                                {{ rec.clock_in|time:"h:i A" }}
+                            </span>
+                            <span class="text-gray-300 mx-2">→</span>
+                            <span class="text-gray-500">
+                                {{ rec.clock_out|time:"h:i A"|default:"--:--" }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-4 font-medium">{{ rec.overtime_hours }}h</td>
+                        <td class="py-4 px-6">
+                            {% if rec.latitude and rec.longitude %}
+                                <a href="https://maps.google.com/?q={{ rec.latitude }},{{ rec.longitude }}" target="_blank" class="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-xs font-medium">
+                                    <i class="fas fa-location-dot"></i> View on Maps
+                                </a>
+                            {% else %}
+                                <span class="text-xs text-gray-400"><i class="fas fa-building"></i> Office Network</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 px-6 text-xs text-gray-500 truncate max-w-xs">{{ rec.note|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-gray-400 text-sm">No attendance records found for today.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 🟢 CLOCK-IN MODAL (With Live Geolocation Fetching) -->
+<div id="clockInModal" class="hidden fixed inset-0 z-50 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white">Mark Live Attendance</h3>
+            <button onclick="closeClockInModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+        </div>
+
+        <form method="POST" action="{% url 'accounts:attendance' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="clock_in">
+            <input type="hidden" name="latitude" id="geo_lat">
+            <input type="hidden" name="longitude" id="geo_lng">
+
+            <div class="p-4 bg-blue-50 dark:bg-slate-700/50 rounded-xl mb-4 text-xs text-blue-700 dark:text-blue-300 flex items-center gap-3">
+                <i class="fas fa-map-pin text-lg"></i>
+                <span id="geo_status">Fetching your live location...</span>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-gray-500 mb-1">Work Note (Optional)</label>
+                <textarea name="note" rows="2" class="w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-lg p-2.5 text-sm" placeholder="e.g. Working from client location / regular shift"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeClockInModal()" class="px-4 py-2 text-sm text-gray-500">Cancel</button>
+                <button type="submit" id="submit_btn" disabled class="px-5 py-2 text-sm font-medium text-white bg-blue-600 disabled:opacity-50 rounded-lg">Confirm & Clock In</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openClockInModal() {
+        document.getElementById('clockInModal').classList.remove('hidden');
+        const statusText = document.getElementById('geo_status');
+        const submitBtn = document.getElementById('submit_btn');
+
+        // Fetch Live Browser Geolocation
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    document.getElementById('geo_lat').value = position.coords.latitude;
+                    document.getElementById('geo_lng').value = position.coords.longitude;
+                    statusText.innerHTML = `📍 Location locked (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`;
+                    submitBtn.removeAttribute('disabled');
+                },
+                (error) => {
+                    statusText.innerHTML = "⚠️ Location permission denied. Defaulting to office premises.";
+                    submitBtn.removeAttribute('disabled');
+                }
+            );
+        } else {
+            statusText.innerHTML = "Geolocation not supported.";
+            submitBtn.removeAttribute('disabled');
+        }
+    }
+
+    function closeClockInModal() {
+        document.getElementById('clockInModal').classList.add('hidden');
+    }
+</script>
+{% endblock %}

@@ -90,7 +90,7 @@
             <thead>
                 <tr class="bg-gradient-to-r from-[#7a2656]/10 via-indigo-50 to-indigo-50 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-b-2 border-[#7a2656]/20">
                     <th class="px-6 py-3">ID</th>
-                    <th class="px-6 py-3">Name</th>
+                    <th class="px-6 py-3">Username</th>
                     <th class="px-6 py-3">Email</th>
                     <th class="px-6 py-3">Role/Dept</th>
                     <th class="px-6 py-3 text-center">Status</th>
@@ -100,16 +100,20 @@
             <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
                 {% for employee in page_obj %}
                 <tr class="hover:bg-[#7a2656]/5 transition-colors group">
-                    <td class="px-6 py-4 font-semibold text-gray-500 border-r border-gray-100">#{{ employee.user.id }}</td>
+                    <!-- Dynamic Formatted ID: EMP001, EMP002 etc. -->
+                    <td class="px-6 py-4 font-semibold text-gray-600 border-r border-gray-100 font-mono text-xs">
+                        EMP{{ employee.user.id|stringformat:"03d" }}
+                    </td>
 
+                    <!-- Username Section -->
                     <td class="px-6 py-4 border-r border-gray-100">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-[#7a2656] text-white flex items-center justify-center font-bold text-xs shadow-sm">
-                                {{ employee.user.first_name|default:employee.user.username|make_list|first|upper }}
+                            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-[#7a2656] text-white flex items-center justify-center font-bold text-xs shadow-sm uppercase">
+                                {{ employee.user.username|make_list|first }}
                             </div>
                             <div>
-                                <p class="font-bold text-gray-800">{{ employee.user.first_name }} {{ employee.user.last_name }}</p>
-                                <p class="text-[10px] text-gray-400">Joined: {{ employee.user.date_joined|date:"M Y" }}</p>
+                                <p class="font-bold text-gray-800 leading-tight">@{{ employee.user.username }}</p>
+                                <p class="text-[10px] text-gray-400 mt-0.5">Joined: {{ employee.user.date_joined|date:"M Y" }}</p>
                             </div>
                         </div>
                     </td>
@@ -123,7 +127,7 @@
                         </span>
                     </td>
                     
-                    <!-- 🟢 DYNAMIC STATUS: Check Leave First, then Active/Inactive -->
+                    <!-- DYNAMIC STATUS: Check Leave First, then Active/Inactive -->
                     <td class="px-6 py-4 text-center border-r border-gray-100">
                         {% if employee.user.id in on_leave_user_ids %}
                             <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 ring-1 ring-amber-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">

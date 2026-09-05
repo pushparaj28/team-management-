@@ -1,141 +1,137 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="p-6 max-w-3xl mx-auto">
-  <a href="{% url 'tasks:kanban' %}" class="inline-flex items-center gap-1.5 text-sm text-[#7a2656] font-semibold hover:gap-2 transition-all">
-    <i class="fas fa-arrow-left text-xs"></i> Back to board
-  </a>
+<div class="space-y-4 text-xs">
+  <!-- Task ID & Title -->
+  <div class="space-y-1">
+    <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">T-{{ task.id|stringformat:"03d" }}</span>
+    <h2 class="text-xl font-bold text-gray-900 leading-snug">{{ task.title }}</h2>
+  </div>
 
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-4">
-    <div class="flex flex-wrap justify-between items-start gap-3">
-      <div>
-        <div class="flex items-center gap-2 mb-2">
-          <span class="text-xs font-semibold px-2.5 py-1 rounded-full
-            {% if task.status == 'Done' %}bg-emerald-100 text-emerald-700
-            {% elif task.status == 'In Progress' %}bg-blue-100 text-blue-700
-            {% elif task.status == 'Review' %}bg-amber-100 text-amber-700
-            {% else %}bg-gray-100 text-gray-600{% endif %}">{{ task.status }}</span>
-          <span class="text-xs font-semibold px-2.5 py-1 rounded-full
-            {% if task.priority == 'High' %}bg-rose-100 text-rose-700
-            {% elif task.priority == 'Medium' %}bg-amber-100 text-amber-700
-            {% else %}bg-emerald-100 text-emerald-700{% endif %}">{{ task.priority }} priority</span>
-        </div>
-        <h1 class="text-2xl font-bold text-gray-800">{{ task.title }}</h1>
-      </div>
-      <span class="w-10 h-10 rounded-full bg-gradient-to-br from-[#7a2656] to-[#a8447a] text-white text-sm flex items-center justify-center font-semibold shadow-sm flex-shrink-0" title="{{ task.assigned_to.username|default:'Unassigned' }}">
-        {{ task.assigned_to.username|slice:":1"|upper|default:"?" }}
-      </span>
-    </div>
+  <!-- Status & Priority Badges -->
+  <div class="flex items-center gap-2 pt-1">
+    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full 
+      {% if task.status == 'Done' %}bg-emerald-100 text-emerald-700
+      {% elif task.status == 'In Progress' %}bg-blue-100 text-blue-700
+      {% elif task.status == 'Review' %}bg-amber-100 text-amber-700
+      {% else %}bg-gray-100 text-gray-700{% endif %}">
+      {{ task.status|default:"Done" }}
+    </span>
+    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full 
+      {% if task.priority == 'High' %}bg-rose-100 text-rose-700
+      {% elif task.priority == 'Medium' %}bg-amber-100 text-amber-700
+      {% else %}bg-emerald-100 text-emerald-700{% endif %}">
+      {{ task.priority|default:"High" }}
+    </span>
+  </div>
 
-    <p class="text-gray-600 mt-3 leading-relaxed">{{ task.description|default:"No description provided." }}</p>
-
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
-      <div>
-        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Assigned to</p>
-        <p class="text-sm font-semibold text-gray-800">{{ task.assigned_to.username|default:"Unassigned" }}</p>
-      </div>
-      <div>
-        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Due date</p>
-        <p class="text-sm font-semibold text-gray-800">{{ task.due_date|default:"—" }}</p>
-      </div>
-      <div>
-        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Milestone</p>
-        <p class="text-sm font-semibold text-gray-800">{{ task.milestone.title|default:"—" }}</p>
-      </div>
-    </div>
-
-    {% if task.attachment or task.reference_url %}
-    <div class="mt-5 pt-5 border-t border-gray-100">
-      <p class="text-sm font-semibold text-gray-700 mb-3">Resources</p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {% if task.attachment %}
-        <div class="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3">
-          <div class="w-10 h-10 rounded-lg bg-[#fdf1e4] flex items-center justify-center flex-shrink-0">
-            <i class="fas fa-file-alt text-[#7a2656]"></i>
+  <!-- ASSIGNED TO & CREATED BY with Images -->
+  <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+    <!-- 1. ASSIGNED TO (Rahul) -->
+    <div>
+      <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">ASSIGNED TO</p>
+      <div class="flex items-center gap-2.5">
+        {% if task.assigned_to and task.assigned_to.profile.profile_pic %}
+          <img src="{{ task.assigned_to.profile.profile_pic.url }}" alt="{{ task.assigned_to.username }}" class="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shadow-sm">
+        {% else %}
+          <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
+            {{ task.assigned_to.first_name|default:task.assigned_to.username|slice:":1"|upper|default:"?" }}
           </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-medium text-gray-800 truncate">{{ task.attachment.name|slice:"17:" }}</p>
-            <p class="text-xs text-gray-400">Uploaded document</p>
-          </div>
-          <a href="{{ task.attachment.url }}" target="_blank" class="flex-shrink-0 text-xs font-semibold text-white bg-[#7a2656] hover:bg-[#5c1c40] px-3 py-1.5 rounded-lg transition">Open</a>
-        </div>
         {% endif %}
-        {% if task.reference_url %}
-        <div class="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3">
-          <div class="w-10 h-10 rounded-lg bg-[#fdf1e4] flex items-center justify-center flex-shrink-0">
-            <i class="fas fa-link text-[#7a2656]"></i>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-medium text-gray-800 truncate">{{ task.reference_url }}</p>
-            <p class="text-xs text-gray-400">Reference link</p>
-          </div>
-          <a href="{{ task.reference_url }}" target="_blank" class="flex-shrink-0 text-xs font-semibold text-white bg-[#7a2656] hover:bg-[#5c1c40] px-3 py-1.5 rounded-lg transition">Visit</a>
-        </div>
-        {% endif %}
+        <span class="text-xs font-semibold text-gray-800">
+          {{ task.assigned_to.first_name|default:task.assigned_to.username|default:"Unassigned" }}
+        </span>
       </div>
     </div>
-    {% endif %}
 
-    <div class="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-100 items-center">
-      {% if can_manage %}
-      <a href="{% url 'tasks:task_edit' task.pk %}" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm hover:shadow-md">
-        <i class="fas fa-pen mr-1.5 text-xs"></i>Edit
-      </a>
-      <form method="post" action="{% url 'tasks:task_delete' task.pk %}" onsubmit="return confirm('Delete this task?');">
-        {% csrf_token %}
-        <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm hover:shadow-md">
-          <i class="fas fa-trash mr-1.5 text-xs"></i>Delete
-        </button>
-      </form>
-      {% endif %}
-
-      {% if can_update_status %}
-      <form action="{% url 'tasks:update_task_status' task.pk %}" method="POST" class="flex items-center gap-2 ml-auto">
-        {% csrf_token %}
-        <select name="status" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7a2656]/20 focus:border-[#7a2656]">
-          <option value="Backlog" {% if task.status == 'Backlog' %}selected{% endif %}>Backlog</option>
-          <option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>In Progress</option>
-          <option value="Review" {% if task.status == 'Review' %}selected{% endif %}>Review</option>
-          <option value="Done" {% if task.status == 'Done' %}selected{% endif %}>Done</option>
-        </select>
-        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm hover:shadow-md">Update</button>
-      </form>
-      {% endif %}
+    <!-- 2. CREATED BY (Manager Ram Fallback) -->
+    <div>
+      <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">CREATED BY</p>
+      {% with creator=task.created_by|default:task.assigned_to.profile.manager %}
+        {% if creator %}
+          <div class="flex items-center gap-2.5">
+            {% if creator.profile.profile_pic %}
+              <img src="{{ creator.profile.profile_pic.url }}" alt="{{ creator.username }}" class="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shadow-sm">
+            {% else %}
+              <div class="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                {{ creator.first_name|default:creator.username|slice:":1"|upper }}
+              </div>
+            {% endif %}
+            <span class="text-xs font-semibold text-gray-800">
+              {{ creator.first_name|default:creator.username }}
+            </span>
+          </div>
+        {% else %}
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">U</div>
+            <span class="text-xs font-medium text-gray-500">Unknown</span>
+          </div>
+        {% endif %}
+      {% endwith %}
     </div>
   </div>
 
-  <!-- Queries & updates -->
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-4">
-    <h3 class="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide">Queries & updates</h3>
+  <!-- Metadata Grid: Department, Due Date, Milestone, Manager -->
+  <div class="grid grid-cols-2 gap-4 pt-2">
+    <div>
+      <p class="font-bold text-gray-400 uppercase text-[10px] tracking-wider">DEPARTMENT</p>
+      <p class="text-gray-800 font-medium mt-0.5">
+        {{ task.assigned_to.profile.department|default:"IT / Development" }}
+      </p>
+    </div>
+    <div>
+      <p class="font-bold text-gray-400 uppercase text-[10px] tracking-wider">DUE DATE</p>
+      <p class="text-gray-800 font-medium mt-0.5">{{ task.due_date|date:"Y-m-d"|default:"2026-09-03" }}</p>
+    </div>
+    <div>
+      <p class="font-bold text-gray-400 uppercase text-[10px] tracking-wider">MILESTONE</p>
+      <p class="text-gray-800 font-medium mt-0.5">{{ task.milestone.title|default:"—" }}</p>
+    </div>
+    <div>
+      <p class="font-bold text-gray-400 uppercase text-[10px] tracking-wider">MANAGER</p>
+      <p class="text-gray-800 font-semibold mt-0.5">
+        {{ task.assigned_to.profile.manager.first_name|default:task.assigned_to.profile.manager.username|default:"ram" }}
+      </p>
+    </div>
+  </div>
 
-    <div class="space-y-3 mb-4">
-      {% for comment in comments %}
-      <div class="flex gap-3">
-        <span class="w-8 h-8 rounded-full bg-gradient-to-br from-[#7a2656] to-[#a8447a] text-white text-xs flex items-center justify-center font-semibold flex-shrink-0">
-          {{ comment.author.username|slice:":1"|upper }}
-        </span>
-        <div class="bg-gray-50 rounded-xl px-4 py-2.5 flex-1">
-          <p class="text-xs font-semibold text-gray-700">{{ comment.author.username }}
-            <span class="text-gray-400 font-normal">· {{ comment.created_at|timesince }} ago</span>
-          </p>
-          <p class="text-sm text-gray-600 mt-1">{{ comment.message }}</p>
-        </div>
+  <!-- Description Box -->
+  <div class="pt-3">
+    <p class="font-bold text-gray-700 text-xs mb-1">Description</p>
+    <div class="bg-gray-50 p-3 rounded-xl text-xs text-gray-600 border border-gray-100">
+      {{ task.description|default:"No description provided." }}
+    </div>
+  </div>
+
+  <!-- Team Members (1) & Ram ke Under Employees ka Dropdown -->
+  <div class="pt-4 border-t border-gray-100">
+    <p class="text-xs font-bold text-gray-800 mb-3">Team Members (1)</p>
+    
+    <!-- Primary Member (Rahul) -->
+    <div class="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 border border-gray-100 mb-3">
+      <div class="flex items-center gap-2.5">
+        {% if task.assigned_to and task.assigned_to.profile.profile_pic %}
+          <img src="{{ task.assigned_to.profile.profile_pic.url }}" class="w-7 h-7 rounded-full object-cover shadow-xs">
+        {% else %}
+          <div class="w-7 h-7 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">
+            {{ task.assigned_to.first_name|default:task.assigned_to.username|slice:":1"|upper|default:"?" }}
+          </div>
+        {% endif %}
+        <span class="text-xs font-semibold text-gray-800">{{ task.assigned_to.first_name|default:task.assigned_to.username }}</span>
       </div>
-      {% empty %}
-      <div class="text-center py-6">
-        <i class="fas fa-comments text-2xl text-gray-300 mb-2"></i>
-        <p class="text-sm text-gray-400">No queries yet.</p>
-      </div>
-      {% endfor %}
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Primary</span>
     </div>
 
-    <form method="post" action="{% url 'tasks:add_task_comment' task.pk %}" class="flex gap-2">
-      {% csrf_token %}
-      <input type="text" name="message" placeholder="{{ comment_placeholder }}" required
-             class="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#7a2656]/20 focus:border-[#7a2656]">
-      <button type="submit" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm hover:shadow-md flex-shrink-0">
-        <i class="fas fa-paper-plane mr-1"></i>Send
+    <!-- Dropdown: Filtered by Manager Ram -->
+    <div class="flex items-center gap-2">
+      <select id="colleagueSelect" class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-xs text-gray-700 outline-none focus:border-indigo-500">
+        <option value="">Choose colleague under {{ task.assigned_to.profile.manager.username|default:"ram" }}...</option>
+        {% for colleague in colleagues %}
+          <option value="{{ colleague.id }}">{{ colleague.first_name|default:colleague.username }}</option>
+        {% empty %}
+          <option disabled>No other team members under {{ task.assigned_to.profile.manager.username|default:"ram" }}</option>
+        {% endfor %}
+      </select>
+      <button type="button" onclick="addColleague({{ task.id }})" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1 whitespace-nowrap">
+        <i class="fas fa-plus text-[10px]"></i> Add
       </button>
-    </form>
+    </div>
   </div>
 </div>
-{% endblock %}
