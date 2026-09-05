@@ -177,12 +177,20 @@
         </a>
         {% endif %}
 
-<!-- Tasks (Kanban) -->
+        <!-- Tasks (new workspace: table view, filters, KPI cards, detail drawer) -->
+        {% url 'tasks:task_list' as task_list_url %}
+        <a href="{{ task_list_url }}"
+            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == task_list_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+            <i class="fas fa-list-check text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">Tasks</span>
+        </a>
+
+        <!-- Kanban board (the existing drag-and-drop board — kept as its own page -->
         {% url 'tasks:kanban' as kanban_url %}
         <a href="{{ kanban_url }}"
             class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == kanban_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-            <i class="fas fa-tasks text-lg w-8 text-center flex-shrink-0"></i>
-            <span class="sidebar-text ml-2">Tasks</span>
+            <i class="fas fa-table-columns text-lg w-8 text-center flex-shrink-0"></i>
+            <span class="sidebar-text ml-2">Kanban Board</span>
         </a>
         
         {% url 'tasks:calendar' as calendar_url %}

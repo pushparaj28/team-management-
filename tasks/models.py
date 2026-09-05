@@ -40,6 +40,7 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     attachment = models.FileField(upload_to='task_attachments/', null=True, blank=True)
     reference_url = models.URLField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_tasks')
     
     class Meta:
         ordering = ['-created_at']
@@ -118,3 +119,22 @@ def notify_employee_on_task_event(sender, instance, created, **kwargs):
         notification_type='task',
         link='/tasks/kanban/'            # Click karne par employee seedha task page par jayega
     )
+
+
+class TaskTeamMember(models.Model):
+    """
+    Additional people working on a task beyond the primary assignee
+    (Task.assigned_to). Kept as a separate small model rather than
+    turning assigned_to into a ManyToMany, so every existing query,
+    form, and permission check built around a single assignee keeps
+    working unchanged.
+    """
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='team_members')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='task_team_memberships')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('task', 'user')
+
+    def __str__(self):
+        return f"{self.user.username} on {self.task.title}"
