@@ -21,4 +21,5 @@ urlpatterns = [
     path('leaves/<int:pk>/review/', views.leave_review, name='leave_review'),
     path('calendar/', views.calendar_view, name='calendar'),
     path('calendar/event/new/', views.event_create, name='event_create'),
+   
 ]

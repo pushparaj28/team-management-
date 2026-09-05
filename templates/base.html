@@ -235,7 +235,6 @@
 </div>
 
 
- 
     
         <!-- Leaves -->
         {% url 'tasks:leave_list' as leaves_url %}
@@ -373,24 +372,40 @@
         </div>
     </div>
 </div>
+<a href="{% url 'accounts:profile' %}"
+    class="flex items-center gap-3 border-l border-gray-200 pl-4 sm:pl-6 cursor-pointer group">
+    
+    <!-- Profile Avatar -->
+    <div class="relative">
+        {% if request.user.userprofile.profile_pic %}
+            <img src="{{ request.user.userprofile.profile_pic.url }}" 
+                 alt="{{ request.user.username }}" 
+                 class="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-200">
+        {% elif request.user.profile.profile_pic %}
+            <img src="{{ request.user.profile.profile_pic.url }}" 
+                 alt="{{ request.user.username }}" 
+                 class="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-200">
+        {% else %}
+            <div class="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-md">
+                {{ request.user.username|make_list|first|upper }}
+            </div>
+        {% endif %}
+        
+        <!-- Online Status Dot -->
+        <div class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white"></div>
+    </div>
 
-            <a href="{% url 'accounts:profile' %}"
-                class="flex items-center gap-3 border-l border-gray-200 pl-4 sm:pl-6 cursor-pointer group">
-                <div class="relative">
-                    <div
-                        class="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-md">
-                        {{ request.user.username|make_list|first|upper }}
-                    </div>
-                    <div class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border-2 border-white">
-                    </div>
-                </div>
-                <div class="hidden md:block text-left">
-                    <p class="text-sm font-semibold text-gray-800 leading-tight"> {{request.user.first_name|default:request.user.username }}</p>
-                    <p class="text-xs text-gray-500">
-                        {% if request.user.is_superuser %}Admin{% else %}{{ request.user.profile.role|title|default:"Employee" }}{% endif %}
-                    </p>
-                </div>
-            </a>
+    <!-- User Info -->
+    <div class="hidden md:block text-left">
+        <p class="text-sm font-semibold text-gray-800 leading-tight">
+            {{ request.user.first_name|default:request.user.username }}
+        </p>
+        <p class="text-xs text-gray-500">
+            {% if request.user.is_superuser %}Admin{% else %}{{ request.user.userprofile.role|default:request.user.profile.role|title|default:"Employee" }}{% endif %}
+        </p>
+    </div>
+</a>
+            
         </div>
     </header>
 

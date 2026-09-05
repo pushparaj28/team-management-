@@ -665,3 +665,4 @@ def event_create(request):
     else:
         form = EventForm()
     return render(request, 'tasks/event_form.html', {'form': form})
+
