@@ -10,9 +10,25 @@
         <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Managers</h1>
         <p class="text-xs text-gray-500 mt-1">Manage your team leads and their access.</p>
     </div>
-    <button onclick="toggleModal()" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors shadow-md flex items-center gap-2">
-        <i class="fas fa-plus"></i> Add Manager
-    </button>
+    <div class="flex items-center gap-3">
+        <!-- 🟢 View Switcher Pill (List vs Grid) -->
+        <div class="inline-flex p-1 bg-gray-100 rounded-xl border border-gray-200 shadow-inner">
+            <button type="button" id="mgrViewListBtn" onclick="switchManagerView('list')"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-[#7a2656] shadow-sm">
+                <i class="fas fa-list"></i>
+                <span>List</span>
+            </button>
+            <button type="button" id="mgrViewGridBtn" onclick="switchManagerView('grid')"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-500 hover:text-gray-800">
+                <i class="fas fa-grip"></i>
+                <span>Grid</span>
+            </button>
+        </div>
+
+        <button onclick="toggleModal()" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors shadow-md flex items-center gap-2">
+            <i class="fas fa-plus"></i> Add Manager
+        </button>
+    </div>
 </div>
 
 <!-- 2. TOP METRIC CARDS -->
@@ -59,68 +75,72 @@
     </div>
 </div>
 
-<!-- 3. TABLE SECTION -->
-<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-    <!-- Table Header, Department Filter & Search -->
-    <div class="p-4 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-3 bg-gradient-to-r from-[#7a2656]/5 to-indigo-50/50">
-        <h2 class="text-sm font-bold text-gray-700 flex items-center gap-2">
-            <i class="fas fa-address-book text-[#7a2656]"></i> Manager Directory
-        </h2>
+<!-- 3. SEARCH & DIRECTORY TOOLBAR -->
+<div class="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm mb-5 flex flex-col md:flex-row justify-between items-center gap-3 bg-gradient-to-r from-[#7a2656]/5 to-indigo-50/50">
+    <h2 class="text-sm font-bold text-gray-700 flex items-center gap-2">
+        <i class="fas fa-address-book text-[#7a2656]"></i> Manager Directory
+    </h2>
 
-        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <!-- Directory Department Filter -->
-            <select id="dirDeptFilter" onchange="filterDirectoryTable()"
-                class="px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none bg-white text-gray-700 cursor-pointer focus:border-[#7a2656]">
-                <option value="all">All Departments</option>
-                <option value="it">IT / Development</option>
-                <option value="design">UI/UX Design</option>
-                <option value="sales">Sales</option>
-                <option value="marketing">Marketing</option>
-                <option value="hr">Human Resources</option>
-            </select>
+    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <!-- Directory Department Filter -->
+        <select id="dirDeptFilter" onchange="filterDirectoryTable()"
+            class="px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none bg-white text-gray-700 cursor-pointer focus:border-[#7a2656]">
+            <option value="all">All Departments</option>
+            <option value="it">IT / Development</option>
+            <option value="design">UI/UX Design</option>
+            <option value="sales">Sales</option>
+            <option value="marketing">Marketing</option>
+            <option value="hr">Human Resources</option>
+        </select>
 
-            <form method="GET" class="relative flex-1 md:w-64">
-                <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
-                <input type="text" name="search" value="{{ search_query }}" placeholder="Search by username or email..."
-                    class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] bg-white transition-all">
-                {% if search_query %}
-                    <a href="{% url 'accounts:managers_list' %}" class="absolute right-3 top-2.5 text-gray-400 hover:text-red-500 text-xs">
-                        <i class="fas fa-times"></i>
-                    </a>
-                {% endif %}
-            </form>
-        </div>
+        <form method="GET" class="relative flex-1 md:w-64">
+            <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+            <input type="text" name="search" value="{{ search_query }}" placeholder="Search by username or email..."
+                class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] bg-white transition-all">
+            {% if search_query %}
+                <a href="{% url 'accounts:managers_list' %}" class="absolute right-3 top-2.5 text-gray-400 hover:text-red-500 text-xs">
+                    <i class="fas fa-times"></i>
+                </a>
+            {% endif %}
+        </form>
     </div>
+</div>
 
-    <!-- Table -->
+<!-- ================= VIEW 1: TABLE VIEW (LIST) ================= -->
+<div id="managerListView" class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
     <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse" id="managersTable">
             <thead>
                 <tr class="bg-gradient-to-r from-[#7a2656]/10 via-indigo-50 to-indigo-50 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-b-2 border-[#7a2656]/20">
-                    <th class="px-6 py-3">ID</th>
-                    <th class="px-6 py-3">Username</th>
-                    <th class="px-6 py-3">Email</th>
-                    <th class="px-6 py-3">Department</th>
-                    <th class="px-6 py-3 text-center">Status</th>
-                    <th class="px-6 py-3 text-center">Action</th>
+                    <th class="px-5 py-3">ID</th>
+                    <th class="px-5 py-3">Username</th>
+                    <th class="px-5 py-3">Name</th>
+                    <th class="px-5 py-3">Email</th>
+                    <th class="px-5 py-3">Department</th>
+                    <th class="px-5 py-3 text-center">Status</th>
+                    <th class="px-5 py-3 text-center">Action</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
                 {% for manager in page_obj %}
                 <tr class="manager-dir-row hover:bg-[#7a2656]/5 transition-colors group"
-                    data-dept="{{ manager.department|default:'Not Assigned'|lower }}">
+                    data-dept="{{ manager.department|default:'not assigned'|lower }}">
                     
-                    <!-- Formatted Manager ID (e.g. MANG001, MANG008) -->
-                    <td class="px-6 py-4 font-semibold text-gray-600 border-r border-gray-100 font-mono text-xs">
+                    <td class="px-5 py-4 font-semibold text-gray-600 border-r border-gray-100 font-mono text-xs">
                         MANG{{ manager.user.id|stringformat:"03d" }}
                     </td>
 
-                    <!-- Username Section -->
-                    <td class="px-6 py-4 border-r border-gray-100">
+                    <td class="px-5 py-4 border-r border-gray-100">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#7a2656] to-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-sm uppercase">
-                                {{ manager.user.username|make_list|first }}
-                            </div>
+                            {% if manager.profile_pic %}
+                                <img src="{{ manager.profile_pic.url }}" alt="{{ manager.user.username }}" class="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200 shadow-xs flex-shrink-0">
+                            {% elif manager.user.profile.profile_pic %}
+                                <img src="{{ manager.user.profile.profile_pic.url }}" alt="{{ manager.user.username }}" class="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200 shadow-xs flex-shrink-0">
+                            {% else %}
+                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#7a2656] to-indigo-500 text-white flex items-center justify-center font-bold text-xs shadow-xs uppercase flex-shrink-0">
+                                    {{ manager.user.username|slice:":1" }}
+                                </div>
+                            {% endif %}
                             <div>
                                 <p class="font-bold text-gray-800 leading-tight">@{{ manager.user.username }}</p>
                                 <p class="text-[10px] text-gray-400 mt-0.5">Joined: {{ manager.user.date_joined|date:"M Y" }}</p>
@@ -128,15 +148,27 @@
                         </div>
                     </td>
 
-                    <td class="px-6 py-4 border-r border-gray-100">{{ manager.user.email }}</td>
+                    <td class="px-5 py-4 border-r border-gray-100">
+                        <p class="font-semibold text-gray-800 text-xs">
+                            {% if manager.user.get_full_name %}
+                                {{ manager.user.get_full_name }}
+                            {% elif manager.user.first_name %}
+                                {{ manager.user.first_name }} {{ manager.user.last_name }}
+                            {% else %}
+                                <span class="text-gray-400 italic">Not Provided</span>
+                            {% endif %}
+                        </p>
+                    </td>
 
-                    <td class="px-6 py-4 text-xs font-medium text-gray-600 border-r border-gray-100">
+                    <td class="px-5 py-4 border-r border-gray-100 text-xs">{{ manager.user.email }}</td>
+
+                    <td class="px-5 py-4 text-xs font-medium text-gray-600 border-r border-gray-100">
                         <span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100 font-semibold text-[11px]">
                             {{ manager.department|default:"Not Assigned" }}
                         </span>
                     </td>
 
-                    <td class="px-6 py-4 text-center border-r border-gray-100">
+                    <td class="px-5 py-4 text-center border-r border-gray-100">
                         <a href="{% url 'accounts:toggle_user_status' manager.user.id %}" class="inline-block transition-transform hover:scale-105">
                             {% if manager.user.is_active %}
                                 <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer hover:bg-emerald-100">
@@ -150,8 +182,8 @@
                         </a>
                     </td>
 
-                    <td class="px-6 py-4 text-center">
-                        <div class="flex items-center justify-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <td class="px-5 py-4 text-center">
+                        <div class="flex items-center justify-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
                             <a href="{% url 'accounts:manager_detail' manager.user.id %}" class="text-indigo-500 hover:text-white hover:bg-indigo-500 bg-indigo-50 p-1.5 rounded-md transition-colors w-8 h-8 flex items-center justify-center" title="View Details">
                                 <i class="fas fa-eye text-xs"></i>
                             </a>
@@ -166,7 +198,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                    <td colspan="7" class="px-6 py-10 text-center text-gray-500">
                         <div class="flex flex-col items-center">
                             <i class="fas fa-folder-open text-3xl text-gray-300 mb-3"></i>
                             <p class="text-sm">No managers found matching your criteria.</p>
@@ -177,33 +209,131 @@
             </tbody>
         </table>
     </div>
+</div>
 
-    <!-- 4. PAGINATION -->
-    {% if page_obj.has_other_pages %}
-    <div class="p-4 border-t border-gray-200 flex items-center justify-between bg-gray-50/50">
-        <p class="text-xs text-gray-500">
-            Showing <span class="font-bold">{{ page_obj.start_index }}</span> to <span class="font-bold">{{ page_obj.end_index }}</span> of <span class="font-bold">{{ paginator.count }}</span> entries
-        </p>
-        <div class="flex gap-1">
-            {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">Prev</a>
-            {% endif %}
+<!-- ================= VIEW 2: CARD GRID VIEW (GRID) ================= -->
+<div id="managerGridView" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-6">
+    {% for manager in page_obj %}
+    <div class="manager-dir-card bg-white rounded-2xl p-5 border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1 group"
+         data-dept="{{ manager.department|default:'not assigned'|lower }}">
+        
+        <div>
+            <!-- Top Row: ID & Status Badge -->
+            <div class="flex items-center justify-between gap-2 mb-4">
+                <span class="text-[11px] font-bold text-gray-400 font-mono tracking-wider">
+                    MANG{{ manager.user.id|stringformat:"03d" }}
+                </span>
+                <a href="{% url 'accounts:toggle_user_status' manager.user.id %}">
+                    {% if manager.user.is_active %}
+                        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 ring-1 ring-rose-200 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
+                        </span>
+                    {% endif %}
+                </a>
+            </div>
 
-            {% for num in paginator.page_range %}
-                {% if page_obj.number == num %}
-                    <span class="px-3 py-1.5 border border-[#7a2656] bg-[#7a2656] text-white rounded-md text-xs font-bold">{{ num }}</span>
+            <!-- Profile Info: Avatar, Name & Username -->
+            <div class="flex items-center gap-3.5 mb-3">
+                {% if manager.profile_pic %}
+                    <img src="{{ manager.profile_pic.url }}" alt="{{ manager.user.username }}" class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 shadow-xs flex-shrink-0">
+                {% elif manager.user.profile.profile_pic %}
+                    <img src="{{ manager.user.profile.profile_pic.url }}" alt="{{ manager.user.username }}" class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 shadow-xs flex-shrink-0">
                 {% else %}
-                    <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">{{ num }}</a>
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#7a2656] to-indigo-500 text-white flex items-center justify-center font-bold text-sm shadow-xs uppercase flex-shrink-0">
+                        {{ manager.user.username|slice:":1" }}
+                    </div>
                 {% endif %}
-            {% endfor %}
 
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">Next</a>
-            {% endif %}
+                <div class="min-w-0">
+                    <h3 class="text-sm font-bold text-gray-900 truncate">
+                        {% if manager.user.get_full_name %}
+                            {{ manager.user.get_full_name }}
+                        {% elif manager.user.first_name %}
+                            {{ manager.user.first_name }} {{ manager.user.last_name }}
+                        {% else %}
+                            {{ manager.user.username }}
+                        {% endif %}
+                    </h3>
+                    <p class="text-xs text-gray-400 truncate">@{{ manager.user.username }}</p>
+                </div>
+            </div>
+
+            <!-- Email & Phone Contact Info -->
+            <div class="mt-3 pt-3 border-t border-gray-100 space-y-2 text-xs">
+                <div class="flex items-center gap-2 text-gray-500 truncate">
+                    <i class="far fa-envelope text-gray-400 w-4 text-center"></i>
+                    <span class="truncate">{{ manager.user.email|default:"No email provided" }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-gray-500 truncate">
+                    <i class="fas fa-phone-alt text-gray-400 w-4 text-center"></i>
+                    <span>{{ manager.phone_number|default:"+91 —" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer: Department Tag & Action Buttons -->
+        <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+            <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 truncate">
+                {{ manager.department|default:"Not Assigned" }}
+            </span>
+
+            <div class="flex items-center gap-1.5">
+                <a href="{% url 'accounts:manager_detail' manager.user.id %}" 
+                   class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white transition shadow-xs" 
+                   title="View Details">
+                    <i class="fas fa-eye text-xs"></i>
+                </a>
+                <a href="{% url 'accounts:edit_manager' manager.user.id %}" 
+                   class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white transition shadow-xs" 
+                   title="Edit Profile">
+                    <i class="fas fa-pen text-xs"></i>
+                </a>
+                <a href="{% url 'accounts:delete_user' manager.user.id %}" 
+                   onclick="return confirm('Are you sure you want to delete this manager?');" 
+                   class="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition shadow-xs" 
+                   title="Delete">
+                    <i class="fas fa-trash text-xs"></i>
+                </a>
+            </div>
         </div>
     </div>
-    {% endif %}
+    {% empty %}
+    <div class="col-span-full py-12 text-center text-gray-400">
+        <i class="fas fa-folder-open text-3xl mb-2 block"></i>
+        No managers found.
+    </div>
+    {% endfor %}
 </div>
+
+<!-- 4. PAGINATION -->
+{% if page_obj.has_other_pages %}
+<div class="p-4 border border-gray-200 rounded-2xl flex items-center justify-between bg-white shadow-sm mb-6">
+    <p class="text-xs text-gray-500">
+        Showing <span class="font-bold">{{ page_obj.start_index }}</span> to <span class="font-bold">{{ page_obj.end_index }}</span> of <span class="font-bold">{{ paginator.count }}</span> entries
+    </p>
+    <div class="flex gap-1">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">Prev</a>
+        {% endif %}
+
+        {% for num in paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="px-3 py-1.5 border border-[#7a2656] bg-[#7a2656] text-white rounded-md text-xs font-bold">{{ num }}</span>
+            {% else %}
+                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">Next</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 
 <!-- 5. ADD/PROMOTE MANAGER MODAL -->
 <div id="addManagerModal" class="fixed inset-0 z-50 hidden bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -224,7 +354,7 @@
         <div class="p-4 border-b border-gray-100 bg-gray-50/40 space-y-2.5">
             <div class="relative">
                 <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i>
-                <input type="text" id="candidateSearch" onkeyup="applyModalFilters()" placeholder="Search candidates by username or email..."
+                <input type="text" id="candidateSearch" onkeyup="applyModalFilters()" placeholder="Search candidates by name, username or email..."
                     class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] bg-white transition">
             </div>
 
@@ -262,17 +392,29 @@
             {% if available_employees %}
                 {% for emp in available_employees %}
                 <div class="candidate-row pt-2.5 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border border-gray-100 rounded-xl hover:bg-purple-50/30 transition-all"
-                     data-name="{{ emp.user.username|lower }}"
+                     data-name="{{ emp.user.first_name|lower }} {{ emp.user.last_name|lower }} {{ emp.user.username|lower }}"
                      data-email="{{ emp.user.email|lower }}"
                      data-dept="{{ emp.department|default:'general'|lower }}">
                     
-                    <!-- Left: Avatar, Username, Role & Current Department -->
+                    <!-- Left: Avatar, Name, Username, Role & Current Department -->
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded-xl bg-purple-50 text-[#7a2656] flex items-center justify-center font-bold text-xs shadow-sm ring-1 ring-purple-100 flex-shrink-0 uppercase">
-                            {{ emp.user.username|make_list|first }}
-                        </div>
+                        {% if emp.profile_pic %}
+                            <img src="{{ emp.profile_pic.url }}" alt="{{ emp.user.username }}" class="w-10 h-10 rounded-xl object-cover ring-1 ring-purple-100 shadow-xs flex-shrink-0">
+                        {% elif emp.user.profile.profile_pic %}
+                            <img src="{{ emp.user.profile.profile_pic.url }}" alt="{{ emp.user.username }}" class="w-10 h-10 rounded-xl object-cover ring-1 ring-purple-100 shadow-xs flex-shrink-0">
+                        {% else %}
+                            <div class="w-10 h-10 rounded-xl bg-purple-50 text-[#7a2656] flex items-center justify-center font-bold text-xs shadow-xs ring-1 ring-purple-100 flex-shrink-0 uppercase">
+                                {{ emp.user.username|slice:":1" }}
+                            </div>
+                        {% endif %}
+
                         <div class="min-w-0">
-                            <p class="text-xs font-bold text-gray-800 truncate">@{{ emp.user.username }}</p>
+                            <div class="flex items-center gap-1.5">
+                                <p class="text-xs font-bold text-gray-800 truncate">
+                                    {{ emp.user.first_name|default:emp.user.username }}
+                                </p>
+                                <span class="text-[10px] text-gray-400 truncate">(@{{ emp.user.username }})</span>
+                            </div>
                             <p class="text-[11px] text-gray-400 truncate">{{ emp.user.email }}</p>
 
                             <!-- Role & Department Badges -->
@@ -321,15 +463,43 @@
     </div>
 </div>
 
+<!-- ================= 6. JAVASCRIPT ================= -->
 <script>
     let activeDeptFilter = 'all';
 
+    // View Switcher: List vs Grid
+    function switchManagerView(viewType) {
+        const listView = document.getElementById('managerListView');
+        const gridView = document.getElementById('managerGridView');
+        const listBtn = document.getElementById('mgrViewListBtn');
+        const gridBtn = document.getElementById('mgrViewGridBtn');
+
+        if (!listView || !gridView) return;
+
+        if (viewType === 'grid') {
+            listView.classList.add('hidden');
+            gridView.classList.remove('hidden');
+
+            gridBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-[#7a2656] shadow-sm';
+            listBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-500 hover:text-gray-800';
+            localStorage.setItem('manager_preferred_view', 'grid');
+        } else {
+            gridView.classList.add('hidden');
+            listView.classList.remove('hidden');
+
+            listBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-[#7a2656] shadow-sm';
+            gridBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-500 hover:text-gray-800';
+            localStorage.setItem('manager_preferred_view', 'list');
+        }
+    }
+
+    // Modal Toggle
     function toggleModal() {
         const modal = document.getElementById('addManagerModal');
         modal.classList.toggle('hidden');
     }
 
-    // Filter Pills Click Handler
+    // Modal Department Pills Click Handler
     function setDeptFilter(dept, btnElement) {
         activeDeptFilter = dept.toLowerCase();
         
@@ -344,7 +514,7 @@
         applyModalFilters();
     }
 
-    // Combined Search & Department Filter in Modal
+    // Modal Search & Filter
     function applyModalFilters() {
         const query = document.getElementById('candidateSearch').value.toLowerCase().trim();
         const rows = document.querySelectorAll('.candidate-row');
@@ -374,19 +544,27 @@
         }
     }
 
-    // Directory Table Department Dropdown Filter
+    // Directory Table & Cards Department Dropdown Filter
     function filterDirectoryTable() {
         const selectedDept = document.getElementById('dirDeptFilter').value.toLowerCase().trim();
-        const rows = document.querySelectorAll('.manager-dir-row');
+        const tableRows = document.querySelectorAll('.manager-dir-row');
+        const gridCards = document.querySelectorAll('.manager-dir-card');
 
-        rows.forEach(row => {
+        tableRows.forEach(row => {
             const rowDept = (row.dataset.dept || '').toLowerCase();
-            if (selectedDept === 'all' || rowDept.includes(selectedDept)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
+            row.style.display = (selectedDept === 'all' || rowDept.includes(selectedDept)) ? '' : 'none';
+        });
+
+        gridCards.forEach(card => {
+            const cardDept = (card.dataset.dept || '').toLowerCase();
+            card.style.display = (selectedDept === 'all' || cardDept.includes(selectedDept)) ? '' : 'none';
         });
     }
+
+    // Restore saved view preference
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedView = localStorage.getItem('manager_preferred_view') || 'list';
+        switchManagerView(savedView);
+    });
 </script>
 {% endblock %}

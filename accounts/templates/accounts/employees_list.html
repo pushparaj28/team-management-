@@ -10,9 +10,25 @@
         <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Employees</h1>
         <p class="text-xs text-gray-500 mt-1">Manage your team members and their roles.</p>
     </div>
-    <a href="{% url 'accounts:add_user' %}" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors shadow-md flex items-center gap-2">
-        <i class="fas fa-plus"></i> Add Employee
-    </a>
+    <div class="flex items-center gap-3">
+        <!-- 🟢 View Switcher Pill (List vs Grid) -->
+        <div class="inline-flex p-1 bg-gray-100 rounded-xl border border-gray-200 shadow-inner">
+            <button type="button" id="empViewListBtn" onclick="switchEmployeeView('list')"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-[#7a2656] shadow-sm">
+                <i class="fas fa-list"></i>
+                <span>List</span>
+            </button>
+            <button type="button" id="empViewGridBtn" onclick="switchEmployeeView('grid')"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-500 hover:text-gray-800">
+                <i class="fas fa-grip"></i>
+                <span>Grid</span>
+            </button>
+        </div>
+
+        <a href="{% url 'accounts:add_user' %}" class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors shadow-md flex items-center gap-2">
+            <i class="fas fa-plus"></i> Add Employee
+        </a>
+    </div>
 </div>
 
 <!-- 2. TOP METRIC CARDS -->
@@ -63,54 +79,57 @@
     </div>
 </div>
 
-<!-- 3. TABLE SECTION (With Search) -->
-<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+<!-- 3. SEARCH & DIRECTORY TOOLBAR -->
+<div class="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm mb-5 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gradient-to-r from-[#7a2656]/5 to-indigo-50/50">
+    <h2 class="text-sm font-bold text-gray-700 flex items-center gap-2">
+        <i class="fas fa-id-badge text-[#7a2656]"></i> Employee Directory
+    </h2>
 
-    <!-- Table Header & Search -->
-    <div class="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gradient-to-r from-[#7a2656]/5 to-indigo-50/50">
-        <h2 class="text-sm font-bold text-gray-700 flex items-center gap-2">
-            <i class="fas fa-id-badge text-[#7a2656]"></i> Employee Directory
-        </h2>
+    <form method="GET" class="relative w-full sm:w-72">
+        <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+        <input type="text" name="search" value="{{ search_query }}" placeholder="Search by name, username, email..." 
+            class="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] bg-white transition-all">
+        {% if search_query %}
+            <a href="{% url 'accounts:employees_list' %}" class="absolute right-3 top-2.5 text-gray-400 hover:text-red-500 text-xs">
+                <i class="fas fa-times"></i>
+            </a>
+        {% endif %}
+    </form>
+</div>
 
-        <form method="GET" class="relative w-full sm:w-64">
-            <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
-            <input type="text" name="search" value="{{ search_query }}" placeholder="Search by name or email..." 
-                class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-[#7a2656] focus:ring-1 focus:ring-[#7a2656] bg-white transition-all">
-            {% if search_query %}
-                <a href="{% url 'accounts:employees_list' %}" class="absolute right-3 top-2.5 text-gray-400 hover:text-red-500 text-xs">
-                    <i class="fas fa-times"></i>
-                </a>
-            {% endif %}
-        </form>
-    </div>
-
-    <!-- Table -->
+<!-- ================= VIEW 1: TABLE VIEW (LIST) ================= -->
+<div id="employeeListView" class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
     <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-gradient-to-r from-[#7a2656]/10 via-indigo-50 to-indigo-50 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-b-2 border-[#7a2656]/20">
-                    <th class="px-6 py-3">ID</th>
-                    <th class="px-6 py-3">Username</th>
-                    <th class="px-6 py-3">Email</th>
-                    <th class="px-6 py-3">Role/Dept</th>
-                    <th class="px-6 py-3 text-center">Status</th>
-                    <th class="px-6 py-3 text-center">Action</th>
+                    <th class="px-5 py-3">ID</th>
+                    <th class="px-5 py-3">Username</th>
+                    <th class="px-5 py-3">Name</th>
+                    <th class="px-5 py-3">Email</th>
+                    <th class="px-5 py-3">Role/Dept</th>
+                    <th class="px-5 py-3 text-center">Status</th>
+                    <th class="px-5 py-3 text-center">Action</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
                 {% for employee in page_obj %}
                 <tr class="hover:bg-[#7a2656]/5 transition-colors group">
-                    <!-- Dynamic Formatted ID: EMP001, EMP002 etc. -->
-                    <td class="px-6 py-4 font-semibold text-gray-600 border-r border-gray-100 font-mono text-xs">
+                    <td class="px-5 py-4 font-semibold text-gray-600 border-r border-gray-100 font-mono text-xs">
                         EMP{{ employee.user.id|stringformat:"03d" }}
                     </td>
 
-                    <!-- Username Section -->
-                    <td class="px-6 py-4 border-r border-gray-100">
+                    <td class="px-5 py-4 border-r border-gray-100">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-[#7a2656] text-white flex items-center justify-center font-bold text-xs shadow-sm uppercase">
-                                {{ employee.user.username|make_list|first }}
-                            </div>
+                            {% if employee.profile_pic %}
+                                <img src="{{ employee.profile_pic.url }}" alt="{{ employee.user.username }}" class="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200 shadow-xs flex-shrink-0">
+                            {% elif employee.user.profile.profile_pic %}
+                                <img src="{{ employee.user.profile.profile_pic.url }}" alt="{{ employee.user.username }}" class="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200 shadow-xs flex-shrink-0">
+                            {% else %}
+                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-[#7a2656] text-white flex items-center justify-center font-bold text-xs shadow-xs uppercase flex-shrink-0">
+                                    {{ employee.user.username|slice:":1" }}
+                                </div>
+                            {% endif %}
                             <div>
                                 <p class="font-bold text-gray-800 leading-tight">@{{ employee.user.username }}</p>
                                 <p class="text-[10px] text-gray-400 mt-0.5">Joined: {{ employee.user.date_joined|date:"M Y" }}</p>
@@ -118,44 +137,65 @@
                         </div>
                     </td>
 
-                    <td class="px-6 py-4 border-r border-gray-100">{{ employee.user.email }}</td>
+                    <td class="px-5 py-4 border-r border-gray-100">
+                        <p class="font-semibold text-gray-800 text-xs">
+                            {% if employee.user.get_full_name %}
+                                {{ employee.user.get_full_name }}
+                            {% elif employee.user.first_name %}
+                                {{ employee.user.first_name }} {{ employee.user.last_name }}
+                            {% else %}
+                                <span class="text-gray-400 italic">Not Provided</span>
+                            {% endif %}
+                        </p>
+                    </td>
 
-                    <td class="px-6 py-4 border-r border-gray-100">
+                    <td class="px-5 py-4 border-r border-gray-100 text-xs">{{ employee.user.email }}</td>
+
+                    <td class="px-5 py-4 border-r border-gray-100">
                         <p class="text-xs font-bold text-gray-700">{{ employee.designation|default:"Staff" }}</p>
                         <span class="inline-block mt-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100 text-[10px] font-medium">
                             {{ employee.department|default:employee.user.profile.department|default:"Not Assigned" }}
                         </span>
                     </td>
                     
-                    <!-- DYNAMIC STATUS: Check Leave First, then Active/Inactive -->
-                    <td class="px-6 py-4 text-center border-r border-gray-100">
+                    <td class="px-5 py-4 text-center border-r border-gray-100">
                         {% if employee.user.id in on_leave_user_ids %}
                             <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 ring-1 ring-amber-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">
                                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> On Leave
                             </span>
                         {% else %}
-                            <a href="{% url 'accounts:toggle_user_status' employee.user.id %}" class="inline-block transition-transform hover:scale-105">
-                                {% if employee.user.is_active %}
-                                    <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer hover:bg-emerald-100">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
-                                    </span>
-                                {% else %}
-                                    <span class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-600 ring-1 ring-rose-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-pointer hover:bg-rose-100">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
-                                    </span>
-                                {% endif %}
-                            </a>
+                            {% if employee.user.is_active and employee.is_active_team_member|default:True %}
+                                <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-600 ring-1 ring-rose-200 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
+                                </span>
+                            {% endif %}
                         {% endif %}
                     </td>
 
-                    <td class="px-6 py-4 text-center">
-                        <div class="flex items-center justify-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                            <!-- Edit Link -->
-                            <a href="{% url 'accounts:edit_employee' employee.user.id %}" class="text-blue-500 hover:text-white hover:bg-blue-500 bg-blue-50 p-1.5 rounded-md transition-colors w-8 h-8 flex items-center justify-center" title="Edit Profile">
+                    <td class="px-5 py-4 text-center">
+                        <div class="flex items-center justify-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                            {% if not employee.user.is_active or not employee.is_active_team_member %}
+                            <a href="{% url 'accounts:employee_approve' employee.user.id %}" 
+                               class="text-emerald-600 hover:text-white hover:bg-emerald-600 bg-emerald-50 p-1.5 rounded-md transition-colors w-8 h-8 flex items-center justify-center shadow-xs" 
+                               title="Approve Employee">
+                                <i class="fas fa-check text-xs"></i>
+                            </a>
+                            {% endif %}
+
+                            <a href="{% url 'accounts:edit_employee' employee.user.id %}" 
+                               class="text-blue-500 hover:text-white hover:bg-blue-500 bg-blue-50 p-1.5 rounded-md transition-colors w-8 h-8 flex items-center justify-center" 
+                               title="Edit Profile">
                                 <i class="fas fa-pen text-xs"></i>
                             </a>
-                            <!-- Delete Link -->
-                            <a href="{% url 'accounts:delete_user' employee.user.id %}" onclick="return confirm('Are you sure you want to delete this employee?');" class="text-red-500 hover:text-white hover:bg-red-500 bg-red-50 p-1.5 rounded-md transition-colors w-8 h-8 flex items-center justify-center" title="Delete">
+
+                            <a href="{% url 'accounts:delete_user' employee.user.id %}" 
+                               onclick="return confirm('Are you sure you want to delete this employee?');" 
+                               class="text-red-500 hover:text-white hover:bg-red-500 bg-red-50 p-1.5 rounded-md transition-colors w-8 h-8 flex items-center justify-center" 
+                               title="Delete">
                                 <i class="fas fa-trash text-xs"></i>
                             </a>
                         </div>
@@ -163,7 +203,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                    <td colspan="7" class="px-6 py-10 text-center text-gray-500">
                         <div class="flex flex-col items-center">
                             <i class="fas fa-users-slash text-3xl text-gray-300 mb-3"></i>
                             <p class="text-sm">No employees found matching your criteria.</p>
@@ -174,31 +214,202 @@
             </tbody>
         </table>
     </div>
-
-    <!-- 4. PAGINATION -->
-    {% if page_obj.has_other_pages %}
-    <div class="p-4 border-t border-gray-200 flex items-center justify-between bg-gray-50/50">
-        <p class="text-xs text-gray-500">
-            Showing <span class="font-bold">{{ page_obj.start_index }}</span> to <span class="font-bold">{{ page_obj.end_index }}</span> of <span class="font-bold">{{ paginator.count }}</span> entries
-        </p>
-        <div class="flex gap-1">
-            {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">Prev</a>
-            {% endif %}
-            
-            {% for num in paginator.page_range %}
-                {% if page_obj.number == num %}
-                    <span class="px-3 py-1.5 border border-[#7a2656] bg-[#7a2656] text-white rounded-md text-xs font-bold">{{ num }}</span>
-                {% else %}
-                    <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">{{ num }}</a>
-                {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">Next</a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
 </div>
+
+<!-- ================= VIEW 2: CARD GRID VIEW (GRID) ================= -->
+<!-- ================= VIEW 2: PREMIUM CARD GRID VIEW (GRID) ================= -->
+<div id="employeeGridView" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-6">
+    {% for employee in page_obj %}
+    {% with completed=employee.completed_tasks|default:0 inprogress=employee.inprogress_tasks|default:0 total=employee.total_tasks|default:0 %}
+    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1 relative group">
+        
+        <div>
+            <!-- Top Row: Avatar + Info + Action Menu -->
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div class="flex items-center gap-3 min-w-0">
+                    <!-- Circular Profile Pic -->
+                    {% if employee.profile_pic %}
+                        <img src="{{ employee.profile_pic.url }}" alt="{{ employee.user.username }}" class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 shadow-xs flex-shrink-0">
+                    {% elif employee.user.profile.profile_pic %}
+                        <img src="{{ employee.user.profile.profile_pic.url }}" alt="{{ employee.user.username }}" class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 shadow-xs flex-shrink-0">
+                    {% else %}
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-[#7a2656] text-white flex items-center justify-center font-bold text-sm shadow-xs uppercase flex-shrink-0">
+                            {{ employee.user.username|slice:":1" }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Name & Designation -->
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-bold text-gray-900 truncate leading-snug">
+                            {% if employee.user.get_full_name %}
+                                {{ employee.user.get_full_name }}
+                            {% elif employee.user.first_name %}
+                                {{ employee.user.first_name }} {{ employee.user.last_name }}
+                            {% else %}
+                                {{ employee.user.username }}
+                            {% endif %}
+                        </h3>
+                        <p class="text-xs text-gray-400 truncate mt-0.5">
+                            {{ employee.designation|default:"Software Engineer" }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 3-Dots Dropdown Action Menu -->
+                <div class="relative flex-shrink-0" x-data="{ open: false }">
+                    <button type="button" onclick="this.nextElementSibling.classList.toggle('hidden')" 
+                            class="w-8 h-8 rounded-full border border-gray-100 hover:border-gray-300 hover:bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-700 transition">
+                        <i class="fas fa-ellipsis-h text-xs"></i>
+                    </button>
+
+                    <!-- Dropdown Content -->
+                    <div class="hidden absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-20">
+                        {% if not employee.user.is_active or not employee.is_active_team_member %}
+                        <a href="{% url 'accounts:employee_approve' employee.user.id %}" class="flex items-center gap-2 px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50">
+                            <i class="fas fa-check"></i> Approve
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'accounts:edit_employee' employee.user.id %}" class="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50">
+                            <i class="fas fa-pen text-blue-500"></i> Edit
+                        </a>
+                        <a href="{% url 'accounts:delete_user' employee.user.id %}" onclick="return confirm('Delete this employee?');" class="flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50">
+                            <i class="fas fa-trash text-rose-500"></i> Delete
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email & Phone Meta Info -->
+            <div class="space-y-1.5 text-xs text-gray-500 mb-4">
+                <div class="flex items-center gap-2 truncate">
+                    <i class="far fa-envelope text-gray-400 w-4 text-center"></i>
+                    <span class="truncate">{{ employee.user.email|default:"No email provided" }}</span>
+                </div>
+                <div class="flex items-center gap-2 truncate">
+                    <i class="fas fa-phone-alt text-gray-400 w-4 text-center"></i>
+                    <span>{{ employee.phone_number|default:"+91 —" }}</span>
+                </div>
+            </div>
+
+            <!-- 🟢 Premium Efficiency Box (Image-style) -->
+            <div class="bg-gray-50/80 rounded-xl p-3 border border-gray-100/80">
+                <div class="flex items-center justify-between text-xs font-semibold text-gray-700 mb-1.5">
+                    <span class="text-[11px] text-gray-500">Efficiency</span>
+                    <span class="text-indigo-600 font-bold">
+                        {% if total > 0 %}
+                            {% widthratio completed total 100 %}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </span>
+                </div>
+
+                <!-- Progress Bar Line -->
+                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mb-2">
+                    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 h-full rounded-full transition-all duration-500" 
+                         style="width: {% if total > 0 %}{% widthratio completed total 100 %}%{% else %}0%{% endif %}"></div>
+                </div>
+
+                <!-- Stats: Completed vs In Progress -->
+                <div class="flex items-center justify-between text-[11px] text-gray-500 pt-0.5">
+                    <span>Completed: <strong class="text-gray-800 font-semibold">{{ completed }}</strong></span>
+                    <span>In Progress: <strong class="text-gray-800 font-semibold">{{ inprogress }}</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Pill & Department Tag -->
+        <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+            <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100">
+                {{ employee.department|default:"General" }}
+            </span>
+
+            <div>
+                {% if employee.user.id in on_leave_user_ids %}
+                    <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 ring-1 ring-amber-200 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Leave
+                    </span>
+                {% else %}
+                    {% if employee.user.is_active and employee.is_active_team_member|default:True %}
+                        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 ring-1 ring-rose-200 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactive
+                        </span>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="col-span-full py-12 text-center text-gray-400">
+        <i class="fas fa-users-slash text-3xl mb-2 block"></i>
+        No employees found.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- 4. PAGINATION -->
+{% if page_obj.has_other_pages %}
+<div class="p-4 border border-gray-200 rounded-2xl flex items-center justify-between bg-white shadow-sm">
+    <p class="text-xs text-gray-500">
+        Showing <span class="font-bold">{{ page_obj.start_index }}</span> to <span class="font-bold">{{ page_obj.end_index }}</span> of <span class="font-bold">{{ paginator.count }}</span> entries
+    </p>
+    <div class="flex gap-1">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">Prev</a>
+        {% endif %}
+        
+        {% for num in paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="px-3 py-1.5 border border-[#7a2656] bg-[#7a2656] text-white rounded-md text-xs font-bold">{{ num }}</span>
+            {% else %}
+                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 bg-white">Next</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ================= 5. VIEW SWITCH SCRIPT ================= -->
+<script>
+function switchEmployeeView(viewType) {
+    const listView = document.getElementById('employeeListView');
+    const gridView = document.getElementById('employeeGridView');
+    const listBtn = document.getElementById('empViewListBtn');
+    const gridBtn = document.getElementById('empViewGridBtn');
+
+    if (!listView || !gridView) return;
+
+    if (viewType === 'grid') {
+        listView.classList.add('hidden');
+        gridView.classList.remove('hidden');
+
+        gridBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-[#7a2656] shadow-sm';
+        listBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-500 hover:text-gray-800';
+        localStorage.setItem('employee_preferred_view', 'grid');
+    } else {
+        gridView.classList.add('hidden');
+        listView.classList.remove('hidden');
+
+        listBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-[#7a2656] shadow-sm';
+        gridBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-500 hover:text-gray-800';
+        localStorage.setItem('employee_preferred_view', 'list');
+    }
+}
+
+// Preference restore on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedView = localStorage.getItem('employee_preferred_view') || 'list';
+    switchEmployeeView(savedView);
+});
+</script>
 {% endblock %}
