@@ -25,9 +25,9 @@
         </button>
       </div>
 
-      <button type="button" class="border border-gray-200 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2">
+      <!-- <button type="button" class="border border-gray-200 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2">
         <i class="fas fa-download"></i>Export
-      </button>
+      </button> -->
       {% if can_manage %}
       <a href="{% url 'tasks:task_create' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm hover:shadow-md flex items-center gap-2">
         <i class="fas fa-plus"></i>Add Task
@@ -200,7 +200,7 @@
             <td class="px-4 py-3 font-semibold text-gray-500 font-mono text-xs">T-{{ task.id|stringformat:"03d" }}</td>
             <td class="px-4 py-3">
               <span class="font-semibold text-gray-800">{{ task.title }}</span>
-              {% if can_manage %}<a href="{% url 'tasks:task_edit' task.id %}" class="text-gray-300 hover:text-indigo-500 ml-1"><i class="fas fa-pen text-xs"></i></a>{% endif %}
+              <!-- {% if can_manage %}<a href="{% url 'tasks:task_edit' task.id %}" class="text-gray-300 hover:text-indigo-500 ml-1"><i class="fas fa-pen text-xs"></i></a>{% endif %} -->
             </td>
 
             <td class="px-4 py-3">

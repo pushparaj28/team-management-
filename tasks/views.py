@@ -362,7 +362,7 @@ def kanban_board(request):
 
 @login_required
 def task_detail(request, pk):
-    task = get_object_or_404(Task, pk=pk)
+    task = get_object_or_404(Task.objects.select_related('assigned_to', 'created_by', 'milestone'), pk=pk)
 
     if request.user.is_superuser:
         comment_placeholder = "Add an admin note about this task..."
@@ -370,6 +370,13 @@ def task_detail(request, pk):
         comment_placeholder = "Add an update or comment about this task..."
     else:
         comment_placeholder = "Ask your manager about this task..."
+
+    colleagues = []
+    if task.assigned_to and hasattr(task.assigned_to, 'profile') and task.assigned_to.profile.manager:
+        existing_member_ids = task.team_members.values_list('user_id', flat=True)
+        colleagues = User.objects.filter(
+            profile__manager=task.assigned_to.profile.manager, profile__role='employee'
+        ).exclude(id=task.assigned_to_id).exclude(id__in=existing_member_ids)
 
     context = {
         'task': task,
@@ -381,6 +388,7 @@ def task_detail(request, pk):
             or task.assigned_to_id == request.user.id
         ),
         'comment_placeholder': comment_placeholder,
+        'colleagues': colleagues,
     }
     return render(request, 'tasks/task_detail.html', context)
 
