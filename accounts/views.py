@@ -194,42 +194,67 @@ def edit_profile(request):
         
     return render(request, 'accounts/edit_profile.html', {'profile': profile})
 
-
 def login_user(request):
-    # STEP 1: Sirf POST request (Form Submit ya AJAX) par check karein
     if request.method == 'POST':
+        is_json = (
+            request.headers.get('Content-Type') == 'application/json' or
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        )
+
         if request.headers.get('Content-Type') == 'application/json':
             data = json.loads(request.body)
-            username = data.get('username')
-            password = data.get('password')
+            username = data.get('username', '').strip()
+            password = data.get('password', '')
         else:
-            username = request.POST.get('username')
-            password = request.POST.get('password')
+            username = request.POST.get('username', '').strip()
+            password = request.POST.get('password', '')
 
-        user = authenticate(request, username=username, password=password)
-        
-        # STEP 2: Agar User sahi hai (Success)
+        # 🟢 STEP 1: Pending Approval Check (Username ya Email dono se check karein)
+        matched_user = User.objects.filter(username=username).first() or User.objects.filter(email=username).first()
+
+        if matched_user and matched_user.check_password(password):
+            is_active_member = getattr(getattr(matched_user, 'profile', None), 'is_active_team_member', True)
+
+            if not matched_user.is_active or not is_active_member:
+                pending_msg = "Account pending admin approval. You can log in once your account is verified."
+                
+                if is_json:
+                    return JsonResponse({
+                        'status': 'pending', 
+                        'message': pending_msg
+                    }, status=403)
+                
+                messages.warning(request, pending_msg)
+                return redirect('accounts:login')
+
+        # 🟢 STEP 2: Standard Authentication (Active Users)
+        user = authenticate(
+            request, 
+            username=matched_user.username if matched_user else username, 
+            password=password
+        )
+
         if user is not None:
             login(request, user)
-            
-            if request.headers.get('Content-Type') == 'application/json':
+
+            if is_json:
                 return JsonResponse({
                     'status': 'success', 
                     'message': 'Login successful!', 
                     'redirect_url': '/tasks/' 
                 })
-                
-            return redirect('tasks:dashboard')
-            
-        # STEP 3: Agar details galat hain (Failed Login)
-        else:
-            if request.headers.get('Content-Type') == 'application/json':
-                return JsonResponse({'status': 'error', 'message': 'Invalid username or password.'}, status=400)
-            # Form wale user ko error dikhaye aur wapas login page par bhej de
-            messages.error(request, 'Invalid username or password.')
-            return redirect('accounts:login') 
 
-    # STEP 4: Agar normal page refresh ho raha hai (GET request)
+            return redirect('tasks:dashboard')
+
+        # 🟢 STEP 3: Galat Details (Invalid Credentials)
+        error_msg = 'Invalid username or password.'
+        if is_json:
+            return JsonResponse({'status': 'error', 'message': error_msg}, status=400)
+
+        messages.error(request, error_msg)
+        return redirect('accounts:login')
+
+    # STEP 4: GET Request
     form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form})
 
