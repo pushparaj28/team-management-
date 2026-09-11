@@ -252,20 +252,23 @@
                 {% endif %}
 
                 {% if request.user.is_superuser or request.user.profile.role == 'manager' %}
-                {% url 'tasks:time_tracker_reports' as reports_url %}
-                
-                <a
-    href="{% url 'resource:reports' %}"
-    class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition"
->
+                {% url 'resource:reports' as reports_url %}
 
-    <i data-lucide="bar-chart-3"></i>
+                <a href="{{ reports_url }}"
+                class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors
+                {% if request.path == reports_url %}
+                    text-teal-300 font-semibold bg-white/5
+                {% else %}
+                    text-gray-300 hover:text-white hover:bg-white/10
+                {% endif %}">
 
-    <span>
-        Reports
-    </span>
+                    <i class="fas fa-chart-bar w-4 text-center"></i>
 
-</a>
+                    <span class="sidebar-text">
+                        Reports
+                    </span>
+
+                </a>
                 {% endif %}
 
                 {% url 'tasks:calendar' as calendar_url %}
