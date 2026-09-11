@@ -25,4 +25,12 @@ urlpatterns = [
     path('api/task/<int:pk>/detail/', views.task_detail_api, name='task_detail_api'),
     path('api/task/<int:pk>/team/add/', views.task_team_add, name='task_team_add'),
     path('api/task/<int:pk>/team/<int:membership_id>/remove/', views.task_team_remove, name='task_team_remove'),
+
+    # ... previous urls
+    path('tracker/', views.time_tracker_page, name='time_tracker'),
+    path('tracker/start/', views.start_time_tracker, name='start_tracker'),
+    path('tracker/stop/', views.stop_time_tracker, name='stop_tracker'),
+    path('tracker/upload-screenshot/', views.upload_screenshot, name='upload_screenshot'),
+    path('tracker/monitoring/', views.admin_live_monitoring, name='live_monitoring'),
+
 ]
