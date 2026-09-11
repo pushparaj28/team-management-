@@ -18,6 +18,14 @@ from .models import TaskTeamMember
 from .models import Task, Milestone, TaskComment
 from .forms import TaskForm, MilestoneForm, EventForm
 
+from .models import TimeEntry, TaskScreenShot
+import base64
+from django.core.files.base import ContentFile
+from django.utils import timezone
+from django.db.models import Sum, F, ExpressionWrapper, fields
+from .models import TimeEntry, Task
+from datetime import timedelta
+
 
 # ---------------------------------------------------------------
 # Permission helpers — kept in one place so every view stays consistent
@@ -362,7 +370,7 @@ def kanban_board(request):
 
 @login_required
 def task_detail(request, pk):
-    task = get_object_or_404(Task, pk=pk)
+    task = get_object_or_404(Task.objects.select_related('assigned_to', 'created_by', 'milestone'), pk=pk)
 
     if request.user.is_superuser:
         comment_placeholder = "Add an admin note about this task..."
@@ -370,6 +378,13 @@ def task_detail(request, pk):
         comment_placeholder = "Add an update or comment about this task..."
     else:
         comment_placeholder = "Ask your manager about this task..."
+
+    colleagues = []
+    if task.assigned_to and hasattr(task.assigned_to, 'profile') and task.assigned_to.profile.manager:
+        existing_member_ids = task.team_members.values_list('user_id', flat=True)
+        colleagues = User.objects.filter(
+            profile__manager=task.assigned_to.profile.manager, profile__role='employee'
+        ).exclude(id=task.assigned_to_id).exclude(id__in=existing_member_ids)
 
     context = {
         'task': task,
@@ -381,6 +396,7 @@ def task_detail(request, pk):
             or task.assigned_to_id == request.user.id
         ),
         'comment_placeholder': comment_placeholder,
+        'colleagues': colleagues,
     }
     return render(request, 'tasks/task_detail.html', context)
 
@@ -915,3 +931,230 @@ def event_create(request):
         form = EventForm()
     return render(request, 'tasks/event_form.html', {'form': form})
 
+
+def format_duration(total_seconds):
+    """Seconds ko readable 'Xh Ym Zs' format me convert karta hai."""
+    if not total_seconds or total_seconds <= 0:
+        return "00m 00s"
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+    if hours > 0:
+        return f"{hours}h {minutes:02d}m {seconds:02d}s"
+    return f"{minutes:02d}m {seconds:02d}s"
+
+
+# ==========================================
+# 1. TIME TRACKER MAIN PAGE (DASHBOARD & FILTERS)
+# ==========================================
+@login_required
+def time_tracker_page(request):
+    user = request.user
+    user_role = getattr(getattr(user, 'profile', None), 'role', '')
+    is_admin_or_mgr = (user.is_superuser or user_role in ['admin', 'manager'])
+
+    # 1. Dynamic Projects / Tasks choices
+    if is_admin_or_mgr:
+        available_tasks = Task.objects.all().values('id', 'title', 'assigned_to__profile__department')
+    else:
+        available_tasks = Task.objects.filter(assigned_to=user).values('id', 'title', 'assigned_to__profile__department')
+
+    # 2. Current running session
+    active_entry = TimeEntry.objects.filter(user=user, is_active=True).first()
+
+    # 3. Timezone-aware Date Filters (Today, This Week, This Month, All Time)
+    time_filter = request.GET.get('filter', 'today')
+    now_local = timezone.localtime(timezone.now())
+
+    if time_filter == 'week':
+        start_date = (now_local - timedelta(days=now_local.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    elif time_filter == 'month':
+        start_date = now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    elif time_filter == 'all':
+        start_date = None
+    else:  # 'today' default
+        start_date = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # 4. User ke completed time logs
+    history_qs = TimeEntry.objects.filter(user=user, is_active=False)
+    if start_date:
+        history_qs = history_qs.filter(start_time__gte=start_date)
+
+    history_entries = []
+    user_total_seconds = 0
+    for item in history_qs.order_by('-start_time'):
+        sec = item.duration_seconds
+        user_total_seconds += sec
+        start_local = timezone.localtime(item.start_time)
+        end_local = timezone.localtime(item.end_time) if item.end_time else None
+        history_entries.append({
+            'obj': item,
+            'formatted_duration': format_duration(sec),
+            'start_formatted': start_local.strftime("%I:%M %p"),
+            'end_formatted': end_local.strftime("%I:%M %p") if end_local else '—',
+            'date_formatted': start_local.strftime("%d %b, %Y"),
+        })
+
+    # Agar session currently chal raha hai toh current duration bhi add karein
+    if active_entry:
+        user_total_seconds += active_entry.duration_seconds
+
+    # 5. Admin & Manager Team Audit Overview
+    team_summary = []
+    total_company_seconds = 0
+    active_employees_count = 0
+
+    if is_admin_or_mgr:
+        all_employees = User.objects.filter(is_active=True).select_related('profile')
+        for emp in all_employees:
+            emp_entries = TimeEntry.objects.filter(user=emp)
+            if start_date:
+                emp_entries = emp_entries.filter(start_time__gte=start_date)
+
+            emp_total_sec = sum(e.duration_seconds for e in emp_entries if not e.is_active)
+            current_active = TimeEntry.objects.filter(user=emp, is_active=True).first()
+
+            if current_active:
+                emp_total_sec += current_active.duration_seconds
+                active_employees_count += 1
+
+            total_company_seconds += emp_total_sec
+
+            team_summary.append({
+                'user': emp,
+                'active_session': current_active,
+                'total_formatted': format_duration(emp_total_sec),
+                'total_seconds': emp_total_sec,
+            })
+
+        team_summary.sort(key=lambda x: (x['active_session'] is not None, x['total_seconds']), reverse=True)
+
+    context = {
+        'active_entry': active_entry,
+        'available_tasks': available_tasks,
+        'history_entries': history_entries,
+        'user_total_time': format_duration(user_total_seconds),
+        'is_admin_or_mgr': is_admin_or_mgr,
+        'team_summary': team_summary,
+        'total_company_time': format_duration(total_company_seconds),
+        'active_employees_count': active_employees_count,
+        'current_filter': time_filter,
+    }
+    return render(request, 'tasks/time_tracker.html', context)
+
+
+# ==========================================
+# 2. START TIME TRACKER (ROBUST PAYLOAD HANDLER)
+# ==========================================
+@login_required
+def start_time_tracker(request):
+    if request.method == 'POST':
+        try:
+            # Puraani running sessions ko close karein
+            TimeEntry.objects.filter(user=request.user, is_active=True).update(
+                end_time=timezone.now(),
+                is_active=False
+            )
+
+            # JSON body ya FormData dono handle karein
+            if request.content_type == 'application/json':
+                body = json.loads(request.body.decode('utf-8'))
+                description = body.get('description', '').strip()
+                project = body.get('project', '').strip()
+            else:
+                description = request.POST.get('description', '').strip()
+                project = request.POST.get('project', '').strip()
+
+            description = description or "Working on tasks"
+            project = project or "General Project"
+
+            entry = TimeEntry.objects.create(
+                user=request.user,
+                description=description,
+                project_name=project,
+                start_time=timezone.now(),
+                is_active=True
+            )
+
+            return JsonResponse({
+                'status': 'started',
+                'entry_id': entry.id,
+                'start_time': entry.start_time.isoformat()
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+# ==========================================
+# 3. STOP TIME TRACKER
+# ==========================================
+@login_required
+def stop_time_tracker(request):
+    if request.method == 'POST':
+        try:
+            entry_id = request.POST.get('entry_id')
+
+            if entry_id:
+                entry = TimeEntry.objects.filter(id=entry_id, user=request.user, is_active=True).first()
+            else:
+                entry = TimeEntry.objects.filter(user=request.user, is_active=True).first()
+
+            if entry:
+                entry.end_time = timezone.now()
+                entry.is_active = False
+                entry.save()
+                return JsonResponse({'status': 'stopped', 'duration': entry.duration_seconds})
+
+            return JsonResponse({'status': 'no_active_session', 'message': 'No running entry found'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+# ==========================================
+# 4. 10-SECOND AUTOMATED SCREENSHOT UPLOAD
+# ==========================================
+@login_required
+def upload_screenshot(request):
+    if request.method == 'POST':
+        try:
+            entry_id = request.POST.get('entry_id')
+            img_data = request.POST.get('screenshot')
+
+            if not entry_id or not img_data:
+                return JsonResponse({'error': 'Missing required data'}, status=400)
+
+            entry = get_object_or_404(TimeEntry, id=entry_id, user=request.user, is_active=True)
+
+            if ';base64,' in img_data:
+                format_part, imgstr = img_data.split(';base64,')
+                ext = format_part.split('/')[-1]
+                data = ContentFile(
+                    base64.b64decode(imgstr),
+                    name=f"user_{request.user.id}_{int(timezone.now().timestamp())}.{ext}"
+                )
+                TaskScreenShot.objects.create(time_entry=entry, user=request.user, image=data)
+                return JsonResponse({'status': 'saved'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid method'}, status=400)
+
+
+# ==========================================
+# 5. ADMIN / MANAGER LIVE MONITORING SCREEN
+# ==========================================
+@login_required
+def admin_live_monitoring(request):
+    active_sessions = TimeEntry.objects.filter(is_active=True).select_related(
+        'user', 'user__profile'
+    ).prefetch_related('screenshots')
+    all_recent_screenshots = TaskScreenShot.objects.select_related('user', 'time_entry')[:28]
+
+    return render(request, 'tasks/live_monitoring.html', {
+        'active_sessions': active_sessions,
+        'recent_screenshots': all_recent_screenshots
+    })

@@ -22,7 +22,7 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import date
 from django.utils import timezone
 from tasks.models import LeaveRequest
-
+from django.db.models import Count, Q
 
 # Optional app models import
 try:
@@ -124,18 +124,31 @@ def register_user(request):
         
         if form.is_valid():
             user = form.save(commit=False) 
-            user.set_password(form.cleaned_data['password'])  
+            user.set_password(form.cleaned_data['password'])
+            # 🟢 Default Inactive: Admin approve karega tabhi active hoga
+            user.is_active = False  
             user.save()
-            UserProfile.objects.create(
+
+            # Agar signals se profile auto-create hoti ho toh get_or_create safe rahega
+            profile, created = UserProfile.objects.get_or_create(
                 user=user,
-                role='employee', 
-                phone_number=form.cleaned_data.get('phone_number'),
-                department=form.cleaned_data.get('department') 
+                defaults={
+                    'role': 'employee',
+                    'phone_number': form.cleaned_data.get('phone_number'),
+                    'department': form.cleaned_data.get('department'),
+                    'is_active_team_member': False,  # 👈 Approval pending
+                }
             )
+            if not created:
+                profile.role = 'employee'
+                profile.phone_number = form.cleaned_data.get('phone_number')
+                profile.department = form.cleaned_data.get('department')
+                profile.is_active_team_member = False
+                profile.save()
             
             return JsonResponse({
                 'status': 'success', 
-                'message': 'Registration successful! Please login.', 
+                'message': 'Registration successful! Your account is pending admin approval.', 
                 'redirect_url': '/accounts/login/'
             })
             
@@ -146,6 +159,24 @@ def register_user(request):
         form = UserRegistrationForm() 
         
     return render(request, 'accounts/register.html', {'form': form})
+
+@login_required
+def approve_employee(request, user_id):
+    # Sirf Admin approve kar sake
+    if not (request.user.is_superuser or getattr(request.user.profile, 'role', '') == 'admin'):
+        messages.error(request, "Permission denied. Only Admins can approve employees.")
+        return redirect('accounts:employees_list')
+
+    emp_user = get_object_or_404(User, id=user_id)
+    emp_user.is_active = True
+    emp_user.save(update_fields=['is_active'])
+
+    if hasattr(emp_user, 'profile'):
+        emp_user.profile.is_active_team_member = True
+        emp_user.profile.save(update_fields=['is_active_team_member'])
+
+    messages.success(request, f"Employee '{emp_user.username}' has been approved and is now active.")
+    return redirect('accounts:employees_list') 
 
 def edit_profile(request):
     profile = get_object_or_404(UserProfile, user=request.user)
@@ -163,42 +194,67 @@ def edit_profile(request):
         
     return render(request, 'accounts/edit_profile.html', {'profile': profile})
 
-
 def login_user(request):
-    # STEP 1: Sirf POST request (Form Submit ya AJAX) par check karein
     if request.method == 'POST':
+        is_json = (
+            request.headers.get('Content-Type') == 'application/json' or
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        )
+
         if request.headers.get('Content-Type') == 'application/json':
             data = json.loads(request.body)
-            username = data.get('username')
-            password = data.get('password')
+            username = data.get('username', '').strip()
+            password = data.get('password', '')
         else:
-            username = request.POST.get('username')
-            password = request.POST.get('password')
+            username = request.POST.get('username', '').strip()
+            password = request.POST.get('password', '')
 
-        user = authenticate(request, username=username, password=password)
-        
-        # STEP 2: Agar User sahi hai (Success)
+        # 🟢 STEP 1: Pending Approval Check (Username ya Email dono se check karein)
+        matched_user = User.objects.filter(username=username).first() or User.objects.filter(email=username).first()
+
+        if matched_user and matched_user.check_password(password):
+            is_active_member = getattr(getattr(matched_user, 'profile', None), 'is_active_team_member', True)
+
+            if not matched_user.is_active or not is_active_member:
+                pending_msg = "Account pending admin approval. You can log in once your account is verified."
+                
+                if is_json:
+                    return JsonResponse({
+                        'status': 'pending', 
+                        'message': pending_msg
+                    }, status=403)
+                
+                messages.warning(request, pending_msg)
+                return redirect('accounts:login')
+
+        # 🟢 STEP 2: Standard Authentication (Active Users)
+        user = authenticate(
+            request, 
+            username=matched_user.username if matched_user else username, 
+            password=password
+        )
+
         if user is not None:
             login(request, user)
-            
-            if request.headers.get('Content-Type') == 'application/json':
+
+            if is_json:
                 return JsonResponse({
                     'status': 'success', 
                     'message': 'Login successful!', 
                     'redirect_url': '/tasks/' 
                 })
-                
-            return redirect('tasks:dashboard')
-            
-        # STEP 3: Agar details galat hain (Failed Login)
-        else:
-            if request.headers.get('Content-Type') == 'application/json':
-                return JsonResponse({'status': 'error', 'message': 'Invalid username or password.'}, status=400)
-            # Form wale user ko error dikhaye aur wapas login page par bhej de
-            messages.error(request, 'Invalid username or password.')
-            return redirect('accounts:login') 
 
-    # STEP 4: Agar normal page refresh ho raha hai (GET request)
+            return redirect('tasks:dashboard')
+
+        # 🟢 STEP 3: Galat Details (Invalid Credentials)
+        error_msg = 'Invalid username or password.'
+        if is_json:
+            return JsonResponse({'status': 'error', 'message': error_msg}, status=400)
+
+        messages.error(request, error_msg)
+        return redirect('accounts:login')
+
+    # STEP 4: GET Request
     form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form})
 
@@ -286,9 +342,18 @@ def manager_dashboard(request):
 @login_required
 def add_employee_to_team(request, profile_id):
     if request.method == 'POST' and hasattr(request.user, 'profile') and request.user.profile.role == 'manager':
-        employee_profile = get_object_or_404(UserProfile, id=profile_id, role='employee', manager__isnull=True)
+        # 🟢 Filter me check karein ki employee Approved/Active ho aur kisi manager ke under na ho
+        employee_profile = get_object_or_404(
+            UserProfile, 
+            id=profile_id, 
+            role='employee', 
+            manager__isnull=True,
+            user__is_active=True,               # 👈 Sirf approved employee
+            is_active_team_member=True          # 👈 Active status
+        )
         employee_profile.manager = request.user
-        employee_profile.save()
+        employee_profile.save(update_fields=['manager'])
+        
     return redirect('accounts:manager_dashboard')
 
 def switch_role(request, role):
@@ -339,12 +404,29 @@ def managers_list(request):
     
     return render(request, 'accounts/managers_list.html', context)
 
+@login_required
 def make_manager(request, user_id):
     if request.user.is_superuser or request.session.get('is_original_admin'):
         profile = get_object_or_404(UserProfile, user__id=user_id)
+        
+        # Role update karein
         profile.role = 'manager'
-        profile.save()
-        messages.success(request, f"{profile.user.first_name} is now a Manager!")
+        # Purane manager ki link hatayein kyunki yeh ab khud Manager hai
+        profile.manager = None  
+        profile.is_active_team_member = True
+        profile.save(update_fields=['role', 'manager', 'is_active_team_member'])
+        
+        # User account active ensure karein
+        user = profile.user
+        if not user.is_active:
+            user.is_active = True
+            user.save(update_fields=['is_active'])
+
+        display_name = user.first_name or user.username
+        messages.success(request, f"{display_name} is now a Manager!")
+    else:
+        messages.error(request, "Permission denied.")
+        
     return redirect('accounts:managers_list')
 
 def toggle_user_status(request, user_id):
@@ -465,7 +547,14 @@ def employees_list(request):
     on_leave_count = len(set(on_leave_user_ids))
 
     # 1. Sirf 'employee' role wale users nikalenge
-    employees = UserProfile.objects.filter(role='employee').select_related('user').order_by('-id')
+    # Base queryset
+    employees_qs = UserProfile.objects.filter(role='employee').select_related('user').order_by('-id')
+
+    # Agar current user Admin nahi hai (Manager hai), toh sirf Active/Approved employees dikhao
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'admin')):
+        employees_qs = employees_qs.filter(user__is_active=True)
+
+    employees = employees_qs
 
     # 2.SEARCH FILTER LOGIC
     search_query = request.GET.get('search', '')
@@ -486,6 +575,13 @@ def employees_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # 🟢 Sahi: 'user__tasks' use karein
+    employees_qs = UserProfile.objects.filter(role='employee').select_related('user').annotate(
+    completed_tasks=Count('user__tasks', filter=Q(user__tasks__status='Done')),
+    inprogress_tasks=Count('user__tasks', filter=Q(user__tasks__status='In Progress')),
+    total_tasks=Count('user__tasks')
+    ).order_by('-id')
+
     context = {
         'page_obj': page_obj,
         'search_query': search_query,
@@ -494,6 +590,7 @@ def employees_list(request):
         'inactive_employees': inactive_employees,
         'on_leave_count': on_leave_count,        
         'on_leave_user_ids': on_leave_user_ids,
+       
     }
     
     return render(request, 'accounts/employees_list.html', context)
@@ -573,7 +670,7 @@ def add_user(request):
         # 2. Uski Profile Create Karna (Phone aur Role ke sath)
         UserProfile.objects.create(
             user=user,
-            phone=phone,
+            phone_number=phone,
             role=role
         )
 

@@ -215,3 +215,37 @@ function removeTeamMember(taskId, membershipId) {
     openTaskDrawer(taskId);
   });
 }
+
+// ================= View Switcher (List vs Grid) =================
+function switchTaskView(viewType) {
+  const listView = document.getElementById('taskListView');
+  const gridView = document.getElementById('taskGridView');
+  const listBtn = document.getElementById('viewListBtn');
+  const gridBtn = document.getElementById('viewGridBtn');
+
+  if (!listView || !gridView) return;
+
+  if (viewType === 'grid') {
+    listView.classList.add('hidden');
+    gridView.classList.remove('hidden');
+
+    // Button states
+    gridBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-indigo-600 shadow-sm';
+    listBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-500 hover:text-gray-800';
+    localStorage.setItem('task_preferred_view', 'grid');
+  } else {
+    gridView.classList.add('hidden');
+    listView.classList.remove('hidden');
+
+    // Button states
+    listBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-indigo-600 shadow-sm';
+    gridBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-500 hover:text-gray-800';
+    localStorage.setItem('task_preferred_view', 'list');
+  }
+}
+
+// Restore saved preference on load
+document.addEventListener('DOMContentLoaded', () => {
+  const savedView = localStorage.getItem('task_preferred_view') || 'list';
+  switchTaskView(savedView);
+});

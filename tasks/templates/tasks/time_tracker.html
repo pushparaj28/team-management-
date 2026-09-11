@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Time Tracker - Team Workload{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto space-y-6">
+
+  <!-- CSRF Protection Helper -->
+  <span id="csrfHelper" class="hidden">{% csrf_token %}</span>
+
+  <!-- ================= 1. CLOCKIFY PREMIUM TOP TRACKER BAR ================= -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 flex flex-col lg:flex-row items-center justify-between gap-4 transition-all">
+    
+    <!-- Description Input -->
+    <div class="flex-1 w-full flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-purple-50 text-[#7a2656] flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-keyboard text-xs"></i>
+      </div>
+      <input type="text" id="taskDesc" placeholder="What are you working on right now?" 
+             value="{{ active_entry.description|default:'' }}"
+             {% if active_entry %}disabled{% endif %}
+             class="w-full text-sm font-semibold text-gray-800 placeholder-gray-400 outline-none bg-transparent">
+    </div>
+
+    <!-- Right Controls: Dynamic Project Dropdown + Live Timer + Button -->
+    <div class="flex flex-wrap items-center justify-between lg:justify-end gap-3 w-full lg:w-auto">
+      
+      <!-- Dynamic Project / Task Selector -->
+      <div class="relative">
+        <select id="projectSelect" {% if active_entry %}disabled{% endif %}
+                class="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-xl px-3.5 py-2.5 pr-8 outline-none focus:border-[#7a2656] cursor-pointer max-w-[200px] truncate">
+          <option value="General Project" {% if not active_entry.project_name %}selected{% endif %}>📁 General Project</option>
+          {% for task in available_tasks %}
+            <option value="{{ task.title }}" {% if active_entry.project_name == task.title %}selected{% endif %}>
+              📌 {{ task.title }}
+            </option>
+          {% endfor %}
+        </select>
+        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-gray-400 text-[10px] pointer-events-none"></i>
+      </div>
+
+      <!-- Live Digital Clock Display -->
+      <div class="font-mono text-2xl font-black text-gray-900 tracking-wider bg-gray-50 px-4 py-1.5 rounded-xl border border-gray-100 min-w-[130px] text-center" id="timerDisplay">
+        00:00:00
+      </div>
+
+      <!-- Start / Stop Button -->
+      {% if active_entry %}
+        <button id="toggleBtn" onclick="stopTracking()" 
+                class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+          <i class="fas fa-stop"></i> STOP
+        </button>
+      {% else %}
+        <button id="toggleBtn" onclick="startTracking()" 
+                class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+          <i class="fas fa-play"></i> START
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Screen Capture Alert Banner -->
+  <div id="monitoringNotice" class="{% if not active_entry %}hidden{% endif %} p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between shadow-xs">
+    <div class="flex items-center gap-2.5">
+      <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+      <span class="font-semibold">Automated Screenshot Audit Active:</span>
+      <span class="text-amber-700">Capturing employee workstation screen every 10 seconds for real-time tracking.</span>
+    </div>
+    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-200/60 uppercase">10s Interval</span>
+  </div>
+
+  <video id="hiddenVideo" autoplay class="hidden"></video>
+  <canvas id="hiddenCanvas" class="hidden"></canvas>
+
+  <!-- ================= 2. ADMIN & MANAGER TEAM WORKLOAD AUDIT ================= -->
+  {% if is_admin_or_mgr %}
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
+    
+    <!-- Header & Date Filter Tabs -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <h2 class="text-base font-bold text-gray-800">Team Workload & Hours</h2>
+          <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 text-[10px] font-bold rounded-full">
+            {{ active_employees_count }} Active Now
+          </span>
+        </div>
+        <p class="text-xs text-gray-400 mt-0.5">Real-time working hours and live session monitoring of team members.</p>
+      </div>
+
+      <!-- Filter Buttons: Today / Week / Month / All -->
+      <div class="inline-flex p-1 bg-gray-100 rounded-xl text-xs font-semibold">
+        <a href="?filter=today" class="px-3 py-1.5 rounded-lg transition {% if current_filter == 'today' %}bg-white text-[#7a2656] shadow-sm font-bold{% else %}text-gray-500 hover:text-gray-800{% endif %}">Today</a>
+        <a href="?filter=week" class="px-3 py-1.5 rounded-lg transition {% if current_filter == 'week' %}bg-white text-[#7a2656] shadow-sm font-bold{% else %}text-gray-500 hover:text-gray-800{% endif %}">This Week</a>
+        <a href="?filter=month" class="px-3 py-1.5 rounded-lg transition {% if current_filter == 'month' %}bg-white text-[#7a2656] shadow-sm font-bold{% else %}text-gray-500 hover:text-gray-800{% endif %}">This Month</a>
+        <a href="?filter=all" class="px-3 py-1.5 rounded-lg transition {% if current_filter == 'all' %}bg-white text-[#7a2656] shadow-sm font-bold{% else %}text-gray-500 hover:text-gray-800{% endif %}">All Time</a>
+      </div>
+    </div>
+
+    <!-- Team Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {% for emp in team_summary %}
+      <div class="p-4 rounded-xl border {% if emp.active_session %}border-emerald-200 bg-emerald-50/20 shadow-xs{% else %}border-gray-100 bg-white{% endif %} flex flex-col justify-between space-y-3">
+        
+        <!-- Member Info -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5 min-w-0">
+            {% if emp.user.profile.profile_pic %}
+              <img src="{{ emp.user.profile.profile_pic.url }}" class="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100 flex-shrink-0">
+            {% else %}
+              <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-[#7a2656] text-white flex items-center justify-center font-bold text-xs uppercase flex-shrink-0">
+                {{ emp.user.username|slice:":1" }}
+              </div>
+            {% endif %}
+            <div class="min-w-0">
+              <p class="text-xs font-bold text-gray-800 truncate">{{ emp.user.get_full_name|default:emp.user.username }}</p>
+              <p class="text-[10px] text-gray-400 truncate">@{{ emp.user.username }}</p>
+            </div>
+          </div>
+
+          <!-- Status Indicator -->
+          {% if emp.active_session %}
+            <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active
+            </span>
+          {% else %}
+            <span class="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Offline</span>
+          {% endif %}
+        </div>
+
+        <!-- Task Info (If working) -->
+        <div class="text-[11px] bg-gray-50 rounded-lg p-2 border border-gray-100/80">
+          {% if emp.active_session %}
+            <span class="text-gray-400 block text-[9px] uppercase font-bold">Working on:</span>
+            <span class="font-semibold text-gray-800 line-clamp-1">{{ emp.active_session.description }}</span>
+            <span class="text-indigo-600 text-[10px] block mt-0.5 font-medium">📁 {{ emp.active_session.project_name }}</span>
+          {% else %}
+            <span class="text-gray-400 italic">No active session right now</span>
+          {% endif %}
+        </div>
+
+        <!-- Total Work Time Card Footer -->
+        <div class="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+          <span class="text-gray-400 text-[11px]">Tracked ({{ current_filter|title }}):</span>
+          <span class="font-mono font-bold text-gray-800 text-sm">{{ emp.total_formatted }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ================= 3. MY TIME LOG HISTORY ================= -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/40">
+      <div>
+        <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider">My Time Entries</h3>
+        <p class="text-[11px] text-gray-400">Detailed list of your completed work intervals.</p>
+      </div>
+      <div class="text-right">
+        <span class="text-[11px] text-gray-400 block">Total Work Duration</span>
+        <span class="text-base font-extrabold text-[#7a2656] font-mono">{{ user_total_time }}</span>
+      </div>
+    </div>
+
+    <!-- History Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+            <th class="px-5 py-3">Task Description</th>
+            <th class="px-5 py-3">Project</th>
+            <th class="px-5 py-3">Date</th>
+            <th class="px-5 py-3">Time Interval</th>
+            <th class="px-5 py-3 text-right">Duration</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 text-gray-700">
+          {% for entry in history_entries %}
+          <tr class="hover:bg-gray-50/70 transition-colors">
+            <td class="px-5 py-3.5 font-bold text-gray-800">
+              <div class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>{{ entry.obj.description }}</span>
+              </div>
+            </td>
+            <td class="px-5 py-3.5">
+              <span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 font-semibold text-[11px] ring-1 ring-indigo-100">
+                📁 {{ entry.obj.project_name }}
+              </span>
+            </td>
+            <td class="px-5 py-3.5 text-gray-500 font-medium">{{ entry.date_formatted }}</td>
+            <td class="px-5 py-3.5 text-gray-500 font-mono">
+              {{ entry.start_formatted }} – {{ entry.end_formatted }}
+            </td>
+            <td class="px-5 py-3.5 text-right font-mono font-bold text-gray-900">
+              {{ entry.formatted_duration }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="py-12 text-center text-gray-400">
+              <i class="far fa-clock text-3xl mb-2 block"></i>
+              No logs found for this period. Click <strong>START</strong> above to track your work.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tracker JavaScript Engine -->
+<script>
+let currentEntryId = "{{ active_entry.id|default:'' }}";
+let timerInterval = null;
+let captureInterval = null;
+let mediaStream = null;
+let secondsPassed = 0;
+
+{% if active_entry %}
+  secondsPassed = {{ active_entry.duration_seconds }};
+  runTimer();
+{% endif %}
+
+// Helper to get CSRF Token
+function getCSRFToken() {
+  const hiddenInput = document.querySelector('#csrfHelper input[name=csrfmiddlewaretoken]');
+  if (hiddenInput && hiddenInput.value) return hiddenInput.value;
+
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, 10) === 'csrftoken=') {
+        cookieValue = decodeURIComponent(cookie.substring(10));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+function runTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    secondsPassed++;
+    let hrs = String(Math.floor(secondsPassed / 3600)).padStart(2, '0');
+    let mins = String(Math.floor((secondsPassed % 3600) / 60)).padStart(2, '0');
+    let secs = String(secondsPassed % 60).padStart(2, '0');
+    document.getElementById('timerDisplay').innerText = `${hrs}:${mins}:${secs}`;
+  }, 1000);
+}
+
+// 🟢 START TRACKER
+async function startTracking() {
+  const desc = document.getElementById('taskDesc').value || "Working on tasks";
+  const project = document.getElementById('projectSelect').value || "General Project";
+
+  // 1. Browser Screen Sharing Prompt
+  try {
+    mediaStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: "always" },
+      audio: false
+    });
+
+    const video = document.getElementById('hiddenVideo');
+    if (video) video.srcObject = mediaStream;
+
+    // Handle user clicking native browser "Stop sharing" bar
+    mediaStream.getVideoTracks()[0].onended = function () {
+      stopTracking();
+    };
+  } catch (permErr) {
+    console.warn("Screen share cancelled or blocked:", permErr);
+    alert("Tracking shuru karne ke liye screen share allow karna zaroori hai.");
+    return;
+  }
+
+  // 2. Start Backend Session
+  try {
+    const csrftoken = getCSRFToken();
+    const payload = new FormData();
+    payload.append('description', desc);
+    payload.append('project', project);
+
+    const response = await fetch("{% url 'tasks:start_tracker' %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrftoken,
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      body: payload
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.status === 'started') {
+      currentEntryId = data.entry_id;
+      secondsPassed = 0;
+      runTimer();
+
+      document.getElementById('monitoringNotice')?.classList.remove('hidden');
+      const btn = document.getElementById('toggleBtn');
+      if (btn) {
+        btn.className = "bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2";
+        btn.innerHTML = `<i class="fas fa-stop"></i> STOP`;
+        btn.setAttribute('onclick', 'stopTracking()');
+      }
+      
+      document.getElementById('taskDesc').disabled = true;
+      document.getElementById('projectSelect').disabled = true;
+
+      // Start 10s auto screenshot capture
+      clearInterval(captureInterval);
+      captureInterval = setInterval(takeAutomatedScreenshot, 10000);
+    } else {
+      console.error("Backend error response:", data);
+      alert("Server error: " + (data.message || "Tracker start nahi ho saka."));
+      if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+    }
+  } catch (apiErr) {
+    console.error("API Error:", apiErr);
+    alert("Connection error: Server tak request nahi pahunchi.");
+    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+  }
+}
+
+// 📸 SCREENSHOT CAPTURE & COMPRESSION (10s Interval)
+async function takeAutomatedScreenshot() {
+  if (!mediaStream || !currentEntryId) return;
+
+  const video = document.getElementById('hiddenVideo');
+  const canvas = document.getElementById('hiddenCanvas');
+  if (!video || !canvas) return;
+  
+  const context = canvas.getContext('2d');
+
+  if (video.videoWidth > 0) {
+    canvas.width = 1280;
+    canvas.height = 720;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const base64Image = canvas.toDataURL('image/jpeg', 0.6);
+    const csrftoken = getCSRFToken();
+
+    const payload = new FormData();
+    payload.append('entry_id', currentEntryId);
+    payload.append('screenshot', base64Image);
+
+    fetch("{% url 'tasks:upload_screenshot' %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrftoken,
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      body: payload
+    }).catch(err => console.error("Upload error:", err));
+  }
+}
+
+// 🛑 STOP TRACKER
+async function stopTracking() {
+  clearInterval(timerInterval);
+  clearInterval(captureInterval);
+
+  if (mediaStream) {
+    try {
+      mediaStream.getTracks().forEach(track => track.stop());
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  const stopBtn = document.getElementById('toggleBtn');
+  if (stopBtn) {
+    stopBtn.disabled = true;
+    stopBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Saving...`;
+  }
+
+  try {
+    const csrftoken = getCSRFToken();
+    const payload = new FormData();
+    if (currentEntryId) {
+      payload.append('entry_id', currentEntryId);
+    }
+
+    const response = await fetch("{% url 'tasks:stop_tracker' %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrftoken,
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      body: payload
+    });
+
+    const data = await response.json();
+    if (data.status === 'stopped' || data.status === 'no_active_session') {
+      window.location.href = window.location.pathname;
+    } else {
+      alert("Error saving session: " + (data.message || "Unknown error"));
+      location.reload();
+    }
+  } catch (err) {
+    console.error("Stop Tracker Error:", err);
+    location.reload();
+  }
+}
+</script>
+{% endblock %}

@@ -4,6 +4,7 @@ from django.db.models.signals import post_save
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from accounts.models import Notification
+from django.utils import timezone
 
 class Milestone(models.Model):
     STATUS_CHOICES = [
@@ -138,3 +139,30 @@ class TaskTeamMember(models.Model):
 
     def __str__(self):
         return f"{self.user.username} on {self.task.title}"
+
+class TimeEntry(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='time_entries')
+    description = models.CharField(max_length=255, blank=True, default="Working on task")
+    project_name = models.CharField(max_length=100, blank=True, default="General")
+    start_time = models.DateTimeField(default=timezone.now)
+    end_time = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    @property
+    def duration_seconds(self):
+        end = self.end_time or timezone.now()
+        return int((end - self.start_time).total_seconds())
+
+    class Meta:
+        ordering = ['-start_time']
+
+class TaskScreenShot(models.Model):
+    time_entry = models.ForeignKey(TimeEntry, on_delete=models.CASCADE, related_name='screenshots')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='tracking_screenshots/%Y/%m/%d/')
+    captured_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-captured_at']
+    
+    
