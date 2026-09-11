@@ -86,6 +86,7 @@ class Resource(models.Model):
     def extension(self):
 
         if self.file:
+
             name = self.file.name.lower()
 
             if "." in name:
@@ -150,6 +151,74 @@ class Resource(models.Model):
         return "file"
 
 
+class ResourceAccess(models.Model):
+
+    """
+    Temporary access given to an employee
+    for Documents or Technical resources.
+    """
+
+    RESOURCE_TYPE_CHOICES = [
+        ("documents", "Documents"),
+        ("technical", "Technical"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="resource_accesses"
+    )
+
+    resource_type = models.CharField(
+        max_length=30,
+        choices=RESOURCE_TYPE_CHOICES
+    )
+
+    granted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="resource_access_granted"
+    )
+
+    start_time = models.DateTimeField()
+
+    end_time = models.DateTimeField()
+
+    is_active = models.BooleanField(
+        default=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+
+        return (
+            f"{self.user} - "
+            f"{self.get_resource_type_display()} - "
+            f"{self.end_time}"
+        )
+
+    @property
+    def is_valid(self):
+
+        from django.utils import timezone
+
+        now = timezone.now()
+
+        return (
+            self.is_active
+            and self.start_time <= now
+            and self.end_time >= now
+        )
+
+
 class Bookmark(models.Model):
 
     user = models.ForeignKey(
@@ -207,4 +276,7 @@ class Comment(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.user.username} - {self.resource.title}"
+        return (
+            f"{self.user.username} - "
+            f"{self.resource.title}"
+        )

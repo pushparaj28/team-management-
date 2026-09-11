@@ -3,565 +3,628 @@
 
 {% block title %}Resources | CollabPulse{% endblock %}
 
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+    .resource-row {
+        transition: background-color .15s ease;
+    }
+
+    .resource-row:hover {
+        background-color: #F8FAFC;
+    }
+
+    .line-clamp-1 {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .modal-backdrop {
+        background: rgba(15, 23, 42, .55);
+        backdrop-filter: blur(4px);
+    }
+
+    .toast {
+        animation: slideIn .25s ease-out;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 999px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mx-auto px-4 py-6 max-w-7xl relative">
-    
-    <!-- HEADER SECTION -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 mb-6">
-        <div>
-            <div class="flex items-center gap-2">
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Resources</h1>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                    {{ total_resources|default:"0" }} items
-                </span>
+
+<div class="min-h-screen bg-slate-50/50 p-4 sm:p-6 lg:p-8">
+
+    <div class="mx-auto max-w-7xl">
+
+        <!-- PAGE TOP HEADER -->
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 sm:text-3xl">Resources</h1>
+                <p class="mt-1 text-sm text-slate-500">
+                    Central place for all project documents, links and assets.
+                </p>
             </div>
-            <p class="text-sm text-slate-500 mt-1">
-                Central hub for team documentation, design assets, and technical references.
-            </p>
+
+            <!-- TOP ACTION BUTTONS -->
+            <div class="flex items-center gap-3">
+                <a href="{% url 'resource:create' %}" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+                    <i data-lucide="plus" class="h-4 w-4"></i>
+                    Add Resource
+                </a>
+
+                {% if is_admin_or_manager %}
+                <button type="button" onclick="openAccessModal()" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                    <i data-lucide="shield-check" class="h-4 w-4 text-slate-500"></i>
+                    Manage Access
+                </button>
+                {% endif %}
+            </div>
         </div>
 
-        <!-- ACTION BUTTONS & SEARCH -->
-        <div class="flex flex-wrap items-center gap-3">
-            <!-- Combined Search & Category Form -->
-            <form method="GET" action="{% url 'resource:list' %}" class="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-1 sm:w-auto">
-                <!-- Category Select Dropdown -->
-                <div class="relative min-w-[150px]">
-                    <select 
-                        name="category" 
-                        onchange="this.form.submit()" 
-                        class="w-full pl-3 pr-8 py-2 text-sm bg-white border border-slate-200 rounded-xl shadow-xs text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer transition-all appearance-none"
-                    >
-                        <option value="all">All Categories</option>
-                        {% for cat in categories %}
-                            <option value="{{ cat.key }}" {% if selected_category == cat.key %}selected{% endif %}>
-                                {{ cat.label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    <i data-lucide="chevron-down" class="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-                </div>
-
-                <!-- Search Input for Resource Name with Clear Icon -->
-                <div class="relative flex-1 sm:w-64 min-w-[180px]">
-                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input 
-                        type="text" 
-                        id="searchInput"
-                        name="q" 
+        <!-- DIRECT SEARCH BAR WITH CLEAR ICON -->
+        <div class="mb-6">
+            <form method="get" action="{% url 'resource:list' %}" class="flex flex-col gap-2.5 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:flex-row sm:items-center">
+                {% if selected_category %}
+                <input type="hidden" name="category" value="{{ selected_category }}">
+                {% endif %}
+                <div class="relative flex flex-1 items-center">
+                    <i data-lucide="search" class="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+                    
+                    <input
+                        type="text"
+                        id="resourceSearch"
+                        name="q"
                         value="{{ search_query|default:'' }}"
-                        placeholder="Search resource name..." 
-                        oninput="toggleClearBtn()"
-                        class="w-full pl-9 pr-9 py-2 text-sm bg-white border border-slate-200 rounded-xl shadow-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                    />
-                    <!-- Clear Search Icon Button -->
-                    <button 
-                        type="button" 
+                        oninput="toggleClearButton()"
+                        placeholder="Search resources, documents, links..."
+                        class="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-10 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+
+                    <!-- CLEAR SEARCH BUTTON (X ICON) -->
+                    <button
+                        type="button"
                         id="clearSearchBtn"
-                        onclick="clearSearchInput(event)"
-                        class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-all cursor-pointer {% if not search_query %}hidden{% endif %}"
-                        title="Clear search query"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
+                        onclick="clearSearch()"
+                        title="Clear search"
+                        class="absolute right-3 top-1/2 z-10 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-100 hover:text-slate-800 cursor-pointer {% if not search_query %}hidden{% endif %}">
+                        <i data-lucide="x" class="h-4 w-4"></i>
                     </button>
                 </div>
 
-                <!-- Search Submit Button -->
-                <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors shrink-0">
-                    Search
-                </button>
-            </form>
-
-            <!-- Add Resource Primary Button -->
-            <a href="{% url 'resource:create' %}" class="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all shadow-indigo-200 active:scale-[0.98] shrink-0">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Add Resource</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- CATEGORY TABS -->
-    <div class="flex items-center gap-2 overflow-x-auto py-1 mb-6 no-scrollbar border-b border-slate-100">
-        <a href="{% url 'resource:list' %}{% if search_query %}?q={{ search_query|urlencode }}{% endif %}"
-           class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl whitespace-nowrap transition-all duration-150 {% if not selected_category or selected_category == 'all' %}bg-indigo-600 text-white shadow-sm shadow-indigo-100{% else %}bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/60{% endif %}">
-            <i data-lucide="layout-grid" class="w-4 h-4"></i>
-            <span>All Resources</span>
-        </a>
-
-        {% for cat in categories %}
-        <a href="?category={{ cat.key }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-           class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl whitespace-nowrap transition-all duration-150 {% if selected_category == cat.key %}bg-indigo-600 text-white shadow-sm shadow-indigo-100{% else %}bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/60{% endif %}">
-
-            {% if cat.key == "documents" %}
-                <i data-lucide="file-text" class="w-4 h-4"></i>
-            {% elif cat.key == "technical" %}
-                <i data-lucide="code-2" class="w-4 h-4"></i>
-            {% elif cat.key == "design" %}
-                <i data-lucide="figma" class="w-4 h-4"></i>
-            {% elif cat.key == "links" %}
-                <i data-lucide="link" class="w-4 h-4"></i>
-            {% elif cat.key == "media" %}
-                <i data-lucide="film" class="w-4 h-4"></i>
-            {% else %}
-                <i data-lucide="folder" class="w-4 h-4"></i>
-            {% endif %}
-
-            <span>{{ cat.label }}</span>
-            
-            {% if cat.count %}
-            <span class="ml-1 px-1.5 py-0.5 text-xs rounded-md {% if selected_category == cat.key %}bg-indigo-500 text-white{% else %}bg-slate-100 text-slate-600{% endif %}">
-                {{ cat.count }}
-            </span>
-            {% endif %}
-        </a>
-        {% endfor %}
-    </div>
-
-    <!-- MAIN GRID: TABLE + SIDEBAR -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-        <!-- MAIN TABLE SECTION -->
-        <section class="lg:col-span-8 xl:col-span-9 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden relative z-10">
-            
-            <!-- Table Header Banner -->
-            <div class="px-6 py-4 bg-slate-50/70 border-b border-slate-200/80 flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <h2 class="font-semibold text-slate-900 text-base">Resource Directory</h2>
-                    {% if search_query %}
-                        <span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md">
-                            Filtering: “{{ search_query }}”
-                        </span>
-                    {% endif %}
+                    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 shrink-0">
+                        <i data-lucide="search" class="h-4 w-4"></i>
+                        Search
+                    </button>
+
+                    <!-- CLEAR BUTTON NEXT TO SEARCH -->
+                    <button
+                        type="button"
+                        id="explicitClearBtn"
+                        onclick="clearSearch()"
+                        class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 shrink-0 {% if not search_query %}hidden{% endif %}">
+                        <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                        Clear
+                    </button>
                 </div>
-                <div class="text-xs text-slate-500 font-medium">
-                    Showing {{ resources|length }} item{% if resources|length != 1 %}s{% endif %}
+            </form>
+        </div>
+
+        <!-- CATEGORY PILLS BAR -->
+        <div class="mb-6 flex flex-wrap items-center gap-2">
+            <a href="{% url 'resource:list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition
+                {% if not selected_category %}bg-indigo-600 text-white shadow-sm{% else %}border border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}">
+                <i data-lucide="layout-grid" class="h-4 w-4"></i>
+                All
+            </a>
+
+            {% for cat in categories %}
+            <a href="?category={{ cat.key }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition
+                {% if selected_category == cat.key %}bg-indigo-600 text-white shadow-sm{% else %}border border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}">
+                <i data-lucide="{{ cat.icon|default:'file-text' }}" class="h-4 w-4"></i>
+                {{ cat.label }}
+            </a>
+            {% empty %}
+            <a href="?category=documents" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="file-text" class="h-4 w-4 text-red-500"></i>
+                Documents
+            </a>
+            <a href="?category=design" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="palette" class="h-4 w-4 text-emerald-500"></i>
+                Design
+            </a>
+            <a href="?category=technical" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="code-2" class="h-4 w-4 text-blue-500"></i>
+                Technical
+            </a>
+            <a href="?category=links" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="link-2" class="h-4 w-4 text-amber-500"></i>
+                Links
+            </a>
+            <a href="?category=media" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="video" class="h-4 w-4 text-purple-500"></i>
+                Media
+            </a>
+            <a href="?category=others" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="folder" class="h-4 w-4 text-slate-500"></i>
+                Others
+            </a>
+            {% endfor %}
+        </div>
+
+
+        <!-- MAIN LAYOUT: LEFT TABLE + RIGHT SIDEBAR CARDS -->
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+
+            <!-- MAIN RESOURCE LIST TABLE (8 Columns) -->
+            <div class="lg:col-span-8">
+
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-slate-900">
+                        {% if selected_category %}{{ selected_category|title }}{% else %}All Resources{% endif %}
+                        <span class="ml-1 text-sm font-normal text-slate-500">({{ page_obj.paginator.count|default:resources|length|default:0 }})</span>
+                    </h2>
                 </div>
-            </div>
 
-            <!-- Table Content -->
-            <div class="overflow-x-auto min-h-[300px]">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b border-slate-200/80 bg-slate-50/40 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                            <th class="py-3 px-6">Resource</th>
-                            <th class="py-3 px-4">Category</th>
-                            <th class="py-3 px-4">Uploaded By</th>
-                            <th class="py-3 px-4">Updated</th>
-                            <th class="py-3 px-6 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 text-sm">
-                        {% for resource in resources %}
-                        <tr class="hover:bg-slate-50/80 transition-colors group">
-                            
-                            <!-- Resource Title & Icon -->
-                            <td class="py-4 px-6">
-                                <div class="flex items-center gap-3 min-w-[220px]">
-                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs 
-                                        {% if resource.icon_type == 'pdf' %}bg-rose-50 text-rose-600 border border-rose-100
-                                        {% elif resource.icon_type == 'technical' %}bg-sky-50 text-sky-600 border border-sky-100
-                                        {% elif resource.icon_type == 'design' %}bg-purple-50 text-purple-600 border border-purple-100
-                                        {% elif resource.icon_type == 'document' %}bg-emerald-50 text-emerald-600 border border-emerald-100
-                                        {% elif resource.icon_type == 'media' %}bg-amber-50 text-amber-600 border border-amber-100
-                                        {% else %}bg-indigo-50 text-indigo-600 border border-indigo-100{% endif %}">
+                {% if resources %}
+                <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="border-b border-slate-100 bg-slate-50/50 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                <tr>
+                                    <th class="px-6 py-4">Resource</th>
+                                    <th class="px-4 py-4">Category</th>
+                                    <th class="px-4 py-4">Uploaded By</th>
+                                    <th class="px-4 py-4">Updated</th>
+                                    <th class="px-6 py-4 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for resource in resources %}
+                                <tr class="resource-row">
 
-                                        {% if resource.icon_type == "pdf" %}
-                                            <span class="font-bold text-xs uppercase tracking-tight">PDF</span>
-                                        {% elif resource.icon_type == "technical" %}
-                                            <i data-lucide="code" class="w-5 h-5"></i>
-                                        {% elif resource.icon_type == "design" %}
-                                            <i data-lucide="palette" class="w-5 h-5"></i>
-                                        {% elif resource.icon_type == "document" %}
-                                            <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
-                                        {% elif resource.icon_type == "media" %}
-                                            <i data-lucide="video" class="w-5 h-5"></i>
-                                        {% else %}
-                                            <i data-lucide="link-2" class="w-5 h-5"></i>
-                                        {% endif %}
-                                    </div>
+                                    <!-- RESOURCE TITLE & ICON -->
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3.5">
+                                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl
+                                                {% if resource.category == 'documents' %}bg-red-50 text-red-500{% elif resource.category == 'technical' %}bg-blue-50 text-blue-500{% elif resource.category == 'design' %}bg-emerald-50 text-emerald-500{% elif resource.category == 'links' %}bg-amber-50 text-amber-500{% elif resource.category == 'media' %}bg-purple-50 text-purple-500{% else %}bg-slate-100 text-slate-500{% endif %}">
+                                                <i data-lucide="{{ resource.icon_type|default:'file-text' }}" class="h-5 w-5"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <a href="{{ resource.get_absolute_url }}" class="line-clamp-1 font-semibold text-slate-900 hover:text-indigo-600 transition">
+                                                    {{ resource.title }}
+                                                </a>
+                                                {% if resource.description %}
+                                                <p class="line-clamp-1 text-xs text-slate-400 mt-0.5">{{ resource.description }}</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
 
-                                    <div class="min-w-0">
-                                        <a href="{{ resource.get_absolute_url }}" class="font-semibold text-slate-900 hover:text-indigo-600 truncate block transition-colors">
-                                            {{ resource.title }}
-                                        </a>
-                                        <p class="text-xs text-slate-500 truncate max-w-xs mt-0.5">
-                                            {{ resource.description|default:"No description provided." }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </td>
+                                    <!-- CATEGORY BADGE -->
+                                    <td class="px-4 py-4">
+                                        <span class="inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold
+                                            {% if resource.category == 'documents' %}bg-indigo-50 text-indigo-700{% elif resource.category == 'technical' %}bg-blue-50 text-blue-700{% elif resource.category == 'design' %}bg-emerald-50 text-emerald-700{% elif resource.category == 'links' %}bg-amber-50 text-amber-700{% elif resource.category == 'media' %}bg-purple-50 text-purple-700{% else %}bg-slate-100 text-slate-700{% endif %}">
+                                            {{ resource.category_label|default:resource.category|title }}
+                                        </span>
+                                    </td>
 
-                            <!-- Category Pill -->
-                            <td class="py-4 px-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/60">
-                                    {{ resource.category_label|default:resource.category }}
-                                </span>
-                            </td>
-
-                            <!-- Uploaded By -->
-                            <td class="py-4 px-4 whitespace-nowrap">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center justify-center text-xs font-bold uppercase shrink-0">
-                                        {% if resource.uploaded_by %}
-                                            {{ resource.uploaded_by.get_full_name|default:resource.uploaded_by.username|slice:":1" }}
-                                        {% else %}
-                                            U
-                                        {% endif %}
-                                    </div>
-                                    <span class="text-xs font-medium text-slate-700 truncate max-w-[120px]">
-                                        {% if resource.uploaded_by %}
-                                            {{ resource.uploaded_by.get_full_name|default:resource.uploaded_by.username }}
-                                        {% else %}
-                                            Unknown User
-                                        {% endif %}
-                                    </span>
-                                </div>
-                            </td>
-
-                            <!-- Updated At -->
-                            <td class="py-4 px-4 whitespace-nowrap text-xs text-slate-500">
-                                {{ resource.updated_at|timesince }} ago
-                            </td>
-
-                            <!-- Actions Column -->
-                            <td class="py-4 px-6 text-right whitespace-nowrap">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    
-                                    <!-- View Action -->
-                                    <a href="{{ resource.get_absolute_url }}" title="View Details" 
-                                       class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">
-                                        <i data-lucide="eye" class="w-4 h-4">View</i>
-                                    </a>
-
-                                    {% if request.user == resource.uploaded_by or request.user.is_staff %}
-                                        <!-- Edit Action -->
-                                        <a href="{% url 'resource:edit' resource.pk %}" title="Edit Resource" 
-                                           class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all">
-                                            <i data-lucide="edit-3" class="w-4 h-4">Edit</i>
-                                        </a>
-
-                                        <!-- Delete Action -->
-                                        <form action="{% url 'resource:delete' resource.pk %}" method="POST" class="inline-block" onsubmit="deleteResource(event, this);">
-                                            {% csrf_token %}
-                                            <button type="submit" title="Delete Resource" 
-                                                    class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
-                                                <i data-lucide="trash-2" class="w-4 h-4">Delete</i>
-                                            </button>
-                                        </form>
-                                    {% endif %}
-
-                                    <!-- Context Menu -->
-                                    <div class="relative inline-block text-left ml-1">
-                                        <button onclick="toggleMenu('menu-{{ resource.pk }}')" title="More Options"
-                                                class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all">
-                                            <i data-lucide="more-vertical" class="w-4 h-4"></i>
-                                        </button>
-
-                                        <!-- Dropdown Menu -->
-                                        <div id="menu-{{ resource.pk }}" class="action-menu hidden absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50 origin-top-right">
-                                            
-                                            {% if resource.file or resource.external_url %}
-                                            <a href="{% url 'resource:download' resource.pk %}" class="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50">
-                                                <i data-lucide="download" class="w-3.5 h-3.5 text-slate-400">ok</i> Download / Open Link
-                                            </a>
-                                            {% endif %}
-                                            
-                                            {% if request.user.is_authenticated %}
-                                            <button onclick="toggleBookmark(this, '{% url 'resource:bookmark' resource.pk %}')" class="w-full flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 text-left">
-                                                <i data-lucide="bookmark" class="w-3.5 h-3.5 {% if resource.id in bookmarked_ids %}text-amber-500 fill-amber-500{% else %}text-slate-400{% endif %}"></i> 
-                                                {% if resource.id in bookmarked_ids %}Remove Bookmark{% else %}Bookmark Item{% endif %}
-                                            </button>
+                                    <!-- UPLOADED BY (NULL SAFE) -->
+                                    <td class="px-4 py-4">
+                                        <div class="flex items-center gap-2.5">
+                                            {% if resource.uploaded_by %}
+                                                {% if resource.uploaded_by.profile_image %}
+                                                <img src="{{ resource.uploaded_by.profile_image.url }}" class="h-7 w-7 rounded-full object-cover ring-2 ring-white shadow-sm" alt="">
+                                                {% else %}
+                                                <div class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">
+                                                    {{ resource.uploaded_by.get_full_name|default:resource.uploaded_by.username|first|upper }}
+                                                </div>
+                                                {% endif %}
+                                                <span class="truncate text-xs font-semibold text-slate-700">
+                                                    {{ resource.uploaded_by.get_full_name|default:resource.uploaded_by.username }}
+                                                </span>
+                                            {% else %}
+                                                <div class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-400">?</div>
+                                                <span class="text-xs font-medium text-slate-400">Unknown</span>
                                             {% endif %}
                                         </div>
-                                    </div>
+                                    </td>
 
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
+                                    <!-- UPDATED TIME -->
+                                    <td class="px-4 py-4 text-xs font-medium text-slate-500 whitespace-nowrap">
+                                        {{ resource.updated_at|timesince }} ago
+                                    </td>
 
-                        <!-- EMPTY STATE -->
-                        <tr>
-                            <td colspan="5" class="py-20 text-center">
-                                <div class="max-w-sm mx-auto space-y-3">
-                                    <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mx-auto border border-indigo-100">
-                                        <i data-lucide="folder-search" class="w-8 h-8"></i>
-                                    </div>
-                                    <h3 class="text-base font-semibold text-slate-800">No resources found</h3>
-                                    <p class="text-xs text-slate-500">
-                                        {% if search_query %}
-                                            No matches found for “<span class="font-medium text-slate-700">{{ search_query }}</span>”
-                                            {% if selected_category and selected_category != 'all' %} in category “{{ selected_category }}”{% endif %}.
-                                        {% else %}
-                                            We couldn't find any resources matching your criteria.
-                                        {% endif %}
-                                    </p>
-                                    <div class="flex items-center justify-center gap-2 pt-2">
-                                        {% if search_query or selected_category and selected_category != 'all' %}
-                                            <a href="{% url 'resource:list' %}" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-                                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                                                Clear Filters
+                                    <!-- ACTIONS COLUMN (VIEW, EDIT, DELETE WITH DISTINCT COLORS) -->
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+
+                                            <!-- VIEW BUTTON (Indigo / Blue Theme) -->
+                                            <a href="{{ resource.get_absolute_url }}" title="View Resource" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-600 shadow-sm transition hover:bg-indigo-600 hover:text-white hover:border-indigo-600">
+                                                <i data-lucide="eye" class="h-4 w-4"></i>
                                             </a>
-                                        {% endif %}
-                                        <a href="{% url 'resource:create' %}" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all">
-                                            <i data-lucide="plus" class="w-4 h-4"></i>
-                                            Add First Resource
-                                        </a>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
 
-            <!-- PAGINATION BAR -->
-            {% if page_obj.paginator.num_pages > 1 %}
-            <div class="px-6 py-4 bg-slate-50/70 border-t border-slate-200/80 flex items-center justify-between">
-                <!-- Prev Button -->
-                {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}{% if selected_category != 'all' %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-2xs transition-all">
-                        <i data-lucide="chevron-left" class="w-4 h-4"></i> Previous
+                                            <!-- EDIT BUTTON (Amber / Orange Theme) -->
+                                            {% if request.user == resource.uploaded_by or is_admin_or_manager %}
+                                            <a href="{% url 'resource:edit' resource.pk %}" title="Edit Resource" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-600 shadow-sm transition hover:bg-amber-600 hover:text-white hover:border-amber-600">
+                                                <i data-lucide="pencil" class="h-4 w-4"></i>
+                                            </a>
+
+                                            <!-- DELETE BUTTON (Rose / Red Theme) -->
+                                            <button type="button" onclick="deleteResource({{ resource.pk }})" title="Delete Resource" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 shadow-sm transition hover:bg-rose-600 hover:text-white hover:border-rose-600">
+                                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                            </button>
+                                            {% endif %}
+
+                                        </div>
+                                    </td>
+
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PAGINATION -->
+                {% if page_obj.has_other_pages %}
+                <div class="mt-6 flex items-center justify-center gap-2">
+                    <a href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% else %}#{% endif %}"
+                       class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition {% if not page_obj.has_previous %}pointer-events-none opacity-40{% else %}hover:bg-slate-50{% endif %}">
+                        Previous
                     </a>
-                {% else %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-100 border border-slate-200/50 rounded-lg cursor-not-allowed">
-                        <i data-lucide="chevron-left" class="w-4 h-4"></i> Previous
-                    </span>
-                {% endif %}
 
-                <!-- Numeric Page Indicators -->
-                <div class="flex items-center gap-1">
                     {% for num in page_obj.paginator.page_range %}
-                        {% if num == page_obj.number %}
-                            <span class="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-indigo-600 text-white rounded-lg shadow-2xs">
-                                {{ num }}
-                            </span>
-                        {% elif num <= 4 %}
-                            <a href="?page={{ num }}{% if selected_category != 'all' %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                               class="w-8 h-8 flex items-center justify-center text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg border border-transparent hover:border-slate-200 transition-all">
-                                {{ num }}
-                            </a>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-
-                <!-- Next Button -->
-                {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if selected_category != 'all' %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-2xs transition-all">
-                        Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    <a href="?page={{ num }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}"
+                       class="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition {% if num == page_obj.number %}bg-indigo-600 text-white shadow-sm{% else %}bg-white border border-slate-200 text-slate-600 hover:bg-slate-50{% endif %}">
+                        {{ num }}
                     </a>
-                {% else %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-100 border border-slate-200/50 rounded-lg cursor-not-allowed">
-                        Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                    </span>
+                    {% endfor %}
+
+                    <a href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% else %}#{% endif %}"
+                       class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition {% if not page_obj.has_next %}pointer-events-none opacity-40{% else %}hover:bg-slate-50{% endif %}">
+                        Next
+                    </a>
+                </div>
                 {% endif %}
-            </div>
-            {% endif %}
-        </section>
 
-        <!-- RIGHT SIDEBAR -->
-        <aside class="lg:col-span-4 xl:col-span-3 space-y-6 relative z-0">
-            <!-- CATEGORIES OVERVIEW CARD -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold text-slate-900 text-sm">Categories</h3>
-                    <a href="{% url 'resource:list' %}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">View All</a>
+                {% else %}
+                <!-- EMPTY STATE -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                        <i data-lucide="folder-search" class="h-7 w-7"></i>
+                    </div>
+                    <h3 class="mt-4 text-base font-bold text-slate-900">No resources found</h3>
+                    <p class="mt-1 text-sm text-slate-500">Try adjusting your search keywords.</p>
+                    <a href="{% url 'resource:list' %}" class="mt-5 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                        <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                        Clear Search
+                    </a>
                 </div>
-                
-                <div class="space-y-1.5">
-                    {% for cat in categories %}
-                    <a href="?category={{ cat.key }}" class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors group">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <div class="w-7 h-7 rounded-lg bg-slate-100 group-hover:bg-indigo-50 group-hover:text-indigo-600 text-slate-500 flex items-center justify-center transition-colors">
-                                {% if cat.key == "documents" %}
-                                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                                {% elif cat.key == "technical" %}
-                                    <i data-lucide="code-2" class="w-3.5 h-3.5"></i>
-                                {% elif cat.key == "design" %}
-                                    <i data-lucide="figma" class="w-3.5 h-3.5"></i>
-                                {% elif cat.key == "links" %}
-                                    <i data-lucide="link" class="w-3.5 h-3.5"></i>
-                                {% elif cat.key == "media" %}
-                                    <i data-lucide="film" class="w-3.5 h-3.5"></i>
-                                {% else %}
-                                    <i data-lucide="folder" class="w-3.5 h-3.5"></i>
-                                {% endif %}
+                {% endif %}
+
+            </div>
+
+
+            <!-- RIGHT SIDEBAR (4 Columns) -->
+            <div class="space-y-6 lg:col-span-4">
+
+                <!-- CARD 1: CATEGORIES LIST WITH COUNTS -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <h3 class="font-bold text-slate-900">Categories</h3>
+                        <a href="{% url 'resource:list' %}" class="text-xs font-semibold text-indigo-600 hover:underline">View All</a>
+                    </div>
+
+                    <div class="mt-3 space-y-2.5">
+                        {% for cat in categories %}
+                        <a href="?category={{ cat.key }}" class="flex items-center justify-between rounded-xl p-2.5 transition hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                                    <i data-lucide="{{ cat.icon|default:'file-text' }}" class="h-4 w-4"></i>
+                                </div>
+                                <span class="text-sm font-semibold text-slate-700">{{ cat.label }}</span>
                             </div>
-                            <span class="text-xs font-medium text-slate-700 group-hover:text-slate-900 truncate">{{ cat.label }}</span>
-                        </div>
-                        <span class="text-[11px] font-semibold text-slate-500 bg-slate-100 group-hover:bg-indigo-100 group-hover:text-indigo-700 px-2 py-0.5 rounded-md transition-colors">
-                            {{ cat.count|default:"0" }}
-                        </span>
-                    </a>
-                    {% endfor %}
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{{ cat.count|default:0 }}</span>
+                        </a>
+                        {% empty %}
+                        <a href="?category=documents" class="flex items-center justify-between rounded-xl p-2 transition hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500"><i data-lucide="file-text" class="h-4 w-4"></i></div>
+                                <span class="text-sm font-semibold text-slate-700">Documents</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">8</span>
+                        </a>
+                        <a href="?category=technical" class="flex items-center justify-between rounded-xl p-2 transition hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500"><i data-lucide="code-2" class="h-4 w-4"></i></div>
+                                <span class="text-sm font-semibold text-slate-700">Technical</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">7</span>
+                        </a>
+                        <a href="?category=design" class="flex items-center justify-between rounded-xl p-2 transition hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-500"><i data-lucide="palette" class="h-4 w-4"></i></div>
+                                <span class="text-sm font-semibold text-slate-700">Design</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">4</span>
+                        </a>
+                        <a href="?category=links" class="flex items-center justify-between rounded-xl p-2 transition hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-500"><i data-lucide="link-2" class="h-4 w-4"></i></div>
+                                <span class="text-sm font-semibold text-slate-700">Links</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">3</span>
+                        </a>
+                        <a href="?category=media" class="flex items-center justify-between rounded-xl p-2 transition hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-500"><i data-lucide="video" class="h-4 w-4"></i></div>
+                                <span class="text-sm font-semibold text-slate-700">Media</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">4</span>
+                        </a>
+                        <a href="?category=others" class="flex items-center justify-between rounded-xl p-2 transition hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><i data-lucide="folder" class="h-4 w-4"></i></div>
+                                <span class="text-sm font-semibold text-slate-700">Others</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">2</span>
+                        </a>
+                        {% endfor %}
+                    </div>
                 </div>
+
+                <!-- CARD 2: POPULAR RESOURCES -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="text-amber-500">🔥</span>
+                            <h3 class="font-bold text-slate-900">Popular Resources</h3>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 space-y-3">
+                        {% for pop in popular_resources|default:resources|slice:":5" %}
+                        <a href="{{ pop.get_absolute_url }}" class="flex items-center justify-between gap-3 rounded-xl p-2 transition hover:bg-slate-50">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                                    <i data-lucide="{{ pop.icon_type|default:'file-text' }}" class="h-4 w-4"></i>
+                                </div>
+                                <span class="truncate text-xs font-semibold text-slate-800">{{ pop.title }}</span>
+                            </div>
+                            <div class="flex items-center gap-1 text-xs font-semibold text-slate-400 shrink-0">
+                                <i data-lucide="eye" class="h-3.5 w-3.5"></i>
+                                <span>{{ pop.views_count|default:pop.views|default:125 }}</span>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <p class="text-xs text-slate-400 italic py-2 text-center">No popular resources yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- CARD 3: RECENTLY ADDED -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-500"><i data-lucide="clock" class="h-4 w-4"></i></span>
+                            <h3 class="font-bold text-slate-900">Recently Added</h3>
+                        </div>
+                        <a href="?filter=recent" class="text-xs font-semibold text-indigo-600 hover:underline">View All</a>
+                    </div>
+
+                    <div class="mt-3 space-y-3">
+                        {% for recent in recent_resources|default:resources|slice:":5" %}
+                        <a href="{{ recent.get_absolute_url }}" class="flex items-center justify-between gap-3 rounded-xl p-2 transition hover:bg-slate-50">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                                    <i data-lucide="{{ recent.icon_type|default:'file-text' }}" class="h-4 w-4"></i>
+                                </div>
+                                <span class="truncate text-xs font-semibold text-slate-800">{{ recent.title }}</span>
+                            </div>
+                            <span class="text-xs font-medium text-slate-400 shrink-0">{{ recent.created_at|timesince }} ago</span>
+                        </a>
+                        {% empty %}
+                        <p class="text-xs text-slate-400 italic py-2 text-center">No recent additions.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
             </div>
 
-            <!-- POPULAR RESOURCES CARD -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-                <div class="flex items-center gap-2 mb-4">
-                    <span class="text-amber-500">🔥</span>
-                    <h3 class="font-semibold text-slate-900 text-sm">Popular Resources</h3>
-                </div>
+        </div>
 
-                <div class="divide-y divide-slate-100">
-                    {% for resource in popular %}
-                    <a href="{{ resource.get_absolute_url }}" class="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 hover:opacity-80 transition-opacity">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 font-bold text-[10px] flex items-center justify-center shrink-0 uppercase border border-amber-100">
-                                {{ resource.icon_type|default:"DOC"|slice:":3" }}
-                            </span>
-                            <span class="text-xs font-medium text-slate-800 truncate">{{ resource.title }}</span>
-                        </div>
-                        <div class="flex items-center gap-1 text-[11px] font-medium text-slate-400 shrink-0 ml-2">
-                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                            <span>{{ resource.views|default:"0" }}</span>
-                        </div>
-                    </a>
-                    {% empty %}
-                    <p class="text-xs text-slate-400 py-2">No popular resources recorded yet.</p>
-                    {% endfor %}
-                </div>
-            </div>
-        </aside>
     </div>
+
 </div>
 
+
+<!-- ACCESS MANAGEMENT MODAL -->
+{% if is_admin_or_manager %}
+<div id="accessModal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900">Resource Access Management</h2>
+                <p class="mt-1 text-sm text-slate-500">Grant temporary access to Documents or Technical resources.</p>
+            </div>
+            <button type="button" onclick="closeAccessModal()" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                <i data-lucide="x" class="h-5 w-5"></i>
+            </button>
+        </div>
+
+        <div class="max-h-[75vh] overflow-y-auto p-6">
+            <form id="grantAccessForm" method="post" action="{% url 'resource:grant_access' %}" class="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div>
+                        <label class="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">Employee</label>
+                        <select name="user_id" required class="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+                            <option value="">Select Employee</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.pk }}">{{ employee.get_full_name|default:employee.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">Resource Type</label>
+                        <select name="resource_type" required class="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+                            <option value="documents">Documents</option>
+                            <option value="technical">Technical</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">Duration</label>
+                        <select name="hours" required class="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+                            <option value="1">1 Hour</option>
+                            <option value="4">4 Hours</option>
+                            <option value="8">8 Hours</option>
+                            <option value="24">1 Day</option>
+                            <option value="72">3 Days</option>
+                            <option value="168">7 Days</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-center justify-end gap-2">
+                    <button type="button" onclick="closeAccessModal()" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                        <i data-lucide="key-round" class="h-4 w-4"></i>
+                        Grant Access
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+<!-- TOAST CONTAINER -->
+<div id="toast" class="toast fixed bottom-5 right-5 z-[60] hidden rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-xl"></div>
+
+
+<!-- JAVASCRIPT LOGIC -->
 <script>
-    // Initialize Lucide Icons if script is loaded
-    if (typeof lucide !== 'undefined') {
+document.addEventListener("DOMContentLoaded", function () {
+    if (window.lucide) {
         lucide.createIcons();
     }
+    toggleClearButton();
+});
 
-    // Toggle clear icon visibility when typing
-    function toggleClearBtn() {
-        const input = document.getElementById('searchInput');
-        const clearBtn = document.getElementById('clearSearchBtn');
-        if (input && clearBtn) {
-            if (input.value.trim().length > 0) {
-                clearBtn.classList.remove('hidden');
-            } else {
-                clearBtn.classList.add('hidden');
+function clearSearch() {
+    const input = document.getElementById("resourceSearch");
+    if (input) {
+        input.value = "";
+        toggleClearButton();
+        
+        // Remove 'q' parameter from current URL and refresh cleanly
+        const url = new URL(window.location.href);
+        url.searchParams.delete('q');
+        window.location.href = url.pathname + url.search;
+    }
+}
+
+function toggleClearButton() {
+    const input = document.getElementById("resourceSearch");
+    const btn = document.getElementById("clearSearchBtn");
+    const explicitBtn = document.getElementById("explicitClearBtn");
+    if (!input) return;
+
+    const hasText = input.value.trim().length > 0;
+    if (btn) {
+        if (hasText) btn.classList.remove("hidden");
+        else btn.classList.add("hidden");
+    }
+    if (explicitBtn) {
+        if (hasText || "{{ search_query }}") explicitBtn.classList.remove("hidden");
+        else explicitBtn.classList.add("hidden");
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
     }
+    return cookieValue;
+}
 
-    // Sync clear button state automatically on initial page load
-    document.addEventListener('DOMContentLoaded', toggleClearBtn);
+async function deleteResource(resourceId) {
+    if (!confirm("Are you sure you want to delete this resource?")) return;
 
-    // Handle clear search action
-    function clearSearchInput(event) {
-        event.preventDefault();
-        const input = document.getElementById('searchInput');
-        const clearBtn = document.getElementById('clearSearchBtn');
-        
-        if (input) {
-            input.value = '';
-            if (clearBtn) clearBtn.classList.add('hidden');
-            input.focus();
-        }
-
-        // Inspect URL parameters natively to handle clearing active search query
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('q') && urlParams.get('q') !== '') {
-            urlParams.delete('q');
-            const queryString = urlParams.toString();
-            window.location.href = window.location.pathname + (queryString ? '?' + queryString : '');
-        }
-    }
-
-    // Toggle Action Menus (Context Menu on table rows)
-    function toggleMenu(menuId) {
-        // Close all other open menus
-        document.querySelectorAll('.action-menu').forEach(menu => {
-            if (menu.id !== menuId) {
-                menu.classList.add('hidden');
+    try {
+        const response = await fetch(`/resource/${resourceId}/delete/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+                "X-Requested-With": "XMLHttpRequest"
             }
         });
-        
-        // Toggle the requested menu
-        const targetMenu = document.getElementById(menuId);
-        if (targetMenu) {
-            targetMenu.classList.toggle('hidden');
-        }
+
+        if (!response.ok) throw new Error("Unable to delete resource.");
+
+        showToast("Resource deleted successfully.", "success");
+        setTimeout(() => window.location.reload(), 600);
+
+    } catch (error) {
+        showToast(error.message, "error");
     }
+}
 
-    // Close action menus when clicking outside
-    document.addEventListener('click', function(event) {
-        const isClickInside = event.target.closest('td.text-right');
-        if (!isClickInside) {
-            document.querySelectorAll('.action-menu').forEach(menu => {
-                menu.classList.add('hidden');
-            });
-        }
-    });
+function openAccessModal() {
+    const modal = document.getElementById("accessModal");
+    if (!modal) return;
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    document.body.classList.add("overflow-hidden");
+}
 
-    // Handle AJAX Delete
-    async function deleteResource(event, form) {
-        event.preventDefault(); // Prevent standard form submission
-        
-        if (!confirm('Are you sure you want to permanently delete this resource?')) {
-            return;
-        }
+function closeAccessModal() {
+    const modal = document.getElementById("accessModal");
+    if (!modal) return;
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+    document.body.classList.remove("overflow-hidden");
+}
 
-        try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            
-            const text = await response.text();
-            let data = {};
-            
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                window.location.reload();
-                return;
-            }
+function showToast(message, type = "success") {
+    const toast = document.getElementById("toast");
+    if (!toast) return;
 
-            if (data.ok || response.ok) {
-                const row = form.closest('tr');
-                if (row) {
-                    row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                    row.style.opacity = '0';
-                    row.style.transform = 'scale(0.95)';
-                    
-                    setTimeout(() => {
-                        row.remove();
-                        if (document.querySelectorAll('tbody tr').length === 0) {
-                            window.location.reload();
-                        }
-                    }, 300);
-                } else {
-                    window.location.reload();
-                }
-            } else {
-                alert(data.error || 'Failed to delete the resource.');
-            }
-        } catch (error) {
-            console.error('Error deleting resource:', error);
-            alert('An unexpected error occurred while deleting.');
-        }
-    }
+    toast.textContent = message;
+    toast.className = `toast fixed bottom-5 right-5 z-[60] rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-xl ${
+        type === "error" ? "bg-rose-600" : "bg-emerald-600"
+    }`;
+    toast.classList.remove("hidden");
 
-    // Mock toggle bookmark function
-    function toggleBookmark(btn, url) {
-        const icon = btn.querySelector('i');
-        if (icon.classList.contains('text-amber-500')) {
-            icon.classList.remove('text-amber-500', 'fill-amber-500');
-            icon.classList.add('text-slate-400');
-        } else {
-            icon.classList.remove('text-slate-400');
-            icon.classList.add('text-amber-500', 'fill-amber-500');
-        }
-    }
+    setTimeout(function () {
+        toast.classList.add("hidden");
+    }, 3000);
+}
 </script>
+
 {% endblock %}

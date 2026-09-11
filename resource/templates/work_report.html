@@ -1,0 +1,801 @@
+{% extends "base.html" %}
+
+{% block title %}
+Work Performance Report | CollabPulse
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container mx-auto px-4 py-6 max-w-7xl">
+
+
+    <!-- ================================= -->
+    <!-- HEADER -->
+    <!-- ================================= -->
+
+    <div class="mb-6">
+
+        <div class="flex items-center gap-3">
+
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+
+                📊
+
+            </div>
+
+            <div>
+
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">
+
+                    Work Performance Report
+
+                </h1>
+
+                <p class="text-slate-500 text-sm mt-1">
+
+                    Track your team's work performance
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- PERIOD FILTER -->
+    <!-- ================================= -->
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-3 mb-6 shadow-sm">
+
+        <div class="flex flex-wrap gap-3">
+
+
+            <!-- TODAY -->
+
+            <a
+                href="?period=today"
+                class="
+                px-5 py-2.5
+                rounded-xl
+                font-medium
+                transition
+
+                {% if period == 'today' %}
+                    bg-blue-600
+                    text-white
+                    shadow
+                {% else %}
+                    bg-slate-100
+                    text-slate-600
+                    hover:bg-slate-200
+                {% endif %}
+                "
+            >
+
+                Today
+
+            </a>
+
+
+
+            <!-- WEEKLY -->
+
+            <a
+                href="?period=weekly"
+                class="
+                px-5 py-2.5
+                rounded-xl
+                font-medium
+                transition
+
+                {% if period == 'weekly' %}
+                    bg-blue-600
+                    text-white
+                    shadow
+                {% else %}
+                    bg-slate-100
+                    text-slate-600
+                    hover:bg-slate-200
+                {% endif %}
+                "
+            >
+
+                Weekly
+
+            </a>
+
+
+
+            <!-- MONTHLY -->
+
+            <a
+                href="?period=monthly"
+                class="
+                px-5 py-2.5
+                rounded-xl
+                font-medium
+                transition
+
+                {% if period == 'monthly' %}
+                    bg-blue-600
+                    text-white
+                    shadow
+                {% else %}
+                    bg-slate-100
+                    text-slate-600
+                    hover:bg-slate-200
+                {% endif %}
+                "
+            >
+
+                Monthly
+
+            </a>
+
+
+
+            <!-- YEARLY -->
+
+            <a
+                href="?period=yearly"
+                class="
+                px-5 py-2.5
+                rounded-xl
+                font-medium
+                transition
+
+                {% if period == 'yearly' %}
+                    bg-blue-600
+                    text-white
+                    shadow
+                {% else %}
+                    bg-slate-100
+                    text-slate-600
+                    hover:bg-slate-200
+                {% endif %}
+                "
+            >
+
+                Yearly
+
+            </a>
+
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- STATISTICS CARDS -->
+    <!-- ================================= -->
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+
+
+        <!-- TOTAL -->
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+
+            <div class="flex justify-between items-center">
+
+                <div>
+
+                    <p class="text-sm text-slate-500">
+
+                        Total Tasks
+
+                    </p>
+
+                    <h2 class="text-3xl font-bold text-slate-800 mt-2">
+
+                        {{ total_tasks }}
+
+                    </h2>
+
+                </div>
+
+                <div class="text-3xl">
+
+                    📋
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- COMPLETED -->
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+
+            <div class="flex justify-between items-center">
+
+                <div>
+
+                    <p class="text-sm text-slate-500">
+
+                        Completed
+
+                    </p>
+
+                    <h2 class="text-3xl font-bold text-green-600 mt-2">
+
+                        {{ completed_tasks }}
+
+                    </h2>
+
+                </div>
+
+                <div class="text-3xl">
+
+                    ✅
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- PENDING -->
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+
+            <div class="flex justify-between items-center">
+
+                <div>
+
+                    <p class="text-sm text-slate-500">
+
+                        Pending
+
+                    </p>
+
+                    <h2 class="text-3xl font-bold text-orange-500 mt-2">
+
+                        {{ pending_tasks }}
+
+                    </h2>
+
+                </div>
+
+                <div class="text-3xl">
+
+                    ⏳
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- OVERDUE -->
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+
+            <div class="flex justify-between items-center">
+
+                <div>
+
+                    <p class="text-sm text-slate-500">
+
+                        Overdue
+
+                    </p>
+
+                    <h2 class="text-3xl font-bold text-red-600 mt-2">
+
+                        {{ overdue_tasks }}
+
+                    </h2>
+
+                </div>
+
+                <div class="text-3xl">
+
+                    ⚠️
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- PERFORMANCE CHART -->
+    <!-- ================================= -->
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 mb-8 shadow-sm">
+
+
+        <div class="flex items-center justify-between mb-6">
+
+
+            <div>
+
+                <h2 class="text-xl font-bold text-slate-800">
+
+                    📈 Task Performance Chart
+
+                </h2>
+
+                <p class="text-sm text-slate-500 mt-1">
+
+                    Task completion overview
+
+                </p>
+
+            </div>
+
+
+            <div class="text-right">
+
+                <p class="text-2xl font-bold text-blue-600">
+
+                    {{ performance }}%
+
+                </p>
+
+                <p class="text-xs text-slate-500">
+
+                    Performance
+
+                </p>
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- CHART -->
+
+        <div class="h-72">
+
+            <canvas id="taskChart"></canvas>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- EMPLOYEE OF MONTH -->
+    <!-- ================================= -->
+
+    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-6 mb-8">
+
+
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+
+
+            <div>
+
+
+                <h2 class="text-xl font-bold text-slate-800 mb-5">
+
+                    🏆 Employee of the Month
+
+                </h2>
+
+
+                {% if employee_of_month %}
+
+
+                    <div class="flex items-center gap-4">
+
+
+                        <div class="w-16 h-16 rounded-full bg-yellow-400 flex items-center justify-center text-3xl">
+
+                            👤
+
+                        </div>
+
+
+                        <div>
+
+
+                            <h3 class="text-xl font-bold text-slate-800">
+
+                                {{ employee_of_month.employee.get_full_name|default:employee_of_month.employee.username }}
+
+                            </h3>
+
+
+                            <p class="text-slate-600 mt-1">
+
+                                Completed:
+
+                                <strong>
+
+                                    {{ employee_of_month.completed_tasks }}
+
+                                    Tasks
+
+                                </strong>
+
+                            </p>
+
+
+                            <p class="text-slate-600">
+
+                                Performance:
+
+                                <strong class="text-green-600">
+
+                                    {{ employee_of_month.performance }}%
+
+                                </strong>
+
+                            </p>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                {% else %}
+
+
+                    <p class="text-slate-500">
+
+                        No employee performance data available.
+
+                    </p>
+
+
+                {% endif %}
+
+
+            </div>
+
+
+            <div class="text-6xl">
+
+                🏆
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- EMPLOYEE PERFORMANCE -->
+    <!-- ================================= -->
+
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+
+
+        <div class="p-6 border-b">
+
+
+            <h2 class="text-xl font-bold text-slate-800">
+
+                👥 Employee Performance
+
+            </h2>
+
+
+            <p class="text-sm text-slate-500 mt-1">
+
+                Individual employee work performance
+
+            </p>
+
+
+        </div>
+
+
+
+        <div class="overflow-x-auto">
+
+
+            <table class="w-full">
+
+
+                <thead class="bg-slate-50">
+
+
+                    <tr>
+
+
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+
+                            Name
+
+                        </th>
+
+
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-slate-600">
+
+                            Completed
+
+                        </th>
+
+
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-slate-600">
+
+                            Pending
+
+                        </th>
+
+
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-slate-600">
+
+                            Performance
+
+                        </th>
+
+
+                    </tr>
+
+
+                </thead>
+
+
+
+                <tbody>
+
+
+                    {% for report in employee_reports %}
+
+
+                    <tr class="border-t hover:bg-slate-50 transition">
+
+
+                        <!-- NAME -->
+
+                        <td class="px-6 py-4">
+
+
+                            <div class="flex items-center gap-3">
+
+
+                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+
+                                    👤
+
+                                </div>
+
+
+                                <span class="font-medium text-slate-800">
+
+
+                                    {{ report.employee.get_full_name|default:report.employee.username }}
+
+
+                                </span>
+
+
+                            </div>
+
+
+                        </td>
+
+
+
+                        <!-- COMPLETED -->
+
+                        <td class="px-6 py-4 text-center">
+
+
+                            <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+
+
+                                {{ report.completed_tasks }}
+
+
+                            </span>
+
+
+                        </td>
+
+
+
+                        <!-- PENDING -->
+
+                        <td class="px-6 py-4 text-center">
+
+
+                            <span class="px-3 py-1 rounded-full bg-orange-100 text-orange-700 font-medium">
+
+
+                                {{ report.pending_tasks }}
+
+
+                            </span>
+
+
+                        </td>
+
+
+
+                        <!-- PERFORMANCE -->
+
+                        <td class="px-6 py-4 text-center font-semibold">
+
+
+                            {{ report.performance }}%
+
+
+                        </td>
+
+
+                    </tr>
+
+
+                    {% empty %}
+
+
+                    <tr>
+
+
+                        <td
+                            colspan="4"
+                            class="px-6 py-10 text-center text-slate-500"
+                        >
+
+                            No employee performance data available.
+
+                        </td>
+
+
+                    </tr>
+
+
+                    {% endfor %}
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+<!-- ================================= -->
+<!-- CHART.JS -->
+<!-- ================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+
+        const ctx = document
+            .getElementById(
+                "taskChart"
+            );
+
+
+        new Chart(
+            ctx,
+            {
+
+                type: "bar",
+
+
+                data: {
+
+                    labels: [
+
+                        "Total",
+
+                        "Completed",
+
+                        "Pending",
+
+                        "Overdue"
+
+                    ],
+
+
+                    datasets: [
+
+                        {
+
+                            label: "Tasks",
+
+                            data: [
+
+                                {{ total_tasks }},
+
+                                {{ completed_tasks }},
+
+                                {{ pending_tasks }},
+
+                                {{ overdue_tasks }}
+
+                            ],
+
+                            borderRadius: 8,
+
+                        }
+
+                    ]
+
+                },
+
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+
+                    plugins: {
+
+                        legend: {
+
+                            display: false
+
+                        }
+
+                    },
+
+
+                    scales: {
+
+                        y: {
+
+                            beginAtZero: true
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        );
+
+
+    }
+);
+
+</script>
+
+
+{% endblock %}

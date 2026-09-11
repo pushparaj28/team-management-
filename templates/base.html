@@ -213,7 +213,18 @@
         <!-- Dropdown Arrow Icon -->
         <i id="resource-arrow" class="fas fa-chevron-down text-[10px] transition-transform duration-300 sidebar-text pr-2"></i>
     </button>
+<a
+    href="{% url 'resource:reports' %}"
+    class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition"
+>
 
+    <i data-lucide="bar-chart-3"></i>
+
+    <span>
+        Reports
+    </span>
+
+</a>
     <!-- RESOURCE SUBMENU (Compact Space) -->
     <!-- FIX: ml-11 ko ml-8 kiya, aur space-y-1 hata diya -->
     <div id="resource-submenu" class="hidden ml-8 pl-2 border-l border-[#1f3a5f] mt-1">
