@@ -28,9 +28,12 @@ urlpatterns = [
 
     # ... previous urls
     path('tracker/', views.time_tracker_page, name='time_tracker'),
+    path('tracker/live-data/', views.time_tracker_live_data, name='time_tracker_live_data'),
     path('tracker/start/', views.start_time_tracker, name='start_tracker'),
     path('tracker/stop/', views.stop_time_tracker, name='stop_tracker'),
     path('tracker/upload-screenshot/', views.upload_screenshot, name='upload_screenshot'),
     path('tracker/monitoring/', views.admin_live_monitoring, name='live_monitoring'),
+    path('tracker/reports/', views.time_tracker_reports, name='time_tracker_reports'),
+    path('tracker/user/<int:user_id>/', views.user_time_history, name='user_time_history'),
 
 ]

@@ -100,6 +100,36 @@
         .dark [class*="bg-[#fdf1e4]"] { background-color: rgba(122,38,86,0.15) !important; }
 
         .dark footer { background-color: #1e293b !important; border-color: #334155 !important; }
+
+        /* ============================================================
+        TEAL BRAND OVERRIDE
+        Every template currently hardcodes the old maroon brand color as
+        Tailwind arbitrary-value classes (bg-[#7a2656], text-[#7a2656],
+        etc). Since Tailwind generates those as real, literal class names,
+        we can re-target them here with one CSS block instead of editing
+        every template individually — same technique as the dark-mode
+        override above. Works identically in light and dark mode since it
+        overrides the class itself, not a theme variant.
+        ============================================================ */
+
+        .bg-\[\#7a2656\] { background-color: #0d9488 !important; }
+        .hover\:bg-\[\#5c1c40\]:hover { background-color: #0f766e !important; }
+        .text-\[\#7a2656\] { color: #0d9488 !important; }
+        .border-\[\#7a2656\] { border-color: #0d9488 !important; }
+        .border-t-\[\#7a2656\] { border-top-color: #0d9488 !important; }
+        .focus\:border-\[\#7a2656\]:focus { border-color: #0d9488 !important; }
+        .focus\:ring-\[\#7a2656\]\/20:focus { --tw-ring-color: rgba(13,148,136,0.2) !important; }
+        .bg-\[\#fdf1e4\] { background-color: #f0fdfa !important; }
+        .from-\[\#7a2656\] { --tw-gradient-from: #0d9488 var(--tw-gradient-from-position) !important; }
+        .to-\[\#a8447a\] { --tw-gradient-to: #14b8a6 var(--tw-gradient-to-position) !important; }
+
+        /* Sidebar background: swap the navy to a deep teal so the whole
+           app reads as one teal-branded product instead of navy+maroon */
+        #app-sidebar { background-color: #042f2e !important; border-right-color: #0f4c47 !important; }
+        #app-sidebar .border-\[\#13273e\] { border-color: #0f4c47 !important; }
+
+        /* Active sidebar nav item (currently bg-blue-600) */
+        #app-sidebar .bg-blue-600 { background-color: #0d9488 !important; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -193,12 +223,49 @@
             <span class="sidebar-text ml-2">Kanban Board</span>
         </a>
         
-        {% url 'tasks:calendar' as calendar_url %}
-        <a href="{{ calendar_url }}"
-            class="flex items-center px-3 py-2.5 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap {% if request.path == calendar_url %}bg-blue-600 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-            <i class="fas fa-calendar-days text-lg w-8 text-center flex-shrink-0"></i>
-            <span class="sidebar-text ml-2">Calendar</span>
-        </a>
+        <!-- 🟢 REAL TIME TRACKER DROPDOWN -->
+        <div class="mb-1">
+            <button onclick="toggleDropdownMenu('tracker-submenu', 'tracker-arrow', false)" class="w-full flex items-center justify-between px-3 py-2 mx-1 text-sm font-medium rounded-lg transition-colors whitespace-nowrap text-gray-300 hover:text-white hover:bg-white/10 cursor-pointer">
+                <div class="flex items-center">
+                    <i class="fas fa-stopwatch text-lg w-8 text-center flex-shrink-0"></i>
+                    <span class="sidebar-text ml-2">Real Time Tracker</span>
+                </div>
+                <i id="tracker-arrow" class="fas fa-chevron-down text-[10px] transition-transform duration-300 sidebar-text pr-2"></i>
+            </button>
+
+            <div id="tracker-submenu" class="hidden ml-8 pl-2 border-l border-[#1f3a5f] mt-1">
+                {% url 'tasks:time_tracker' as tracker_url %}
+                <a href="{{ tracker_url }}" class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors {% if request.path == tracker_url %}text-teal-300 font-semibold bg-white/5{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-clock w-4 text-center"></i>
+                    <span class="sidebar-text">Time Tracker</span>
+                </a>
+
+                {% if request.user.is_superuser %}
+                {% url 'tasks:live_monitoring' as monitoring_url %}
+                <a href="{{ monitoring_url }}" class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors {% if request.path == monitoring_url %}text-teal-300 font-semibold bg-white/5{% else %}text-gray-400 hover:text-white hover:bg-white/10{% endif %}">
+                    <div class="relative w-4 text-center">
+                        <i class="fas fa-desktop"></i>
+                        <span class="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    </div>
+                    <span class="sidebar-text">Live Monitoring</span>
+                </a>
+                {% endif %}
+
+                {% if request.user.is_superuser or request.user.profile.role == 'manager' %}
+                {% url 'tasks:time_tracker_reports' as reports_url %}
+                <a href="{{ reports_url }}" class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors {% if request.path == reports_url %}text-teal-300 font-semibold bg-white/5{% else %}text-gray-400 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-chart-column w-4 text-center"></i>
+                    <span class="sidebar-text">Reports</span>
+                </a>
+                {% endif %}
+
+                {% url 'tasks:calendar' as calendar_url %}
+                <a href="{{ calendar_url }}" class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors {% if request.path == calendar_url %}text-teal-300 font-semibold bg-white/5{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                    <i class="fas fa-calendar-days w-4 text-center"></i>
+                    <span class="sidebar-text">Calendar</span>
+                </a>
+            </div>
+        </div>
 
 
 <!-- 🟢 RESOURCES CLICK DROPDOWN SECTION (Compact) -->
@@ -242,26 +309,6 @@
     </div>
 </div>
 
-<!-- ================= TIME TRACKER LINK (Har User ke liye) ================= -->
-<a href="{% url 'tasks:time_tracker' %}" 
-   class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 
-   {% if request.resolver_match.url_name == 'time_tracker' %}bg-[#7a2656] text-white shadow-sm{% else %}text-gray-600 hover:bg-gray-100 hover:text-gray-900{% endif %}">
-    <i class="fas fa-stopwatch w-4 text-center text-sm"></i>
-    <span>Time Tracker</span>
-</a>
-
-<!-- ================= LIVE MONITORING LINK (Sirf Admin & Manager ke liye) ================= -->
-{% if request.user.profile.role == 'admin' or request.user.profile.role == 'manager' or request.user.is_superuser %}
-<a href="{% url 'tasks:live_monitoring' %}" 
-   class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 
-   {% if request.resolver_match.url_name == 'live_monitoring' %}bg-[#7a2656] text-white shadow-sm{% else %}text-gray-600 hover:bg-gray-100 hover:text-gray-900{% endif %}">
-    <div class="relative w-4 text-center">
-        <i class="fas fa-desktop text-sm"></i>
-        <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-    </div>
-    <span>Live Monitoring</span>
-</a>
-{% endif %}
 
     
         <!-- Leaves -->
@@ -554,7 +601,8 @@ function closeAllSubmenusExcept(currentMenuId) {
     const dropdowns = [
         { menu: 'dashboardSubMenu', arrow: 'dashboard-arrow' },
         { menu: 'resource-submenu', arrow: 'resource-arrow' },
-        { menu: 'settings-submenu', arrow: 'settings-arrow' }
+        { menu: 'settings-submenu', arrow: 'settings-arrow' },
+        { menu: 'tracker-submenu', arrow: 'tracker-arrow' }
     ];
 
     dropdowns.forEach(item => {

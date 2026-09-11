@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6 max-w-4xl mx-auto">
+  <a href="{% url 'tasks:time_tracker' %}" class="inline-flex items-center gap-1.5 text-sm text-teal-700 font-semibold hover:gap-2 transition-all mb-4">
+    <i class="fas fa-arrow-left text-xs"></i> Back to tracker
+  </a>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="w-12 h-12 rounded-full bg-gradient-to-br from-teal-600 to-teal-400 text-white flex items-center justify-center font-bold">
+        {{ target.username|slice:":1"|upper }}
+      </span>
+      <div>
+        <p class="font-bold text-gray-800">{{ target.get_full_name|default:target.username }}</p>
+        <p class="text-xs text-gray-500">@{{ target.username }}</p>
+      </div>
+    </div>
+    <div class="text-right">
+      <p class="text-xs text-gray-500">Total tracked</p>
+      <p class="text-xl font-bold text-gray-800">{{ total_formatted }}</p>
+    </div>
+  </div>
+
+  <form method="get" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4 flex flex-wrap gap-2 items-end">
+    <input type="text" name="project" value="{{ filters.project }}" placeholder="Filter by project..."
+           class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+    <input type="date" name="start" value="{{ filters.start }}" class="border border-gray-200 rounded-lg px-2 py-2 text-xs">
+    <span class="text-gray-400 text-xs self-center">to</span>
+    <input type="date" name="end" value="{{ filters.end }}" class="border border-gray-200 rounded-lg px-2 py-2 text-xs">
+    <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">Apply</button>
+    <a href="{% url 'tasks:user_time_history' target.id %}" class="border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-semibold px-4 py-2 rounded-lg transition">Clear</a>
+  </form>
+
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <table class="w-full text-left border-collapse text-xs">
+      <thead>
+        <tr class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+          <th class="px-5 py-3">Task</th>
+          <th class="px-5 py-3">Project</th>
+          <th class="px-5 py-3">Date</th>
+          <th class="px-5 py-3">Interval</th>
+          <th class="px-5 py-3 text-right">Duration</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 text-gray-700">
+        {% for entry in page_obj %}
+        <tr class="hover:bg-gray-50/70">
+          <td class="px-5 py-3">{{ entry.obj.description }}</td>
+          <td class="px-5 py-3"><span class="bg-teal-50 text-teal-700 px-2 py-0.5 rounded font-semibold text-[11px]">{{ entry.obj.project_name }}</span></td>
+          <td class="px-5 py-3">{{ entry.date_formatted }}</td>
+          <td class="px-5 py-3 font-mono">{{ entry.start_formatted }} – {{ entry.end_formatted }}</td>
+          <td class="px-5 py-3 text-right font-mono font-bold">{{ entry.formatted_duration }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400"><i class="fas fa-clock text-2xl mb-2 block"></i>No entries in this range.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if page_obj.has_other_pages %}
+    <div class="p-4 border-t border-gray-100 flex justify-end gap-1 bg-gray-50/50">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100">Prev</a>{% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}<span class="px-2.5 py-1 bg-teal-600 text-white rounded-md text-xs font-bold">{{ num }}</span>
+        {% else %}<a href="?page={{ num }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100">{{ num }}</a>{% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="px-2.5 py-1 border border-gray-200 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100">Next</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

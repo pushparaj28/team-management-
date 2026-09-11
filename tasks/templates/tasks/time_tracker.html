@@ -4,411 +4,2158 @@
 {% block title %}Time Tracker - Team Workload{% endblock %}
 
 {% block content %}
+
 <div class="p-6 max-w-7xl mx-auto space-y-6">
 
-  <!-- CSRF Protection Helper -->
-  <span id="csrfHelper" class="hidden">{% csrf_token %}</span>
+  <!-- ============================================================
+       CSRF PROTECTION
+  ============================================================ -->
 
-  <!-- ================= 1. CLOCKIFY PREMIUM TOP TRACKER BAR ================= -->
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 flex flex-col lg:flex-row items-center justify-between gap-4 transition-all">
-    
-    <!-- Description Input -->
+  <span id="csrfHelper" class="hidden">
+    {% csrf_token %}
+  </span>
+
+
+  <!-- ============================================================
+       1. TOP TIME TRACKER BAR
+  ============================================================ -->
+
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100
+              p-4 sm:p-5
+              flex flex-col lg:flex-row
+              items-center justify-between
+              gap-4 transition-all">
+
+    <!-- DESCRIPTION -->
     <div class="flex-1 w-full flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-purple-50 text-[#7a2656] flex items-center justify-center flex-shrink-0">
+
+      <div class="w-9 h-9 rounded-xl bg-purple-50
+                  text-[#7a2656]
+                  flex items-center justify-center
+                  flex-shrink-0">
+
         <i class="fas fa-keyboard text-xs"></i>
+
       </div>
-      <input type="text" id="taskDesc" placeholder="What are you working on right now?" 
-             value="{{ active_entry.description|default:'' }}"
-             {% if active_entry %}disabled{% endif %}
-             class="w-full text-sm font-semibold text-gray-800 placeholder-gray-400 outline-none bg-transparent">
+
+      <input
+        type="text"
+        id="taskDesc"
+        placeholder="What are you working on right now?"
+        value="{{ active_entry.description|default:'' }}"
+        {% if active_entry %}disabled{% endif %}
+        class="w-full text-sm font-semibold
+               text-gray-800
+               placeholder-gray-400
+               outline-none
+               bg-transparent"
+      >
+
     </div>
 
-    <!-- Right Controls: Dynamic Project Dropdown + Live Timer + Button -->
-    <div class="flex flex-wrap items-center justify-between lg:justify-end gap-3 w-full lg:w-auto">
-      
-      <!-- Dynamic Project / Task Selector -->
+
+    <!-- RIGHT CONTROLS -->
+    <div class="flex flex-wrap
+                items-center
+                justify-between
+                lg:justify-end
+                gap-3
+                w-full lg:w-auto">
+
+      <!-- PROJECT / TASK SELECTOR -->
+
       <div class="relative">
-        <select id="projectSelect" {% if active_entry %}disabled{% endif %}
-                class="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-xl px-3.5 py-2.5 pr-8 outline-none focus:border-[#7a2656] cursor-pointer max-w-[200px] truncate">
-          <option value="General Project" {% if not active_entry.project_name %}selected{% endif %}>📁 General Project</option>
+
+        <select
+          id="projectSelect"
+          {% if active_entry %}disabled{% endif %}
+          class="appearance-none
+                 bg-gray-50
+                 border border-gray-200
+                 text-gray-700
+                 text-xs font-bold
+                 rounded-xl
+                 px-3.5 py-2.5
+                 pr-8
+                 outline-none
+                 focus:border-[#7a2656]
+                 cursor-pointer
+                 max-w-[200px]
+                 truncate"
+        >
+
+          <option
+            value="General Project"
+            {% if not active_entry.project_name %}selected{% endif %}
+          >
+            📁 General Project
+          </option>
+
           {% for task in available_tasks %}
-            <option value="{{ task.title }}" {% if active_entry.project_name == task.title %}selected{% endif %}>
+
+            <option
+              value="{{ task.title }}"
+              {% if active_entry.project_name == task.title %}selected{% endif %}
+            >
               📌 {{ task.title }}
             </option>
+
           {% endfor %}
+
         </select>
-        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-gray-400 text-[10px] pointer-events-none"></i>
+
+        <i class="fas fa-chevron-down
+                  absolute right-3 top-3.5
+                  text-gray-400
+                  text-[10px]
+                  pointer-events-none">
+        </i>
+
       </div>
 
-      <!-- Live Digital Clock Display -->
-      <div class="font-mono text-2xl font-black text-gray-900 tracking-wider bg-gray-50 px-4 py-1.5 rounded-xl border border-gray-100 min-w-[130px] text-center" id="timerDisplay">
+
+      <!-- LIVE TIMER -->
+
+      <div
+        class="font-mono
+               text-2xl
+               font-black
+               text-gray-900
+               tracking-wider
+               bg-gray-50
+               px-4 py-1.5
+               rounded-xl
+               border border-gray-100
+               min-w-[130px]
+               text-center"
+        id="timerDisplay"
+      >
         00:00:00
       </div>
 
-      <!-- Start / Stop Button -->
+
+      <!-- START / STOP -->
+
       {% if active_entry %}
-        <button id="toggleBtn" onclick="stopTracking()" 
-                class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2">
-          <i class="fas fa-stop"></i> STOP
+
+        <button
+          id="toggleBtn"
+          onclick="stopTracking()"
+          class="bg-rose-600
+                 hover:bg-rose-700
+                 text-white
+                 text-xs
+                 font-bold
+                 px-6 py-2.5
+                 rounded-xl
+                 transition-all
+                 shadow-md
+                 hover:shadow-lg
+                 flex items-center gap-2"
+        >
+
+          <i class="fas fa-stop"></i>
+          STOP
+
         </button>
+
       {% else %}
-        <button id="toggleBtn" onclick="startTracking()" 
-                class="bg-[#7a2656] hover:bg-[#5c1c40] text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2">
-          <i class="fas fa-play"></i> START
+
+        <button
+          id="toggleBtn"
+          onclick="startTracking()"
+          class="bg-[#7a2656]
+                 hover:bg-[#5c1c40]
+                 text-white
+                 text-xs
+                 font-bold
+                 px-6 py-2.5
+                 rounded-xl
+                 transition-all
+                 shadow-md
+                 hover:shadow-lg
+                 flex items-center gap-2"
+        >
+
+          <i class="fas fa-play"></i>
+          START
+
         </button>
+
       {% endif %}
+
     </div>
+
   </div>
 
-  <!-- Screen Capture Alert Banner -->
-  <div id="monitoringNotice" class="{% if not active_entry %}hidden{% endif %} p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between shadow-xs">
+
+  <!-- ============================================================
+       SCREEN CAPTURE NOTICE
+  ============================================================ -->
+
+  <div
+    id="monitoringNotice"
+    class="{% if not active_entry %}hidden{% endif %}
+           p-3.5
+           rounded-xl
+           bg-teal-50
+           border border-teal-200
+           text-teal-900
+           text-xs
+           flex items-center
+           justify-between
+           shadow-xs"
+  >
+
     <div class="flex items-center gap-2.5">
-      <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-      <span class="font-semibold">Automated Screenshot Audit Active:</span>
-      <span class="text-amber-700">Capturing employee workstation screen every 10 seconds for real-time tracking.</span>
+
+      <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+
+      <span class="font-semibold">
+        Session tracking active:
+      </span>
+
+      <span class="text-teal-700">
+        Periodic screen captures are recorded while this session runs,
+        per company policy.
+      </span>
+
     </div>
-    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-200/60 uppercase">10s Interval</span>
+
+    <span
+      class="text-[10px]
+             font-bold
+             px-2 py-0.5
+             rounded
+             bg-teal-100
+             uppercase"
+    >
+      10s interval
+    </span>
+
   </div>
 
-  <video id="hiddenVideo" autoplay class="hidden"></video>
-  <canvas id="hiddenCanvas" class="hidden"></canvas>
 
-  <!-- ================= 2. ADMIN & MANAGER TEAM WORKLOAD AUDIT ================= -->
-  {% if is_admin_or_mgr %}
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-    
-    <!-- Header & Date Filter Tabs -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
-      <div>
-        <div class="flex items-center gap-2">
-          <h2 class="text-base font-bold text-gray-800">Team Workload & Hours</h2>
-          <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 text-[10px] font-bold rounded-full">
-            {{ active_employees_count }} Active Now
-          </span>
-        </div>
-        <p class="text-xs text-gray-400 mt-0.5">Real-time working hours and live session monitoring of team members.</p>
-      </div>
+  <!-- Hidden screen capture elements -->
 
-      <!-- Filter Buttons: Today / Week / Month / All -->
-      <div class="inline-flex p-1 bg-gray-100 rounded-xl text-xs font-semibold">
-        <a href="?filter=today" class="px-3 py-1.5 rounded-lg transition {% if current_filter == 'today' %}bg-white text-[#7a2656] shadow-sm font-bold{% else %}text-gray-500 hover:text-gray-800{% endif %}">Today</a>
-        <a href="?filter=week" class="px-3 py-1.5 rounded-lg transition {% if current_filter == 'week' %}bg-white text-[#7a2656] shadow-sm font-bold{% else %}text-gray-500 hover:text-gray-800{% endif %}">This Week</a>
-        <a href="?filter=month" class="px-3 py-1.5 rounded-lg transition {% if current_filter == 'month' %}bg-white text-[#7a2656] shadow-sm font-bold{% else %}text-gray-500 hover:text-gray-800{% endif %}">This Month</a>
-        <a href="?filter=all" class="px-3 py-1.5 rounded-lg transition {% if current_filter == 'all' %}bg-white text-[#7a2656] shadow-sm font-bold{% else %}text-gray-500 hover:text-gray-800{% endif %}">All Time</a>
-      </div>
-    </div>
+  <video
+    id="hiddenVideo"
+    autoplay
+    class="hidden">
+  </video>
 
-    <!-- Team Cards Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {% for emp in team_summary %}
-      <div class="p-4 rounded-xl border {% if emp.active_session %}border-emerald-200 bg-emerald-50/20 shadow-xs{% else %}border-gray-100 bg-white{% endif %} flex flex-col justify-between space-y-3">
-        
-        <!-- Member Info -->
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2.5 min-w-0">
-            {% if emp.user.profile.profile_pic %}
-              <img src="{{ emp.user.profile.profile_pic.url }}" class="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100 flex-shrink-0">
+  <canvas
+    id="hiddenCanvas"
+    class="hidden">
+  </canvas>
+
+
+  <!-- ============================================================
+       2. UNIFIED TIME TRACKER WORKSPACE
+       
+       ADMIN:
+         Team = All managers + employees
+         My Work = Admin's own entries
+
+       MANAGER:
+         Team = Their employees
+         My Work = Manager's own entries
+
+       EMPLOYEE:
+         My Work only
+  ============================================================ -->
+
+  {% with active_scope=scope|default:"team" %}
+
+  <div
+    class="bg-white
+           rounded-2xl
+           shadow-sm
+           border border-gray-100
+           overflow-hidden"
+  >
+
+    <!-- ==========================================================
+         WORKSPACE HEADER
+    ========================================================== -->
+
+    <div
+      class="px-6 py-5
+             border-b border-gray-100"
+    >
+
+      <div
+        class="flex flex-col
+               lg:flex-row
+               lg:items-center
+               lg:justify-between
+               gap-4"
+      >
+
+        <!-- ======================================================
+             TITLE
+        ====================================================== -->
+
+        <div>
+
+          <div class="flex items-center gap-2">
+
+            {% if active_scope == 'my' or not is_admin_or_mgr %}
+
+              <h2 class="text-base font-bold text-gray-800">
+                My Work & Hours
+              </h2>
+
             {% else %}
-              <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-[#7a2656] text-white flex items-center justify-center font-bold text-xs uppercase flex-shrink-0">
-                {{ emp.user.username|slice:":1" }}
-              </div>
+
+              <h2 class="text-base font-bold text-gray-800">
+                Team Workload & Hours
+              </h2>
+
+              <span
+                class="px-2 py-0.5
+                       bg-emerald-50
+                       text-emerald-700
+                       ring-1 ring-emerald-200
+                       text-[10px]
+                       font-bold
+                       rounded-full"
+              >
+
+                {{ active_employees_count }} Active Now
+
+              </span>
+
             {% endif %}
-            <div class="min-w-0">
-              <p class="text-xs font-bold text-gray-800 truncate">{{ emp.user.get_full_name|default:emp.user.username }}</p>
-              <p class="text-[10px] text-gray-400 truncate">@{{ emp.user.username }}</p>
-            </div>
+
           </div>
 
-          <!-- Status Indicator -->
-          {% if emp.active_session %}
-            <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active
-            </span>
-          {% else %}
-            <span class="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Offline</span>
+
+          <p class="text-xs text-gray-400 mt-1">
+
+            {% if active_scope == 'my' or not is_admin_or_mgr %}
+
+              Your tracked work and time entries.
+
+            {% else %}
+
+              Real-time working hours and live session monitoring
+              of team members.
+
+            {% endif %}
+
+          </p>
+
+        </div>
+
+
+        <!-- ======================================================
+             CONTROLS
+        ====================================================== -->
+
+        <div class="flex flex-wrap
+                    items-center
+                    gap-2">
+
+
+          <!-- ====================================================
+               TEAM / MY WORK SWITCH
+          ==================================================== -->
+
+          {% if is_admin_or_mgr %}
+
+            <div
+              class="inline-flex
+                     p-1
+                     bg-gray-100
+                     rounded-xl
+                     text-xs
+                     font-semibold"
+            >
+
+              <!-- TEAM -->
+
+              <a
+                href="?scope=team&filter={{ current_filter|default:'today' }}"
+                class="px-3 py-1.5
+                       rounded-lg
+                       transition
+                       {% if active_scope == 'team' %}
+                         bg-white
+                         text-[#7a2656]
+                         shadow-sm
+                         font-bold
+                       {% else %}
+                         text-gray-500
+                         hover:text-gray-800
+                       {% endif %}"
+              >
+
+                <i class="fas fa-users mr-1"></i>
+
+                Team
+
+              </a>
+
+
+              <!-- MY WORK -->
+
+              <a
+                href="?scope=my&filter={{ current_filter|default:'today' }}"
+                class="px-3 py-1.5
+                       rounded-lg
+                       transition
+                       {% if active_scope == 'my' %}
+                         bg-white
+                         text-[#7a2656]
+                         shadow-sm
+                         font-bold
+                       {% else %}
+                         text-gray-500
+                         hover:text-gray-800
+                       {% endif %}"
+              >
+
+                <i class="fas fa-user mr-1"></i>
+
+                My Work
+
+              </a>
+
+            </div>
+
           {% endif %}
+
+
+          <!-- ====================================================
+               DATE FILTER
+          ==================================================== -->
+
+          <div
+            class="inline-flex
+                   p-1
+                   bg-gray-100
+                   rounded-xl
+                   text-xs
+                   font-semibold"
+          >
+
+            <!-- TODAY -->
+
+            <a
+              href="?scope={{ active_scope }}&filter=today"
+              class="px-3 py-1.5
+                     rounded-lg
+                     transition
+                     {% if current_filter == 'today' %}
+                       bg-white
+                       text-[#7a2656]
+                       shadow-sm
+                       font-bold
+                     {% else %}
+                       text-gray-500
+                       hover:text-gray-800
+                     {% endif %}"
+            >
+              Today
+            </a>
+
+
+            <!-- WEEK -->
+
+            <a
+              href="?scope={{ active_scope }}&filter=week"
+              class="px-3 py-1.5
+                     rounded-lg
+                     transition
+                     {% if current_filter == 'week' %}
+                       bg-white
+                       text-[#7a2656]
+                       shadow-sm
+                       font-bold
+                     {% else %}
+                       text-gray-500
+                       hover:text-gray-800
+                     {% endif %}"
+            >
+              This Week
+            </a>
+
+
+            <!-- MONTH -->
+
+            <a
+              href="?scope={{ active_scope }}&filter=month"
+              class="px-3 py-1.5
+                     rounded-lg
+                     transition
+                     {% if current_filter == 'month' %}
+                       bg-white
+                       text-[#7a2656]
+                       shadow-sm
+                       font-bold
+                     {% else %}
+                       text-gray-500
+                       hover:text-gray-800
+                     {% endif %}"
+            >
+              This Month
+            </a>
+
+
+            <!-- ALL TIME -->
+
+            <a
+              href="?scope={{ active_scope }}&filter=all"
+              class="px-3 py-1.5
+                     rounded-lg
+                     transition
+                     {% if current_filter == 'all' %}
+                       bg-white
+                       text-[#7a2656]
+                       shadow-sm
+                       font-bold
+                     {% else %}
+                       text-gray-500
+                       hover:text-gray-800
+                     {% endif %}"
+            >
+              All Time
+            </a>
+
+          </div>
+
         </div>
 
-        <!-- Task Info (If working) -->
-        <div class="text-[11px] bg-gray-50 rounded-lg p-2 border border-gray-100/80">
-          {% if emp.active_session %}
-            <span class="text-gray-400 block text-[9px] uppercase font-bold">Working on:</span>
-            <span class="font-semibold text-gray-800 line-clamp-1">{{ emp.active_session.description }}</span>
-            <span class="text-indigo-600 text-[10px] block mt-0.5 font-medium">📁 {{ emp.active_session.project_name }}</span>
-          {% else %}
-            <span class="text-gray-400 italic">No active session right now</span>
-          {% endif %}
-        </div>
-
-        <!-- Total Work Time Card Footer -->
-        <div class="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
-          <span class="text-gray-400 text-[11px]">Tracked ({{ current_filter|title }}):</span>
-          <span class="font-mono font-bold text-gray-800 text-sm">{{ emp.total_formatted }}</span>
-        </div>
       </div>
-      {% endfor %}
+
     </div>
-  </div>
-  {% endif %}
 
-  <!-- ================= 3. MY TIME LOG HISTORY ================= -->
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/40">
-      <div>
-        <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider">My Time Entries</h3>
-        <p class="text-[11px] text-gray-400">Detailed list of your completed work intervals.</p>
-      </div>
-      <div class="text-right">
-        <span class="text-[11px] text-gray-400 block">Total Work Duration</span>
-        <span class="text-base font-extrabold text-[#7a2656] font-mono">{{ user_total_time }}</span>
-      </div>
-    </div>
 
-    <!-- History Table -->
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse text-xs">
-        <thead>
-          <tr class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
-            <th class="px-5 py-3">Task Description</th>
-            <th class="px-5 py-3">Project</th>
-            <th class="px-5 py-3">Date</th>
-            <th class="px-5 py-3">Time Interval</th>
-            <th class="px-5 py-3 text-right">Duration</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100 text-gray-700">
-          {% for entry in history_entries %}
-          <tr class="hover:bg-gray-50/70 transition-colors">
-            <td class="px-5 py-3.5 font-bold text-gray-800">
-              <div class="flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span>{{ entry.obj.description }}</span>
+    <!-- ==========================================================
+         TEAM MODE
+    ========================================================== -->
+
+    {% if is_admin_or_mgr and active_scope == 'team' %}
+
+      <div class="p-6">
+
+        {% if team_summary %}
+
+          <!-- ====================================================
+               TEAM MEMBER CARDS
+          ==================================================== -->
+
+          <div
+            class="grid
+                   grid-cols-1
+                   sm:grid-cols-2
+                   lg:grid-cols-3
+                   xl:grid-cols-4
+                   gap-4"
+          >
+
+            {% for emp in team_summary %}
+
+              <div
+                class="p-4
+                       rounded-xl
+                       border
+                       {% if emp.active_session %}
+                         border-emerald-200
+                         bg-emerald-50/20
+                         shadow-sm
+                       {% else %}
+                         border-gray-100
+                         bg-white
+                       {% endif %}
+                       flex flex-col
+                       justify-between
+                       space-y-3"
+              >
+
+                <!-- =================================================
+                     MEMBER INFORMATION
+                ================================================= -->
+
+                <div
+                  class="flex items-center
+                         justify-between"
+                >
+
+                  <div
+                    class="flex items-center
+                           gap-2.5
+                           min-w-0"
+                  >
+
+                    <!-- PROFILE IMAGE -->
+
+                    {% if emp.user.profile.profile_pic %}
+
+                      <img
+                        src="{{ emp.user.profile.profile_pic.url }}"
+                        class="w-9 h-9
+                               rounded-full
+                               object-cover
+                               ring-2 ring-gray-100
+                               flex-shrink-0"
+                        alt="{{ emp.user.username }}"
+                      >
+
+                    {% else %}
+
+                      <div
+                        class="w-9 h-9
+                               rounded-full
+                               bg-gradient-to-br
+                               from-indigo-500
+                               to-[#7a2656]
+                               text-white
+                               flex items-center
+                               justify-center
+                               font-bold
+                               text-xs
+                               uppercase
+                               flex-shrink-0"
+                      >
+
+                        {{ emp.user.username|slice:":1" }}
+
+                      </div>
+
+                    {% endif %}
+
+
+                    <!-- NAME -->
+
+                    <div class="min-w-0">
+
+                      <p
+                        class="text-xs
+                               font-bold
+                               text-gray-800
+                               truncate"
+                      >
+                        {{ emp.user.get_full_name|default:emp.user.username }}
+                      </p>
+
+                      <p
+                        class="text-[10px]
+                               text-gray-400
+                               truncate"
+                      >
+                        @{{ emp.user.username }}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+                  <!-- =================================================
+                       ONLINE / OFFLINE STATUS
+                  ================================================= -->
+
+                  {% if emp.active_session %}
+
+                    <span
+                      class="inline-flex
+                             items-center
+                             gap-1
+                             bg-emerald-100
+                             text-emerald-800
+                             text-[10px]
+                             font-bold
+                             px-2 py-0.5
+                             rounded-full"
+                    >
+
+                      <span
+                        class="w-1.5 h-1.5
+                               rounded-full
+                               bg-emerald-500
+                               animate-pulse">
+                      </span>
+
+                      Active
+
+                    </span>
+
+                  {% else %}
+
+                    <span
+                      class="text-[10px]
+                             font-semibold
+                             text-gray-400
+                             bg-gray-100
+                             px-2 py-0.5
+                             rounded-full"
+                    >
+                      Offline
+                    </span>
+
+                  {% endif %}
+
+                </div>
+
+
+                <!-- =================================================
+                     CURRENT SESSION
+                ================================================= -->
+
+                <div
+                  class="text-[11px]
+                         bg-gray-50
+                         rounded-lg
+                         p-2
+                         border border-gray-100/80"
+                >
+
+                  {% if emp.active_session %}
+
+                    <span
+                      class="text-gray-400
+                             block
+                             text-[9px]
+                             uppercase
+                             font-bold"
+                    >
+                      Working on:
+                    </span>
+
+                    <span
+                      class="font-semibold
+                             text-gray-800
+                             line-clamp-1"
+                    >
+                      {{ emp.active_session.description }}
+                    </span>
+
+                    <span
+                      class="text-indigo-600
+                             text-[10px]
+                             block
+                             mt-0.5
+                             font-medium"
+                    >
+                      📁 {{ emp.active_session.project_name }}
+                    </span>
+
+                  {% else %}
+
+                    <span class="text-gray-400 italic">
+                      No active session right now
+                    </span>
+
+                  {% endif %}
+
+                </div>
+
+
+                <!-- =================================================
+                     TOTAL WORK TIME
+                ================================================= -->
+
+                <div
+                  class="pt-2
+                         border-t border-gray-100
+                         flex items-center
+                         justify-between"
+                >
+
+                  <span
+                    class="text-gray-400
+                           text-[11px]"
+                  >
+                    Tracked
+                    ({{ current_filter|default:'today'|title }}):
+                  </span>
+
+                  <span
+                    class="font-mono
+                           font-bold
+                           text-gray-800
+                           text-sm"
+                  >
+                    {{ emp.total_formatted }}
+                  </span>
+
+                </div>
+                <a
+                  href="{% url 'tasks:user_time_history' emp.user.id %}"
+                  class="w-full inline-flex items-center justify-center gap-2
+                        px-3 py-2 rounded-lg
+                        bg-gray-50 hover:bg-teal-50
+                        border border-gray-100 hover:border-teal-200
+                        text-gray-600 hover:text-teal-700
+                        text-[10px] font-bold
+                        transition-all"
+              >
+                  <i class="fas fa-clock"></i>
+                  View Time History
+              </a>
+
               </div>
-            </td>
-            <td class="px-5 py-3.5">
-              <span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 font-semibold text-[11px] ring-1 ring-indigo-100">
-                📁 {{ entry.obj.project_name }}
+
+            {% endfor %}
+
+          </div>
+
+
+          <!-- ====================================================
+               TEAM PAGINATION
+          ==================================================== -->
+
+          {% if page_obj and page_obj.has_other_pages %}
+
+            <div
+              class="flex
+                     flex-col
+                     sm:flex-row
+                     sm:items-center
+                     sm:justify-between
+                     gap-3
+                     mt-5
+                     pt-4
+                     border-t border-gray-100"
+            >
+
+              <span
+                class="text-[11px]
+                       text-gray-400"
+              >
+
+                Showing
+                {{ page_obj.start_index }}
+                –
+                {{ page_obj.end_index }}
+                of
+                {{ page_obj.paginator.count }}
+                members
+
               </span>
-            </td>
-            <td class="px-5 py-3.5 text-gray-500 font-medium">{{ entry.date_formatted }}</td>
-            <td class="px-5 py-3.5 text-gray-500 font-mono">
-              {{ entry.start_formatted }} – {{ entry.end_formatted }}
-            </td>
-            <td class="px-5 py-3.5 text-right font-mono font-bold text-gray-900">
-              {{ entry.formatted_duration }}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="5" class="py-12 text-center text-gray-400">
-              <i class="far fa-clock text-3xl mb-2 block"></i>
-              No logs found for this period. Click <strong>START</strong> above to track your work.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+
+
+              <div
+                class="flex
+                       items-center
+                       gap-1
+                       flex-wrap"
+              >
+
+                <!-- PREVIOUS -->
+
+                {% if page_obj.has_previous %}
+
+                  <a
+                    href="?scope=team&filter={{ current_filter }}&page={{ page_obj.previous_page_number }}"
+                    class="px-3 py-1.5
+                           border border-gray-200
+                           rounded-lg
+                           text-xs
+                           font-semibold
+                           text-gray-600
+                           hover:bg-gray-50"
+                  >
+                    Previous
+                  </a>
+
+                {% endif %}
+
+
+                <!-- PAGE NUMBERS -->
+
+                {% for num in page_obj.paginator.page_range %}
+
+                  {% if page_obj.number == num %}
+
+                    <span
+                      class="px-3 py-1.5
+                             rounded-lg
+                             bg-[#7a2656]
+                             text-white
+                             text-xs
+                             font-bold"
+                    >
+                      {{ num }}
+                    </span>
+
+                  {% else %}
+
+                    <a
+                      href="?scope=team&filter={{ current_filter }}&page={{ num }}"
+                      class="px-3 py-1.5
+                             border border-gray-200
+                             rounded-lg
+                             text-xs
+                             font-semibold
+                             text-gray-600
+                             hover:bg-gray-50"
+                    >
+                      {{ num }}
+                    </a>
+
+                  {% endif %}
+
+                {% endfor %}
+
+
+                <!-- NEXT -->
+
+                {% if page_obj.has_next %}
+
+                  <a
+                    href="?scope=team&filter={{ current_filter }}&page={{ page_obj.next_page_number }}"
+                    class="px-3 py-1.5
+                           border border-gray-200
+                           rounded-lg
+                           text-xs
+                           font-semibold
+                           text-gray-600
+                           hover:bg-gray-50"
+                  >
+                    Next
+                  </a>
+
+                {% endif %}
+
+              </div>
+
+            </div>
+
+          {% endif %}
+
+
+        {% else %}
+
+          <!-- NO TEAM MEMBERS -->
+
+          <div class="py-12 text-center">
+
+            <i
+              class="fas fa-users
+                     text-3xl
+                     text-gray-300
+                     mb-3"
+            ></i>
+
+            <p
+              class="text-sm
+                     font-semibold
+                     text-gray-500"
+            >
+              No team members found
+            </p>
+
+          </div>
+
+        {% endif %}
+
+      </div>
+
+
+    <!-- ==========================================================
+         MY WORK MODE
+         
+         IMPORTANT:
+         This replaces the old separate "My Time Entries"
+         section. There is ONLY ONE workspace card.
+    ========================================================== -->
+
+    {% else %}
+
+      <div class="p-6">
+
+        <!-- ====================================================
+             MY WORK SUMMARY
+        ==================================================== -->
+
+        <div
+          class="flex
+                 flex-col
+                 sm:flex-row
+                 sm:items-center
+                 sm:justify-between
+                 gap-3
+                 mb-5"
+        >
+
+          <div>
+
+            <p
+              class="text-xs
+                     font-bold
+                     text-gray-700
+                     uppercase
+                     tracking-wider"
+            >
+              My Time Entries
+            </p>
+
+            <p
+              class="text-[11px]
+                     text-gray-400
+                     mt-1"
+            >
+              Detailed list of your tracked work for
+              {{ current_filter|default:'today'|title|lower }}.
+            </p>
+
+          </div>
+
+
+          <!-- TOTAL WORK DURATION -->
+
+          <div class="text-right">
+
+            <span
+              class="text-[10px]
+                     text-gray-400
+                     block
+                     uppercase"
+            >
+              Total Work Duration
+            </span>
+
+            <span
+              class="text-base
+                     font-extrabold
+                     text-[#7a2656]
+                     font-mono"
+            >
+              {{ my_total_time|default:user_total_time|default:"00m 00s" }}
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- ====================================================
+             MY WORK TABLE
+        ==================================================== -->
+
+        <div
+          class="overflow-x-auto
+                 rounded-xl
+                 border border-gray-100"
+        >
+
+          <table
+            class="w-full
+                   text-left
+                   border-collapse
+                   text-xs"
+          >
+
+            <!-- TABLE HEADER -->
+
+            <thead>
+
+              <tr
+                class="bg-gray-50
+                       text-[10px]
+                       font-bold
+                       text-gray-400
+                       uppercase
+                       tracking-wider
+                       border-b border-gray-100"
+              >
+
+                <th class="px-5 py-3">
+                  Task Description
+                </th>
+
+                <th class="px-5 py-3">
+                  Project
+                </th>
+
+                <th class="px-5 py-3">
+                  Date
+                </th>
+
+                <th class="px-5 py-3">
+                  Time Interval
+                </th>
+
+                <th class="px-5 py-3 text-right">
+                  Duration
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <!-- TABLE BODY -->
+
+            <tbody
+              class="divide-y
+                     divide-gray-100
+                     text-gray-700"
+            >
+
+
+              <!-- =================================================
+                   CURRENTLY RUNNING ENTRY
+              ================================================= -->
+
+              {% if active_entry %}
+
+                <tr
+                  class="bg-emerald-50/30"
+                >
+
+                  <!-- DESCRIPTION -->
+
+                  <td
+                    class="px-5 py-3.5
+                           font-bold
+                           text-gray-800"
+                  >
+
+                    <div
+                      class="flex
+                             items-center
+                             gap-2"
+                    >
+
+                      <span
+                        class="w-2 h-2
+                               rounded-full
+                               bg-emerald-500
+                               animate-pulse
+                               flex-shrink-0"
+                      ></span>
+
+                      <span>
+                        {{ active_entry.description }}
+                      </span>
+
+                      <span
+                        class="text-[9px]
+                               font-bold
+                               bg-emerald-100
+                               text-emerald-700
+                               px-1.5 py-0.5
+                               rounded-full"
+                      >
+                        RUNNING
+                      </span>
+
+                    </div>
+
+                  </td>
+
+
+                  <!-- PROJECT -->
+
+                  <td class="px-5 py-3.5">
+
+                    <span
+                      class="px-2.5 py-1
+                             rounded-md
+                             bg-indigo-50
+                             text-indigo-700
+                             font-semibold
+                             text-[11px]
+                             ring-1
+                             ring-indigo-100"
+                    >
+
+                      📁 {{ active_entry.project_name }}
+
+                    </span>
+
+                  </td>
+
+
+                  <!-- DATE -->
+
+                  <td
+                    class="px-5 py-3.5
+                           text-gray-500
+                           font-medium"
+                  >
+                    Today
+                  </td>
+
+
+                  <!-- TIME -->
+
+                  <td
+                    class="px-5 py-3.5
+                           text-gray-500
+                           font-mono"
+                  >
+
+                    {{ active_entry.start_time|date:"h:i A" }}
+                    –
+                    Running
+
+                  </td>
+
+
+                  <!-- DURATION -->
+
+                  <td
+                    class="px-5 py-3.5
+                           text-right
+                           font-mono
+                           font-bold
+                           text-emerald-600"
+                  >
+
+                    <span id="myWorkLiveDuration">
+                      Tracking...
+                    </span>
+
+                  </td>
+
+                </tr>
+
+              {% endif %}
+
+
+              <!-- =================================================
+                   COMPLETED ENTRIES
+              ================================================= -->
+
+              {% for entry in my_entries|default:history_entries %}
+
+                <tr
+                  class="hover:bg-gray-50/70
+                         transition-colors"
+                >
+
+                  <!-- DESCRIPTION -->
+
+                  <td
+                    class="px-5 py-3.5
+                           font-bold
+                           text-gray-800"
+                  >
+
+                    <div
+                      class="flex
+                             items-center
+                             gap-2"
+                    >
+
+                      <span
+                        class="w-1.5 h-1.5
+                               rounded-full
+                               bg-gray-300
+                               flex-shrink-0"
+                      ></span>
+
+                      <span>
+                        {{ entry.obj.description }}
+                      </span>
+
+                    </div>
+
+                  </td>
+
+
+                  <!-- PROJECT -->
+
+                  <td class="px-5 py-3.5">
+
+                    <span
+                      class="px-2.5 py-1
+                             rounded-md
+                             bg-indigo-50
+                             text-indigo-700
+                             font-semibold
+                             text-[11px]
+                             ring-1
+                             ring-indigo-100"
+                    >
+
+                      📁 {{ entry.obj.project_name }}
+
+                    </span>
+
+                  </td>
+
+
+                  <!-- DATE -->
+
+                  <td
+                    class="px-5 py-3.5
+                           text-gray-500
+                           font-medium"
+                  >
+
+                    {{ entry.date_formatted }}
+
+                  </td>
+
+
+                  <!-- TIME -->
+
+                  <td
+                    class="px-5 py-3.5
+                           text-gray-500
+                           font-mono"
+                  >
+
+                    {{ entry.start_formatted }}
+                    –
+                    {{ entry.end_formatted }}
+
+                  </td>
+
+
+                  <!-- DURATION -->
+
+                  <td
+                    class="px-5 py-3.5
+                           text-right
+                           font-mono
+                           font-bold
+                           text-gray-900"
+                  >
+
+                    {{ entry.formatted_duration }}
+
+                  </td>
+
+                </tr>
+
+
+              {% empty %}
+
+                {% if not active_entry %}
+
+                  <tr>
+
+                    <td
+                      colspan="5"
+                      class="py-12
+                             text-center
+                             text-gray-400"
+                    >
+
+                      <i
+                        class="far fa-clock
+                               text-3xl
+                               mb-2
+                               block"
+                      ></i>
+
+                      <p class="text-sm">
+
+                        No logs found for this period.
+
+                      </p>
+
+                      <p
+                        class="text-[11px]
+                               mt-1"
+                      >
+
+                        Click
+                        <strong>START</strong>
+                        above to track your work.
+
+                      </p>
+
+                    </td>
+
+                  </tr>
+
+                {% endif %}
+
+              {% endfor %}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    {% endif %}
+
   </div>
+
+  {% endwith %}
+
 
 </div>
 
-<!-- Tracker JavaScript Engine -->
+
+<!-- ============================================================
+     TRACKER JAVASCRIPT ENGINE
+     
+     Existing functionality preserved:
+       - Timer
+       - Screen sharing
+       - Auto screenshots
+       - Start
+       - Stop
+       - CSRF
+============================================================ -->
+
 <script>
+
 let currentEntryId = "{{ active_entry.id|default:'' }}";
+
 let timerInterval = null;
+
 let captureInterval = null;
+
 let mediaStream = null;
+
 let secondsPassed = 0;
 
+
+/* ============================================================
+   INITIALIZE ACTIVE TIMER
+============================================================ */
+
 {% if active_entry %}
+
   secondsPassed = {{ active_entry.duration_seconds }};
+
   runTimer();
+
 {% endif %}
 
-// Helper to get CSRF Token
+
+/* ============================================================
+   CSRF TOKEN
+============================================================ */
+
 function getCSRFToken() {
-  const hiddenInput = document.querySelector('#csrfHelper input[name=csrfmiddlewaretoken]');
-  if (hiddenInput && hiddenInput.value) return hiddenInput.value;
+
+  const hiddenInput =
+    document.querySelector(
+      '#csrfHelper input[name=csrfmiddlewaretoken]'
+    );
+
+  if (hiddenInput && hiddenInput.value) {
+    return hiddenInput.value;
+  }
+
 
   let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, 10) === 'csrftoken=') {
-        cookieValue = decodeURIComponent(cookie.substring(10));
+
+
+  if (
+    document.cookie &&
+    document.cookie !== ''
+  ) {
+
+    const cookies =
+      document.cookie.split(';');
+
+
+    for (
+      let i = 0;
+      i < cookies.length;
+      i++
+    ) {
+
+      const cookie =
+        cookies[i].trim();
+
+
+      if (
+        cookie.substring(0, 10)
+        === 'csrftoken='
+      ) {
+
+        cookieValue =
+          decodeURIComponent(
+            cookie.substring(10)
+          );
+
         break;
+
       }
+
     }
+
   }
+
+
   return cookieValue;
+
 }
+
+
+/* ============================================================
+   FORMAT TIMER
+============================================================ */
+
+function formatTimer(seconds) {
+
+  const hrs =
+    String(
+      Math.floor(seconds / 3600)
+    ).padStart(2, '0');
+
+
+  const mins =
+    String(
+      Math.floor(
+        (seconds % 3600) / 60
+      )
+    ).padStart(2, '0');
+
+
+  const secs =
+    String(
+      seconds % 60
+    ).padStart(2, '0');
+
+
+  return `${hrs}:${mins}:${secs}`;
+
+}
+
+
+/* ============================================================
+   RUN TIMER
+============================================================ */
 
 function runTimer() {
+
   clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    secondsPassed++;
-    let hrs = String(Math.floor(secondsPassed / 3600)).padStart(2, '0');
-    let mins = String(Math.floor((secondsPassed % 3600) / 60)).padStart(2, '0');
-    let secs = String(secondsPassed % 60).padStart(2, '0');
-    document.getElementById('timerDisplay').innerText = `${hrs}:${mins}:${secs}`;
-  }, 1000);
+
+
+  // Immediately display current value
+  document.getElementById(
+    'timerDisplay'
+  ).innerText =
+    formatTimer(secondsPassed);
+
+
+  updateMyWorkLiveDuration();
+
+
+  timerInterval =
+    setInterval(() => {
+
+      secondsPassed++;
+
+
+      document.getElementById(
+        'timerDisplay'
+      ).innerText =
+        formatTimer(secondsPassed);
+
+
+      updateMyWorkLiveDuration();
+
+
+    }, 1000);
+
 }
 
-// 🟢 START TRACKER
-async function startTracking() {
-  const desc = document.getElementById('taskDesc').value || "Working on tasks";
-  const project = document.getElementById('projectSelect').value || "General Project";
 
-  // 1. Browser Screen Sharing Prompt
-  try {
-    mediaStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { cursor: "always" },
-      audio: false
-    });
+/* ============================================================
+   UPDATE MY WORK LIVE DURATION
+============================================================ */
 
-    const video = document.getElementById('hiddenVideo');
-    if (video) video.srcObject = mediaStream;
+function updateMyWorkLiveDuration() {
 
-    // Handle user clicking native browser "Stop sharing" bar
-    mediaStream.getVideoTracks()[0].onended = function () {
-      stopTracking();
-    };
-  } catch (permErr) {
-    console.warn("Screen share cancelled or blocked:", permErr);
-    alert("Tracking shuru karne ke liye screen share allow karna zaroori hai.");
+  const liveElement =
+    document.getElementById(
+      'myWorkLiveDuration'
+    );
+
+
+  if (!liveElement) {
     return;
   }
 
-  // 2. Start Backend Session
+
+  liveElement.innerText =
+    formatTimer(secondsPassed);
+
+}
+
+
+/* ============================================================
+   START TRACKER
+============================================================ */
+
+async function startTracking() {
+
+  const descElement =
+    document.getElementById(
+      'taskDesc'
+    );
+
+
+  const projectElement =
+    document.getElementById(
+      'projectSelect'
+    );
+
+
+  const desc =
+    descElement?.value
+    || "Working on tasks";
+
+
+  const project =
+    projectElement?.value
+    || "General Project";
+
+
+  /* ==========================================================
+     1. BROWSER SCREEN SHARING
+  ========================================================== */
+
   try {
-    const csrftoken = getCSRFToken();
-    const payload = new FormData();
-    payload.append('description', desc);
-    payload.append('project', project);
 
-    const response = await fetch("{% url 'tasks:start_tracker' %}", {
-      method: "POST",
-      headers: {
-        "X-CSRFToken": csrftoken,
-        "X-Requested-With": "XMLHttpRequest"
-      },
-      body: payload
-    });
+    mediaStream =
+      await navigator.mediaDevices.getDisplayMedia({
 
-    const data = await response.json();
+        video: {
+          cursor: "always"
+        },
 
-    if (response.ok && data.status === 'started') {
-      currentEntryId = data.entry_id;
+        audio: false
+
+      });
+
+
+    const video =
+      document.getElementById(
+        'hiddenVideo'
+      );
+
+
+    if (video) {
+
+      video.srcObject =
+        mediaStream;
+
+    }
+
+
+    /* ========================================================
+       HANDLE USER STOPPING SCREEN SHARE
+    ======================================================== */
+
+    mediaStream
+      .getVideoTracks()[0]
+      .onended = function () {
+
+        stopTracking();
+
+      };
+
+
+  } catch (permErr) {
+
+    console.warn(
+      "Screen share cancelled or blocked:",
+      permErr
+    );
+
+
+    alert(
+      "Tracking shuru karne ke liye screen share allow karna zaroori hai."
+    );
+
+
+    return;
+
+  }
+
+
+  /* ==========================================================
+     2. START BACKEND SESSION
+  ========================================================== */
+
+  try {
+
+    const csrftoken =
+      getCSRFToken();
+
+
+    const payload =
+      new FormData();
+
+
+    payload.append(
+      'description',
+      desc
+    );
+
+
+    payload.append(
+      'project',
+      project
+    );
+
+
+    const response =
+      await fetch(
+        "{% url 'tasks:start_tracker' %}",
+        {
+          method: "POST",
+
+          headers: {
+
+            "X-CSRFToken":
+              csrftoken,
+
+            "X-Requested-With":
+              "XMLHttpRequest"
+
+          },
+
+          body: payload
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      response.ok &&
+      data.status === 'started'
+    ) {
+
+      currentEntryId =
+        data.entry_id;
+
+
       secondsPassed = 0;
+
+
       runTimer();
 
-      document.getElementById('monitoringNotice')?.classList.remove('hidden');
-      const btn = document.getElementById('toggleBtn');
+
+      /* ====================================================
+         SHOW MONITORING NOTICE
+      ==================================================== */
+
+      document
+        .getElementById(
+          'monitoringNotice'
+        )
+        ?.classList
+        .remove('hidden');
+
+
+      /* ====================================================
+         CHANGE BUTTON TO STOP
+      ==================================================== */
+
+      const btn =
+        document.getElementById(
+          'toggleBtn'
+        );
+
+
       if (btn) {
-        btn.className = "bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2";
-        btn.innerHTML = `<i class="fas fa-stop"></i> STOP`;
-        btn.setAttribute('onclick', 'stopTracking()');
+
+        btn.className =
+          "bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2";
+
+
+        btn.innerHTML =
+          `<i class="fas fa-stop"></i> STOP`;
+
+
+        btn.setAttribute(
+          'onclick',
+          'stopTracking()'
+        );
+
       }
-      
-      document.getElementById('taskDesc').disabled = true;
-      document.getElementById('projectSelect').disabled = true;
 
-      // Start 10s auto screenshot capture
-      clearInterval(captureInterval);
-      captureInterval = setInterval(takeAutomatedScreenshot, 10000);
+
+      /* ====================================================
+         DISABLE INPUTS WHILE TRACKING
+      ==================================================== */
+
+      const taskDesc =
+        document.getElementById(
+          'taskDesc'
+        );
+
+
+      const projectSelect =
+        document.getElementById(
+          'projectSelect'
+        );
+
+
+      if (taskDesc) {
+        taskDesc.disabled = true;
+      }
+
+
+      if (projectSelect) {
+        projectSelect.disabled = true;
+      }
+
+
+      /* ====================================================
+         START AUTO SCREENSHOT
+      ==================================================== */
+
+      clearInterval(
+        captureInterval
+      );
+
+
+      captureInterval =
+        setInterval(
+          takeAutomatedScreenshot,
+          10000
+        );
+
+
     } else {
-      console.error("Backend error response:", data);
-      alert("Server error: " + (data.message || "Tracker start nahi ho saka."));
-      if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+
+      console.error(
+        "Backend error response:",
+        data
+      );
+
+
+      alert(
+        "Server error: "
+        + (
+          data.message
+          || "Tracker start nahi ho saka."
+        )
+      );
+
+
+      if (mediaStream) {
+
+        mediaStream
+          .getTracks()
+          .forEach(
+            track => track.stop()
+          );
+
+      }
+
     }
+
+
   } catch (apiErr) {
-    console.error("API Error:", apiErr);
-    alert("Connection error: Server tak request nahi pahunchi.");
-    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+
+    console.error(
+      "API Error:",
+      apiErr
+    );
+
+
+    alert(
+      "Connection error: Server tak request nahi pahunchi."
+    );
+
+
+    if (mediaStream) {
+
+      mediaStream
+        .getTracks()
+        .forEach(
+          track => track.stop()
+        );
+
+    }
+
   }
+
 }
 
-// 📸 SCREENSHOT CAPTURE & COMPRESSION (10s Interval)
+
+/* ============================================================
+   AUTOMATED SCREENSHOT
+   Every 10 seconds
+============================================================ */
+
 async function takeAutomatedScreenshot() {
-  if (!mediaStream || !currentEntryId) return;
 
-  const video = document.getElementById('hiddenVideo');
-  const canvas = document.getElementById('hiddenCanvas');
-  if (!video || !canvas) return;
-  
-  const context = canvas.getContext('2d');
+  if (
+    !mediaStream ||
+    !currentEntryId
+  ) {
 
-  if (video.videoWidth > 0) {
-    canvas.width = 1280;
-    canvas.height = 720;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return;
 
-    const base64Image = canvas.toDataURL('image/jpeg', 0.6);
-    const csrftoken = getCSRFToken();
-
-    const payload = new FormData();
-    payload.append('entry_id', currentEntryId);
-    payload.append('screenshot', base64Image);
-
-    fetch("{% url 'tasks:upload_screenshot' %}", {
-      method: "POST",
-      headers: {
-        "X-CSRFToken": csrftoken,
-        "X-Requested-With": "XMLHttpRequest"
-      },
-      body: payload
-    }).catch(err => console.error("Upload error:", err));
   }
+
+
+  const video =
+    document.getElementById(
+      'hiddenVideo'
+    );
+
+
+  const canvas =
+    document.getElementById(
+      'hiddenCanvas'
+    );
+
+
+  if (
+    !video ||
+    !canvas
+  ) {
+
+    return;
+
+  }
+
+
+  const context =
+    canvas.getContext('2d');
+
+
+  if (
+    video.videoWidth > 0
+  ) {
+
+    canvas.width = 1280;
+
+    canvas.height = 720;
+
+
+    context.drawImage(
+      video,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+
+    const base64Image =
+      canvas.toDataURL(
+        'image/jpeg',
+        0.6
+      );
+
+
+    const csrftoken =
+      getCSRFToken();
+
+
+    const payload =
+      new FormData();
+
+
+    payload.append(
+      'entry_id',
+      currentEntryId
+    );
+
+
+    payload.append(
+      'screenshot',
+      base64Image
+    );
+
+
+    fetch(
+      "{% url 'tasks:upload_screenshot' %}",
+      {
+
+        method: "POST",
+
+        headers: {
+
+          "X-CSRFToken":
+            csrftoken,
+
+          "X-Requested-With":
+            "XMLHttpRequest"
+
+        },
+
+        body: payload
+
+      }
+    )
+    .catch(
+      err =>
+        console.error(
+          "Upload error:",
+          err
+        )
+    );
+
+  }
+
 }
 
-// 🛑 STOP TRACKER
+
+/* ============================================================
+   STOP TRACKER
+============================================================ */
+
 async function stopTracking() {
-  clearInterval(timerInterval);
-  clearInterval(captureInterval);
+
+  clearInterval(
+    timerInterval
+  );
+
+
+  clearInterval(
+    captureInterval
+  );
+
+
+  /* ==========================================================
+     STOP SCREEN SHARING
+  ========================================================== */
 
   if (mediaStream) {
+
     try {
-      mediaStream.getTracks().forEach(track => track.stop());
+
+      mediaStream
+        .getTracks()
+        .forEach(
+          track => track.stop()
+        );
+
     } catch (e) {
+
       console.log(e);
+
     }
+
   }
 
-  const stopBtn = document.getElementById('toggleBtn');
+
+  /* ==========================================================
+     CHANGE BUTTON
+  ========================================================== */
+
+  const stopBtn =
+    document.getElementById(
+      'toggleBtn'
+    );
+
+
   if (stopBtn) {
+
     stopBtn.disabled = true;
-    stopBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Saving...`;
+
+
+    stopBtn.innerHTML =
+      `<i class="fas fa-spinner fa-spin"></i> Saving...`;
+
   }
+
+
+  /* ==========================================================
+     SEND STOP REQUEST
+  ========================================================== */
 
   try {
-    const csrftoken = getCSRFToken();
-    const payload = new FormData();
+
+    const csrftoken =
+      getCSRFToken();
+
+
+    const payload =
+      new FormData();
+
+
     if (currentEntryId) {
-      payload.append('entry_id', currentEntryId);
+
+      payload.append(
+        'entry_id',
+        currentEntryId
+      );
+
     }
 
-    const response = await fetch("{% url 'tasks:stop_tracker' %}", {
-      method: "POST",
-      headers: {
-        "X-CSRFToken": csrftoken,
-        "X-Requested-With": "XMLHttpRequest"
-      },
-      body: payload
-    });
 
-    const data = await response.json();
-    if (data.status === 'stopped' || data.status === 'no_active_session') {
-      window.location.href = window.location.pathname;
+    const response =
+      await fetch(
+        "{% url 'tasks:stop_tracker' %}",
+        {
+
+          method: "POST",
+
+          headers: {
+
+            "X-CSRFToken":
+              csrftoken,
+
+            "X-Requested-With":
+              "XMLHttpRequest"
+
+          },
+
+          body: payload
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      data.status === 'stopped' ||
+      data.status === 'no_active_session'
+    ) {
+
+      /*
+       * Reload the same page so the newly
+       * completed entry appears immediately.
+       */
+      window.location.href =
+        window.location.pathname
+        + window.location.search;
+
     } else {
-      alert("Error saving session: " + (data.message || "Unknown error"));
+
+      alert(
+        "Error saving session: "
+        + (
+          data.message
+          || "Unknown error"
+        )
+      );
+
+
       location.reload();
+
     }
+
+
   } catch (err) {
-    console.error("Stop Tracker Error:", err);
+
+    console.error(
+      "Stop Tracker Error:",
+      err
+    );
+
+
     location.reload();
+
   }
+
 }
+
 </script>
+
+
 {% endblock %}
