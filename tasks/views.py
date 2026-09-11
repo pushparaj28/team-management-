@@ -949,99 +949,565 @@ def format_duration(total_seconds):
 # ==========================================
 @login_required
 def time_tracker_page(request):
+    """
+    Time Tracker access model:
+
+    Admin:
+        Team = all Managers + Employees
+        My Work = Admin's own time entries
+
+    Manager:
+        Team = only employees reporting to that manager
+        My Work = Manager's own time entries
+
+    Employee:
+        Only their own time entries
+    """
+
     user = request.user
-    user_role = getattr(getattr(user, 'profile', None), 'role', '')
-    is_admin_or_mgr = (user.is_superuser or user_role in ['admin', 'manager'])
 
-    # 1. Dynamic Projects / Tasks choices
-    if is_admin_or_mgr:
-        available_tasks = Task.objects.all().values('id', 'title', 'assigned_to__profile__department')
+    is_admin = user.is_superuser
+    is_manager = _is_manager(user)
+    is_admin_or_mgr = is_admin or is_manager
+
+    # ============================================================
+    # 1. ACTIVE ENTRY OF CURRENT USER
+    # ============================================================
+
+    active_entry = TimeEntry.objects.filter(
+        user=user,
+        is_active=True
+    ).first()
+
+    # ============================================================
+    # 2. TASKS AVAILABLE IN THE START TRACKER DROPDOWN
+    # ============================================================
+
+    if is_admin:
+
+        # Admin can track against any task
+        available_tasks = Task.objects.all().values(
+            'id',
+            'title',
+            'assigned_to__profile__department'
+        )
+
+    elif is_manager:
+
+        # Manager can use tasks belonging to their visible team
+        visible_users = _visible_team_users(user)
+
+        available_tasks = Task.objects.filter(
+            assigned_to__in=visible_users
+        ).values(
+            'id',
+            'title',
+            'assigned_to__profile__department'
+        )
+
     else:
-        available_tasks = Task.objects.filter(assigned_to=user).values('id', 'title', 'assigned_to__profile__department')
 
-    # 2. Current running session
-    active_entry = TimeEntry.objects.filter(user=user, is_active=True).first()
+        # Employee can use only their own assigned tasks
+        available_tasks = Task.objects.filter(
+            assigned_to=user
+        ).values(
+            'id',
+            'title',
+            'assigned_to__profile__department'
+        )
 
-    # 3. Timezone-aware Date Filters (Today, This Week, This Month, All Time)
+    # ============================================================
+    # 3. PERIOD FILTER
+    # ============================================================
+
     time_filter = request.GET.get('filter', 'today')
+
+    if time_filter not in ('today', 'week', 'month', 'all'):
+        time_filter = 'today'
+
     now_local = timezone.localtime(timezone.now())
 
     if time_filter == 'week':
-        start_date = (now_local - timedelta(days=now_local.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-    elif time_filter == 'month':
-        start_date = now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    elif time_filter == 'all':
-        start_date = None
-    else:  # 'today' default
-        start_date = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # 4. User ke completed time logs
-    history_qs = TimeEntry.objects.filter(user=user, is_active=False)
+        start_date = (
+            now_local - timedelta(days=now_local.weekday())
+        ).replace(
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0
+        )
+
+    elif time_filter == 'month':
+
+        start_date = now_local.replace(
+            day=1,
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0
+        )
+
+    elif time_filter == 'all':
+
+        start_date = None
+
+    else:
+
+        start_date = now_local.replace(
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0
+        )
+
+    # ============================================================
+    # 4. TEAM / MY WORK SCOPE
+    # ============================================================
+
+    requested_scope = request.GET.get('scope', '')
+
+    if is_admin_or_mgr:
+
+        if requested_scope in ('team', 'my'):
+            scope = requested_scope
+        else:
+            # Default for Admin/Manager
+            scope = 'team'
+
+    else:
+
+        # Employee can never access Team view
+        scope = 'my'
+
+    search = request.GET.get('search', '').strip()
+
+    # ============================================================
+    # 5. CURRENT USER'S OWN TIME HISTORY
+    # ============================================================
+
+    history_qs = TimeEntry.objects.filter(
+        user=user,
+        is_active=False
+    )
+
     if start_date:
-        history_qs = history_qs.filter(start_time__gte=start_date)
+
+        history_qs = history_qs.filter(
+            start_time__gte=start_date
+        )
 
     history_entries = []
     user_total_seconds = 0
+
     for item in history_qs.order_by('-start_time'):
-        sec = item.duration_seconds
-        user_total_seconds += sec
-        start_local = timezone.localtime(item.start_time)
-        end_local = timezone.localtime(item.end_time) if item.end_time else None
+
+        seconds = item.duration_seconds
+
+        user_total_seconds += seconds
+
+        start_local = timezone.localtime(
+            item.start_time
+        )
+
+        end_local = (
+            timezone.localtime(item.end_time)
+            if item.end_time
+            else None
+        )
+
         history_entries.append({
             'obj': item,
-            'formatted_duration': format_duration(sec),
+            'formatted_duration': format_duration(seconds),
+            'start_formatted': start_local.strftime("%I:%M %p"),
+            'end_formatted': (
+                end_local.strftime("%I:%M %p")
+                if end_local
+                else '—'
+            ),
+            'date_formatted': start_local.strftime(
+                "%d %b, %Y"
+            ),
+        })
+
+    # Include currently running session in user's total
+    if active_entry:
+        user_total_seconds += active_entry.duration_seconds
+
+    # ============================================================
+    # 6. TEAM SUMMARY
+    # ============================================================
+
+    team_summary = []
+
+    total_company_seconds = 0
+    active_employees_count = 0
+
+    page_obj = None
+
+    if is_admin_or_mgr and scope == 'team':
+
+        # --------------------------------------------------------
+        # ADMIN
+        # Admin sees ALL Managers + Employees
+        # --------------------------------------------------------
+
+        if is_admin:
+
+            team_pool = User.objects.filter(
+                profile__role__in=[
+                    'manager',
+                    'employee'
+                ]
+            ).exclude(
+                id=user.id
+            ).select_related(
+                'profile'
+            ).distinct()
+
+        # --------------------------------------------------------
+        # MANAGER
+        # Manager sees ONLY employees assigned to them
+        # --------------------------------------------------------
+
+        else:
+
+            team_pool = User.objects.filter(
+                profile__manager=user,
+                profile__role='employee'
+            ).select_related(
+                'profile'
+            ).distinct()
+
+        # ========================================================
+        # SEARCH TEAM MEMBERS
+        # ========================================================
+
+        if search:
+
+            team_pool = team_pool.filter(
+                Q(username__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(profile__role__icontains=search) |
+                Q(time_entries__project_name__icontains=search)
+            ).distinct()
+
+        # ========================================================
+        # BUILD MEMBER CARDS
+        # ========================================================
+
+        for member in team_pool:
+
+            member_entries = TimeEntry.objects.filter(
+                user=member
+            )
+
+            if start_date:
+
+                member_entries = member_entries.filter(
+                    start_time__gte=start_date
+                )
+
+            # Completed sessions
+            member_total_seconds = sum(
+                entry.duration_seconds
+                for entry in member_entries
+                if not entry.is_active
+            )
+
+            # Currently active session
+            current_active = TimeEntry.objects.filter(
+                user=member,
+                is_active=True
+            ).first()
+
+            if current_active:
+
+                member_total_seconds += (
+                    current_active.duration_seconds
+                )
+
+                active_employees_count += 1
+
+            total_company_seconds += member_total_seconds
+
+            # ----------------------------------------------------
+            # Determine Role
+            # ----------------------------------------------------
+
+            profile = getattr(
+                member,
+                'profile',
+                None
+            )
+
+            role = (
+                getattr(profile, 'role', 'employee')
+                if profile
+                else 'employee'
+            )
+
+            if role == 'manager':
+                role_label = 'Manager'
+            else:
+                role_label = 'Employee'
+
+            # ----------------------------------------------------
+            # Add member to summary
+            # ----------------------------------------------------
+
+            team_summary.append({
+                'user': member,
+
+                'active_session': current_active,
+
+                'total_formatted': format_duration(
+                    member_total_seconds
+                ),
+
+                'total_seconds': member_total_seconds,
+
+                'role': role,
+
+                'role_label': role_label,
+            })
+
+        # ========================================================
+        # ACTIVE MEMBERS FIRST
+        # THEN SORT BY TOTAL TIME
+        # ========================================================
+
+        team_summary.sort(
+            key=lambda item: (
+                item['active_session'] is not None,
+                item['total_seconds']
+            ),
+            reverse=True
+        )
+
+        # ========================================================
+        # PAGINATION
+        # 8 MEMBERS PER PAGE
+        # ========================================================
+
+        paginator = Paginator(
+            team_summary,
+            8
+        )
+
+        page_obj = paginator.get_page(
+            request.GET.get('page')
+        )
+
+    # ============================================================
+    # 7. CONTEXT
+    # ============================================================
+
+    context = {
+        'active_entry': active_entry,
+        'available_tasks': available_tasks,
+
+        # My Work data
+        'my_entries': history_entries,
+        'my_total_time': format_duration(user_total_seconds),
+
+        # Keep these if other parts of the template still use them
+        'history_entries': history_entries,
+        'user_total_time': format_duration(user_total_seconds),
+
+        'is_admin_or_mgr': is_admin_or_mgr,
+        'is_admin': is_admin,
+        'is_manager': is_manager,
+
+        'team_summary': (
+            page_obj.object_list
+            if page_obj
+            else []
+        ),
+
+        'page_obj': page_obj,
+
+        'total_company_time': format_duration(
+            total_company_seconds
+        ),
+
+        'active_employees_count': active_employees_count,
+
+        'current_filter': time_filter,
+        'scope': scope,
+        'search_query': search,
+    }
+
+    return render(
+        request,
+        'tasks/time_tracker.html',
+        context
+    )
+
+
+@login_required
+def time_tracker_live_data(request):
+    """Return live team time-tracking data for Admin/Manager polling."""
+    user = request.user
+    is_admin = user.is_superuser
+    is_manager = _is_manager(user)
+
+    if not (is_admin or is_manager):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    requested_scope = request.GET.get('scope', 'team')
+    scope = requested_scope if requested_scope in ('team', 'my') else 'team'
+    time_filter = request.GET.get('filter', 'today')
+    if time_filter not in ('today', 'week', 'month', 'all'):
+        time_filter = 'today'
+
+    now_local = timezone.localtime(timezone.now())
+
+    if time_filter == 'week':
+        start_date = (now_local - timedelta(days=now_local.weekday())).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+    elif time_filter == 'month':
+        start_date = now_local.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+    elif time_filter == 'all':
+        start_date = None
+    else:
+        start_date = now_local.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+
+    if scope == 'my':
+        users = User.objects.filter(id=user.id).select_related('profile')
+    elif is_admin:
+        users = User.objects.filter(
+            profile__role__in=['manager', 'employee']
+        ).select_related('profile').distinct()
+    else:
+        users = User.objects.filter(
+            profile__manager=user, profile__role='employee'
+        ).select_related('profile').distinct()
+
+    search = request.GET.get('search', '').strip()
+    if search:
+        users = users.filter(
+            Q(username__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(profile__role__icontains=search)
+        ).distinct()
+
+    members = []
+    active_count = 0
+
+    for member in users: 
+        entries = TimeEntry.objects.filter(user=member)
+        if start_date:
+            entries = entries.filter(start_time__gte=start_date)
+
+        total_seconds = sum(e.duration_seconds for e in entries)
+        active_entry = TimeEntry.objects.filter(
+            user=member, is_active=True
+        ).select_related('user').first()
+
+        if active_entry:
+            active_count += 1
+
+        profile = getattr(member, 'profile', None)
+        role = getattr(profile, 'role', 'employee') if profile else 'employee'
+        role_label = 'Manager' if role == 'manager' else 'Employee'
+
+        avatar = None
+        if profile and getattr(profile, 'profile_pic', None):
+            try:
+                avatar = profile.profile_pic.url
+            except Exception:
+                avatar = None
+
+        members.append({
+            'id': member.id,
+            'username': member.username,
+            'name': member.get_full_name() or member.username,
+            'role': role,
+            'role_label': role_label,
+            'avatar': avatar,
+            'active': bool(active_entry),
+            'description': active_entry.description if active_entry else '',
+            'project': active_entry.project_name if active_entry else '',
+            'duration_seconds': total_seconds,
+            'total_formatted': format_duration(total_seconds),
+            'active_start': timezone.localtime(active_entry.start_time).isoformat() if active_entry else None,
+            'history_url': f'/tasks/tracker/user/{member.id}/',
+        })
+
+    members.sort(key=lambda m: (m['active'], m['duration_seconds']), reverse=True)
+
+    return JsonResponse({
+        'server_now': now_local.isoformat(),
+        'scope': scope,
+        'filter': time_filter,
+        'active_count': active_count,
+        'members': members,
+    })
+
+
+@login_required
+def time_tracker_reports(request):
+    if not (request.user.is_superuser or _is_manager(request.user)):
+        return HttpResponseForbidden()
+    return render(request, 'tasks/time_tracker_reports.html')
+
+
+@login_required
+def user_time_history(request, user_id):
+    target = get_object_or_404(User, pk=user_id)
+
+    allowed = (
+        request.user.is_superuser
+        or target.id == request.user.id
+        or (_is_manager(request.user) and hasattr(target, 'profile') and target.profile.manager_id == request.user.id)
+    )
+    if not allowed:
+        return HttpResponseForbidden("You don't have permission to view this history.")
+
+    entries = TimeEntry.objects.filter(user=target, is_active=False).order_by('-start_time')
+
+    project_f = request.GET.get('project', '')
+    start_f = request.GET.get('start', '')
+    end_f = request.GET.get('end', '')
+    if project_f:
+        entries = entries.filter(project_name__icontains=project_f)
+    if start_f:
+        entries = entries.filter(start_time__date__gte=start_f)
+    if end_f:
+        entries = entries.filter(start_time__date__lte=end_f)
+
+    total_seconds = sum(e.duration_seconds for e in entries)
+
+    formatted_entries = []
+    for e in entries:
+        start_local = timezone.localtime(e.start_time)
+        end_local = timezone.localtime(e.end_time) if e.end_time else None
+        formatted_entries.append({
+            'obj': e,
+            'formatted_duration': format_duration(e.duration_seconds),
             'start_formatted': start_local.strftime("%I:%M %p"),
             'end_formatted': end_local.strftime("%I:%M %p") if end_local else '—',
             'date_formatted': start_local.strftime("%d %b, %Y"),
         })
 
-    # Agar session currently chal raha hai toh current duration bhi add karein
-    if active_entry:
-        user_total_seconds += active_entry.duration_seconds
-
-    # 5. Admin & Manager Team Audit Overview
-    team_summary = []
-    total_company_seconds = 0
-    active_employees_count = 0
-
-    if is_admin_or_mgr:
-        all_employees = User.objects.filter(is_active=True).select_related('profile')
-        for emp in all_employees:
-            emp_entries = TimeEntry.objects.filter(user=emp)
-            if start_date:
-                emp_entries = emp_entries.filter(start_time__gte=start_date)
-
-            emp_total_sec = sum(e.duration_seconds for e in emp_entries if not e.is_active)
-            current_active = TimeEntry.objects.filter(user=emp, is_active=True).first()
-
-            if current_active:
-                emp_total_sec += current_active.duration_seconds
-                active_employees_count += 1
-
-            total_company_seconds += emp_total_sec
-
-            team_summary.append({
-                'user': emp,
-                'active_session': current_active,
-                'total_formatted': format_duration(emp_total_sec),
-                'total_seconds': emp_total_sec,
-            })
-
-        team_summary.sort(key=lambda x: (x['active_session'] is not None, x['total_seconds']), reverse=True)
+    paginator = Paginator(formatted_entries, 15)
+    page_obj = paginator.get_page(request.GET.get('page'))
 
     context = {
-        'active_entry': active_entry,
-        'available_tasks': available_tasks,
-        'history_entries': history_entries,
-        'user_total_time': format_duration(user_total_seconds),
-        'is_admin_or_mgr': is_admin_or_mgr,
-        'team_summary': team_summary,
-        'total_company_time': format_duration(total_company_seconds),
-        'active_employees_count': active_employees_count,
-        'current_filter': time_filter,
+        'target': target,
+        'page_obj': page_obj,
+        'total_formatted': format_duration(total_seconds),
+        'filters': {'project': project_f, 'start': start_f, 'end': end_f},
     }
-    return render(request, 'tasks/time_tracker.html', context)
-
+    return render(request, 'tasks/user_time_history.html', context)
 
 # ==========================================
 # 2. START TIME TRACKER (ROBUST PAYLOAD HANDLER)
@@ -1149,6 +1615,12 @@ def upload_screenshot(request):
 # ==========================================
 @login_required
 def admin_live_monitoring(request):
+    # Backend-enforced — Admin only, not Manager. A Manager who
+    # manually visits this URL is rejected here regardless of what
+    # the sidebar shows them.
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Live Monitoring is available to Admin only.")
+
     active_sessions = TimeEntry.objects.filter(is_active=True).select_related(
         'user', 'user__profile'
     ).prefetch_related('screenshots')
