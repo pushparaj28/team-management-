@@ -5,21 +5,39 @@
     <i class="fas fa-arrow-left text-xs"></i> Back to tracker
   </a>
 
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-4 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <span class="w-12 h-12 rounded-full bg-gradient-to-br from-teal-600 to-teal-400 text-white flex items-center justify-center font-bold">
-        {{ target.username|slice:":1"|upper }}
-      </span>
-      <div>
-        <p class="font-bold text-gray-800">{{ target.get_full_name|default:target.username }}</p>
-        <p class="text-xs text-gray-500">@{{ target.username }}</p>
-      </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+
+            {% if target.profile.profile_pic %}
+                <img
+                    src="{{ target.profile.profile_pic.url }}"
+                    alt="{{ target.get_full_name|default:target.username }}"
+                    class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100"
+                >
+            {% else %}
+                <span class="w-12 h-12 rounded-full bg-gradient-to-br from-teal-600 to-teal-400 text-white flex items-center justify-center font-bold">
+                    {{ target.username|slice:":1"|upper }}
+                </span>
+            {% endif %}
+
+            <div>
+                <p class="font-bold text-gray-800">
+                    {{ target.get_full_name|default:target.username }}
+                </p>
+                <p class="text-xs text-gray-500">
+                    @{{ target.username }}
+                </p>
+            </div>
+
+        </div>
+
+        <div class="text-right">
+            <p class="text-xs text-gray-500">Total tracked</p>
+            <p class="text-xl font-bold text-gray-800">
+                {{ total_formatted }}
+            </p>
+        </div>
     </div>
-    <div class="text-right">
-      <p class="text-xs text-gray-500">Total tracked</p>
-      <p class="text-xl font-bold text-gray-800">{{ total_formatted }}</p>
-    </div>
-  </div>
 
   <form method="get" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4 flex flex-wrap gap-2 items-end">
     <input type="text" name="project" value="{{ filters.project }}" placeholder="Filter by project..."
